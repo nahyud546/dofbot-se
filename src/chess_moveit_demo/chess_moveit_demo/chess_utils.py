@@ -90,7 +90,10 @@ OMPL_PLANNING_TIMEOUT_SEC = 5.0
 CARTESIAN_PLANNING_TIMEOUT_SEC = 5.0
 IK_WAIT_TIMEOUT_SEC = 1.5
 FK_SERVICE_TIMEOUT_SEC = 1.5
-SCENE_SERVICE_TIMEOUT_SEC = 1.5
+# GET scene là roundtrip thuần (không ảnh hưởng chất lượng plan): nới 3.0s
+# để chịu được máy tải cao (đo thực: load ~9, GET timeout 1.5s oan ở take-e2
+# khi move_group bận).
+SCENE_SERVICE_TIMEOUT_SEC = 3.0
 ACM_APPLY_TIMEOUT_SEC = 3.0
 
 # ==== DENY-ALL: không còn ngoại lệ tiếp xúc ACM (đo 10/09/2026) ====
@@ -125,13 +128,13 @@ GRASP_PROUD_MARGIN_RAD = 0.0
 #   (place không cứu được — đã chứng minh 3 runs), khỏi đốt budget comp.
 # Nằm giữa 11° desired và 26° hard của gate đặt.
 TCP_GRASP_TILT_RAD = math.pi / 2
-SEED_IK_TILT_TOL_RAD = 0.30
-TRANSFER_TILT_TOL_RAD = 0.35
+SEED_IK_TILT_TOL_RAD = 0.22
+TRANSFER_TILT_TOL_RAD = 0.26
 # Gate tilt gắp (đo thực compounding: grasp 17° + seed 17° -> piece 35° chết
 # gate 26°; comp dịch tịnh không sửa được xoay). Grasp lệch quá mốc này ->
 # loại offset ngay (rẻ, trước sweep/chain đắt). 12° + seed 17° = worst 29°,
 # typical ~10° ≈ 11° desired; gate đặt 26° hard chốt cuối.
-GRASP_TILT_TOL_RAD = 0.21
+GRASP_TILT_TOL_RAD = 0.16
 
 # Tổng thời gian tối đa cho tìm candidate gắp 1 ô (Fix 6): thử offset mà
 # không trần thời gian có thể treo lượt đi khi scene khó. Hết trần -> raise
@@ -349,7 +352,7 @@ MAX_JOINT_STEP_RAD = 0.6
 # margin tới limit (rad, càng xa càng tốt nên trừ điểm), |arm5| (rad, cang
 # nho cang tot — uu tien nghiem gan 0 trong cage, huong B).
 CANDIDATE_SCORE_W_POS = 1.0 / 0.005
-CANDIDATE_SCORE_W_TILT = 1.0 / 0.45
+CANDIDATE_SCORE_W_TILT = 1.0 / 0.25
 CANDIDATE_SCORE_W_TRAVEL = 0.15
 CANDIDATE_SCORE_W_LIMIT_MARGIN = -0.5
 CANDIDATE_SCORE_W_ARM5 = 0.5
@@ -368,9 +371,11 @@ REGION_JOINT_TEMPLATES = {
 }
 
 # ==== TILT 5-DOF (TODO-3) ====
-# Quality target <=11° (KPI, chưa blocker MVP), hard reject >26°.
+# Quality target <=11° (KPI), hard reject >18° (siết từ 26° vì ảnh RViz cho
+# thấy 15-20° đã lệch rõ; nhưng e2e4 đo thực best 15.2° nên giữ 18° để nước
+# mở cờ chuẩn vẫn chạy được).
 TILT_QUALITY_TARGET_RAD = 0.191986  # 11 deg
-TILT_HARD_LIMIT_RAD = 0.453786  # 26 deg
+TILT_HARD_LIMIT_RAD = 0.314159  # 18 deg
 # Thử orientation constraint giữ TCP gần thẳng đứng, yaw tự do (TODO-3).
 # False = dùng candidate scoring (mặc định, reachability cao hơn trên 5-DOF
 # position-only); True = ép descend theo quat thẳng đứng trước, rớt mới

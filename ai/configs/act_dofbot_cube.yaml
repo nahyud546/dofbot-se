@@ -1,0 +1,18 @@
+# ACT cho Dofbot cube — baseline nhẹ, hợp 50-100 ep.
+# Dùng với: lerobot-train --policy.type=act (tham số CLI ghi đè file này).
+# Giữ tối giản: chunk 50, batch 8 để chạy được GPU laptop/Colab T4.
+
+policy:
+  type: act
+  chunk_size: 50
+  n_action_steps: 50
+  batch_size: 8
+  num_epochs: 50
+  lr: 1.0e-4
+dataset:
+  repo_id: local/dofbot_cube
+  # observation.images optional khi chưa có camera; joints bắt buộc:
+  # arm1_Joint.pos ... arm5_Joint.pos, Rlink1_Joint.pos (độ)
+robot:
+  type: dofbot_follower
+  backend: sim_ros2

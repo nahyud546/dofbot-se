@@ -10,3 +10,13 @@ log/
 .vscode/
 # Yahboom proprietary meshes (~104M), machine-provided via setup_standalone.sh
 src/dofbot_urdf
+# LeRobot / AI artefacts (nặng, máy-local)
+datasets/*
+!datasets/.gitkeep
+outputs/*
+!outputs/.gitkeep
+ai/checkpoints/*
+!ai/checkpoints/.gitkeep
+ai/experiments/*.jsonl
+*.jsonl
+.DS_Store

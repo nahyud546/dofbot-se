@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=71"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lerobot-robot-dofbot"
+version = "0.1.0"
+description = "LeRobot plugin for Yahboom Dofbot 6DOF (5 arm + 1 gripper). Sim via ROS2 topics, real via Arm_Lib."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "lerobot>=0.6.2",
+    "numpy>=2.0,<2.3",
+]
+
+[project.optional-dependencies]
+ros = [
+    # chỉ cài trong venv ROS (py3.10) hoặc venv bridge có rclpy sẵn.
+    # Không ép trong venv lerobot py3.12 vì Humble không có wheel 3.12.
+]
+real = [
+    # Arm_Lib chỉ có trên image Yahboom (py3.10). Plugin import lazy, thiếu vẫn dùng sim được.
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py312"

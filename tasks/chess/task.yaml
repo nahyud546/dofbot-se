@@ -1,0 +1,13 @@
+# chess — tái dùng pipeline hiện có, không viết lại
+# - Luật/visual: chess_moveit_demo/chess_brain_node + chess_base_node
+# - MoveIt full: pick_place_node (OMPL + Cartesian, attach/detach)
+# - Replay nhanh: simplify_chess_game (FollowJointTrajectory, 64 routes VALIDATED)
+# - LeRobot: mỗi leg HOME->PICK->HOME->DROP->HOME là 1 episode ngắn để train ACT
+
+backend_supported: [sim_ros2]
+board_ref: src/dofbot_common/dofbot_common/board_constants.py
+routes: simplify-chess-game/config/square_routes.yaml
+success: FEN khớp UCI, ACK /chess/move_done, không NACK/lock
+safety:
+  reachability_execute_on_fakesystem: false # bật true chỉ trên sim khi deep-check
+  tcp_offset_calibrated: false # chặn execute hardware tới khi calibrate (xem README gốc)

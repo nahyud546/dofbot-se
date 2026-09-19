@@ -15,9 +15,17 @@ dofbot_robot_arm_6dof/      <- workspace root (chạy colcon build TẠI ĐÂY)
     chess_moveit_demo/       <- cờ vua (Stockfish self-play + MoveIt2 pick-place, Python)
     dofbot_tea_moveit/       <- rót trà (C++ MoveIt2)
     dofbot_moveit/           <- vendored MoveIt config (Yahboom)
+    dofbot_common/           <- NEW: single source of truth (joints, TCP, board)
     pymoveit2/               <- vendored + patch no-spin (xem VENDOR.txt)
     dofbot_urdf/             <- Yahboom meshes (~104M), Git bỏ qua (xem dưới)
+    simplify_chess_game -> ../simplify-chess-game (symlink để colcon build được)
   setup_standalone.sh
+  lerobot_plugins/lerobot_robot_dofbot/  <- NEW: plugin LeRobot (sim_ros2|arm_lib|mock)
+  tasks/{cube_pick_place,cap_sorting,chess}/ <- NEW: định nghĩa task độc lập backend
+  ai/{configs,experiments,policies,checkpoints}/ <- NEW: train/eval (venv py3.12)
+  scripts/{record_dataset,train_act,rollout_act}.sh <- NEW: wrapper lerobot-* CLI
+  hardware/README.md         <- NEW: ghi chú Arm_Lib + an toàn tay thật
+  docs/ARCHITECTURE.md       <- NEW: luồng chính + quy ước (đọc 1 file là chạy được)
 ```
 
 ## Clone + build (máy mới, chỉ cần repo này)

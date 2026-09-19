@@ -1,0 +1,13 @@
+# cube_pick_place — baseline đầu tiên cho LeRobot/ACT
+# Vì sao task này trước: 1 object, không collision phức tạp, dễ record 50-100 ep.
+
+backend_supported: [sim_ros2, arm_lib, mock]
+objects:
+  cube: {size_mm: 40, start: [0.18, -0.05], goal: [0.18, 0.06]}
+flow: pick (approach 65mm) -> lift -> move -> place -> home
+success: cube trong vòng 20mm quanh goal, gripper mở, arm về HOME
+record:
+  episodes: 50
+  teleop: keyboard # hoặc so_leader khi có tay thứ 2
+  dataset: local/dofbot_cube
+eval: rollout 10 ep, tính success_rate

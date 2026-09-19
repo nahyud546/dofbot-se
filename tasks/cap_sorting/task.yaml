@@ -1,0 +1,5 @@
+# cap_sorting — multi-object, test generalization màu/vị trí
+backend_supported: [sim_ros2, arm_lib]
+objects: [cap_red, cap_blue, bin_red, bin_blue]
+success: mỗi nắp đúng bin màu, không rơi khỏi bàn
+record: {episodes: 100, dataset: local/dofbot_caps}

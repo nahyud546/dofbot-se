@@ -1,0 +1,20 @@
+# Task registry — định nghĩa task độc lập backend.
+# Mỗi task: dùng được cho cả MoveIt demo cũ và LeRobot policy mới.
+# Thêm task mới = copy 1 folder này, không copy cả package ROS.
+
+tasks:
+  cube_pick_place:
+    desc: "Gắp cube 4cm từ A sang B trên bàn phẳng (baseline cho ACT)"
+    policy: "act"
+    objects: ["cube_40mm"]
+    success: "cube trong vùng đích 20mm, gripper mở, arm về HOME"
+  cap_sorting:
+    desc: "Phân loại nắp chai theo màu (baseline multi-object)"
+    policy: "act/diffusion"
+    objects: ["cap_red", "cap_blue", "bin_red", "bin_blue"]
+    success: "mỗi nắp đúng bin màu"
+  chess:
+    desc: "Pick-place quân cờ theo UCI (tái dùng route/IK đã có)"
+    policy: "replay + act (từng leg)"
+    objects: ["board_24cm", "pieces_32"]
+    success: "board FEN khớp nước đi, không NACK"
