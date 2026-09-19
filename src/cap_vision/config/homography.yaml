@@ -1,0 +1,20 @@
+# Homography pixel -> table_frame (don vi met, frame table_frame).
+# p_table_h = H @ [u, v, 1]; lay (x, y) = (p[0]/p[2], p[1]/p[2]).
+# File mac dinh CHUA calibrate (calibrated: false, H = identity).
+# Chay: ros2 run cap_vision calibrate_table -- --output <duong-dan-file-nay>
+image_width: 640
+image_height: 480
+homography:
+  - [1.0, 0.0, 0.0]
+  - [0.0, 1.0, 0.0]
+  - [0.0, 0.0, 1.0]
+calibrated: false
+reprojection_error_px: null
+# world_points: 4+ diem [(x, y)] (met) theo dung thu tu click pixel,
+# do calibrate_table tu dien khi luu. Mac dinh: ban 300x250mm, O = top-left:
+world_points:
+  - [0.00, 0.00]
+  - [0.30, 0.00]
+  - [0.30, 0.25]
+  - [0.00, 0.25]
+notes: "Do lai bang calibrate_table tren ban that truoc khi chay detector."

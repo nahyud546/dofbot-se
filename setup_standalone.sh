@@ -37,7 +37,7 @@ fi
 echo "=== 3/4 build ==="
 cd "$WS"
 source /opt/ros/humble/setup.bash
-colcon build --packages-select pymoveit2 dofbot_urdf dofbot_moveit dofbot_common dofbot_tea_moveit chess_moveit_demo simplify_chess_game
+colcon build --packages-select pymoveit2 dofbot_urdf dofbot_moveit dofbot_common dofbot_tea_moveit chess_moveit_demo simplify_chess_game cap_vision
 
 echo "=== 4/4 done ==="
 echo "source $WS/install/setup.bash"

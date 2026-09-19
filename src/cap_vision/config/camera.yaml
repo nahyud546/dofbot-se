@@ -1,0 +1,9 @@
+# Camera that cho cap_sorting. Load boi camera_test + cap_detector.
+cap_vision:
+  ros__parameters:
+    device_index: 0      # /dev/video0; doi neu co nhieu camera
+    width: 640
+    height: 480
+    fps: 30.0
+    frame_id: "camera_frame"
+    image_topic: "/cap_vision/image_raw"
