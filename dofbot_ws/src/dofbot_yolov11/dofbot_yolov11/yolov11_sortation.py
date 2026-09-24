@@ -47,7 +47,8 @@ from ultralytics import YOLO
 warnings.filterwarnings("ignore")
 
 # ---------------- T6 tuning constants (plan B1) ----------------
-CONF_THRESHOLD = 0.30   # ha tu 0.65 (->0.40->0.30): vat nghieng/mo duoc bat
+# CONF chinh live khong can sua code: T6_CONF=0.25 ros2 run ... (mac dinh 0.30).
+CONF_THRESHOLD = float(os.environ.get("T6_CONF", "0.30"))
 IMG_SIZE = 960          # tang tu 640: vat nho/anh in tren cube net hon
 CONF_PASS2 = 0.15       # san thap cho pass-2 crop upscale (chi chay khi SPACE)
 # Temporal vote: track box qua cac frame bang IoU, SPACE publish track on
@@ -95,9 +96,15 @@ YAW_FRESH_S = 5.0
 # TTA fallback: scan-only ma >N giay khong thay box thi thu them 1 lan
 # inference tren frame xoay 90 (vat nghieng/xeo hay rot khoi detector).
 TTA_STALE_S = 8.0
+# Yaw median theo track (port stacking angle_history median-5): can it nhat
+# N sample reliable, spread (max-min) qua lon -> FALLBACK nhu cube khong on dinh.
+YAW_MIN_SAMPLES = 3
+YAW_MAX_SPREAD_DEG = 15.0
 # Quad-fit mat vuong tren cube: dien tich quad phai chiem bao nhieu crop,
 # do lech goc toi da (deg) de chap nhan la mat vuong.
-QUAD_MIN_AREA_FRAC = 0.08
+# MIN 0.15 (tang tu 0.08): loai khung/chu nhat NHO cua anh IN tren cube, chi
+# nhan quad co mat cube (sticker phu gan kin mat -> quad to, giua crop).
+QUAD_MIN_AREA_FRAC = 0.15
 QUAD_MAX_AREA_FRAC = 0.85
 QUAD_MAX_ANGLE_DEV = 20.0
 
@@ -230,13 +237,13 @@ def _edge_alpha_delta(pts):
 
 
 def estimate_yaw(crop_rgb):
-    """Uoc luong goc xoay vat (deg, world CCW+, wrap [-45,45]).
+    """Uoc luong goc xoay vat (delta, ok, box4) - box4: 4 dinh minAreaRect.
 
     Port tu stacking_target.get_Sqaure: contour lon nhat -> canh DAI
     minAreaRect (boxPoints, khong dung w/h) -> alpha anh -> delta.
     Chu y: frame tu cam_pub la RGB -> dung RGB2GRAY (ban cu dung BGR2GRAY
     tren du lieu RGB, lech trong so xam). Gan vuong / khong tach duoc
-    contour sach -> (0.0, False).
+    contour sach -> (0.0, False, None).
     """
     try:
         gray = cv.cvtColor(crop_rgb, cv.COLOR_RGB2GRAY)
@@ -244,25 +251,25 @@ def estimate_yaw(crop_rgb):
         h, w = gray.shape
         area_wh = float(w * h)
         if area_wh <= 0:
-            return 0.0, False
+            return 0.0, False, None
         cnt = _contour_from_thresh(gray, area_wh)
         if cnt is None:
             cnt = _contour_from_edges(gray, area_wh)
         if cnt is None:
             _yaw_debug_dump(crop_rgb, None, 0.0, "NONE")
-            return 0.0, False
+            return 0.0, False, None
         rect = cv.minAreaRect(cnt)
         long_side = max(rect[1])
         short_side = min(rect[1])
         if short_side <= 0 or long_side / short_side < YAW_MIN_ASPECT:
             _yaw_debug_dump(crop_rgb, cnt, 0.0, "MASK_SQUARE")
-            return 0.0, False
+            return 0.0, False, None
         box = cv.boxPoints(rect)
         delta = _edge_alpha_delta(box)
         _yaw_debug_dump(crop_rgb, cnt, delta, "MASK")
-        return delta, True
+        return delta, True, np.asarray(box, dtype=float)
     except Exception:
-        return 0.0, False
+        return 0.0, False, None
 
 
 def _quad_squareness(quad):
@@ -307,18 +314,31 @@ def estimate_quad_yaw(crop_rgb):
             peri = cv.arcLength(cnt, True)
             if peri <= 0:
                 continue
-            approx = cv.approxPolyDP(cnt, 0.02 * peri, True)
-            if len(approx) != 4 or not cv.isContourConvex(approx):
+            # Thu 2 epsilon: 0.02 truoc (chuan), 0.035 du phong khi vien in
+            # tren cube lam contour gay khuc (approx thua -> >4 dinh).
+            quad = None
+            for eps in (0.02, 0.035):
+                approx = cv.approxPolyDP(cnt, eps * peri, True)
+                if len(approx) == 4 and cv.isContourConvex(approx):
+                    quad = approx
+                    break
+            if quad is None:
                 continue
-            dev = _quad_squareness(approx)
+            dev = _quad_squareness(quad)
             if dev > QUAD_MAX_ANGLE_DEV:
                 continue
-            # Uu tien vua to vua vuong; mat tren thuong o nua tren crop.
-            moments = cv.moments(approx)
-            cy = moments["m01"] / moments["m00"] if moments["m00"] > 0 else h
-            score = (dev, -area + (cy / h) * area * 0.2)
+            # Uu tien vua to vua vuong vua GIUA crop: sticker phu mat cube nen
+            # quad mat that nam giua; quad anh in lech thuong nho/lech tam.
+            moments = cv.moments(quad)
+            if moments["m00"] > 0:
+                qcx = moments["m10"] / moments["m00"]
+                qcy = moments["m01"] / moments["m00"]
+            else:
+                qcx, qcy = w / 2.0, h
+            off = abs(qcx / w - 0.5) + abs(qcy / h - 0.5)
+            score = (dev, -area + area * (0.2 * (qcy / h) + 0.5 * off))
             if best_score is None or score < best_score:
-                best_score, best = score, approx.reshape(4, 2)
+                best_score, best = score, quad.reshape(4, 2)
         if best is None:
             return 0.0, False, None
         return _edge_alpha_delta(best), True, best
@@ -327,15 +347,64 @@ def estimate_quad_yaw(crop_rgb):
 
 
 def estimate_yaw_top(crop_rgb):
-    """Yaw 3 tang: QUAD (mat vuong tren) -> MASK (longest-edge) -> FALLBACK 0."""
+    """Yaw 3 tang: QUAD (mat vuong tren) -> MASK (longest-edge) -> FALLBACK 0.
+
+    Tra (yaw, ok, tier, poly): poly la 4 dinh (crop coords) de ve overlay,
+    None khi FALLBACK.
+    """
     yaw, ok, quad = estimate_quad_yaw(crop_rgb)
     if ok:
         _yaw_debug_dump(crop_rgb, quad, yaw, "QUAD")
-        return yaw, True, "QUAD"
-    yaw, ok = estimate_yaw(crop_rgb)
+        return yaw, True, "QUAD", np.asarray(quad, dtype=float)
+    yaw, ok, box = estimate_yaw(crop_rgb)
     if ok:
-        return yaw, True, "MASK"
-    return 0.0, False, "FALLBACK"
+        return yaw, True, "MASK", box
+    return 0.0, False, "FALLBACK", None
+
+
+def yaw_sample_frame(frame, box, pad=YAW_CROP_PAD_PX):
+    """1 yaw sample tu box tren frame day du -> (yaw, ok, tier, poly_frame).
+
+    poly_frame la 4 dinh theo toa do FRAME (da offset), dung ve overlay.
+    """
+    h, w = frame.shape[:2]
+    x1, y1, x2, y2 = box
+    cx1, cy1 = max(0, x1 - pad), max(0, y1 - pad)
+    cx2, cy2 = min(w, x2 + pad), min(h, y2 + pad)
+    crop = frame[cy1:cy2, cx1:cx2]
+    if crop.size == 0:
+        return 0.0, False, "EMPTY", None
+    yaw, ok, tier, poly = estimate_yaw_top(crop)
+    if poly is not None:
+        poly = poly + np.array([cx1, cy1], dtype=float)
+    if not ok:
+        yaw = 0.0
+    return yaw, ok, tier, poly
+
+
+# Mau overlay theo tier (BGR): QUAD xanh, MASK vang, FALLBACK do.
+TIER_COLORS = {"QUAD": (0, 255, 0), "MASK": (0, 255, 255),
+               "FALLBACK": (0, 0, 255), "EMPTY": (0, 0, 255)}
+
+
+def draw_yaw_overlay(bgr, items):
+    """Ve goc yaw kieu stacking len anh BGR: polygon + text '{name} {yaw}d'.
+
+    items: list dict(box, name, yaw, ok, tier, poly, tid, votes).
+    Giong stacking_target.get_Sqaure: drawContours + putText goc len hinh.
+    """
+    for it in items:
+        x1, y1, x2, y2 = it["box"]
+        color = TIER_COLORS.get(it["tier"], (0, 0, 255))
+        if it["poly"] is not None:
+            cv.drawContours(bgr, [np.asarray(it["poly"], dtype=int)],
+                            -1, color, 2)
+        label = (f"{it['name']} {it['yaw']:+.0f}d({it['tier']})"
+                 f"#{it['tid']}v{it['votes']}")
+        ty = max(0, y1 - 8)
+        cv.putText(bgr, label, (x1, ty),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
+    return bgr
 
 
 class YoloAllGarbageDetectNode(Node):
@@ -487,7 +556,7 @@ class YoloAllGarbageDetectNode(Node):
                         f"TTA-rot90 recovered {len(dets)} box(es)")
         if dets:
             self._last_det_time = time.time()
-        self._update_tracks(dets, time.time())
+        self._update_tracks(frame, dets, time.time())
         if self.pubPos_flag:
             # SPACE: publish track on dinh nhat (majority class + median),
             # khong lay box frame don.
@@ -500,9 +569,11 @@ class YoloAllGarbageDetectNode(Node):
                 self._publish_pick(frame, pick)
 
         # Preview tuy chon (mac dinh TAT khi chay that de max FPS).
+        # Overlay yaw kieu stacking: polygon + text '{class} {yaw}d(tier)'.
         if self.show:
             annotated_frame = results[0].plot()
             annotated_frame = cv.cvtColor(annotated_frame, cv.COLOR_RGB2BGR)
+            draw_yaw_overlay(annotated_frame, self._viz_items())
             cv.imshow("YOLO Inference - All Garbage Detection",
                       cv.resize(annotated_frame, (640, 480)))
             if cv.waitKey(1) == 32:
@@ -510,8 +581,30 @@ class YoloAllGarbageDetectNode(Node):
                 self.pubPos_flag = True
                 self.get_logger().info("Space pressed, grasp highest-confidence item")
 
-    def _update_tracks(self, dets, now):
-        """Ghep det vao track theo IoU (greedy), track gia chet sau TTL."""
+    def _viz_items(self):
+        """Item de ve overlay: track thay frame nay, kem yaw sample moi nhat."""
+        now = time.time()
+        items = []
+        for tr in self._tracks:
+            if now - tr["last_seen"] > 0.3 or tr["last_viz"] is None:
+                continue
+            s = self._track_summary(tr)
+            yaw, ok, tier, poly = tr["last_viz"]
+            items.append({"box": tr["box"], "name": s["name"], "yaw": yaw,
+                          "ok": ok, "tier": tier, "poly": poly,
+                          "tid": tr["id"],
+                          "votes": sum(tr["votes"].values())})
+        return items
+
+    def _update_tracks(self, frame, dets, now):
+        """Ghep det vao track theo IoU (greedy), track gia chet sau TTL.
+
+        Moi det duoc lay 1 yaw sample (nhu stacking do goc moi frame); track
+        giu yaw_hist de luc SPACE lay median thay vi 1 frame don.
+        """
+        for d in dets:
+            yaw, ok, tier, poly = yaw_sample_frame(frame, d["box"])
+            d["yaw"], d["yok"], d["ytier"], d["ypoly"] = yaw, ok, tier, poly
         unmatched = list(dets)
         for tr in self._tracks:
             best_i, best_iou = -1, TRACK_IOU_MIN
@@ -525,6 +618,8 @@ class YoloAllGarbageDetectNode(Node):
                 tr["hist_box"].append(d["box"])
                 tr["votes"][d["name"]] = tr["votes"].get(d["name"], 0) + 1
                 tr["confs"].append(d["conf"])
+                tr["yaw_hist"].append((d["yaw"], d["yok"], d["ytier"]))
+                tr["last_viz"] = (d["yaw"], d["yok"], d["ytier"], d["ypoly"])
                 tr["last_seen"] = now
         for d in unmatched:
             self._track_id += 1
@@ -534,6 +629,9 @@ class YoloAllGarbageDetectNode(Node):
                 "hist_box": deque([d["box"]], maxlen=TRACK_HIST_LEN),
                 "votes": {d["name"]: 1},
                 "confs": deque([d["conf"]], maxlen=TRACK_HIST_LEN),
+                "yaw_hist": deque([(d["yaw"], d["yok"], d["ytier"])],
+                                  maxlen=TRACK_HIST_LEN),
+                "last_viz": (d["yaw"], d["yok"], d["ytier"], d["ypoly"]),
                 "last_seen": now,
             })
         self._tracks = [tr for tr in self._tracks
@@ -565,6 +663,36 @@ class YoloAllGarbageDetectNode(Node):
             if score > best_score:
                 best, best_score = s, score
         return best
+
+    def _track_yaw(self, tr):
+        """Yaw cua track = median yaw_hist (port stacking angle_history).
+
+        Gate y nhu stacking get_Sqaure: kich clamp + spread lon / o ria anh
+        -> FALLBACK yaw=0 (J5=J1). Tra (yaw_raw, reliable, tier, n, spread).
+        """
+        rels = [(y, t) for (y, ok, t) in tr["yaw_hist"] if ok]
+        n = len(rels)
+        if n < YAW_MIN_SAMPLES:
+            return 0.0, False, "FALLBACK", n, 0.0
+        ymed_all = median([y for y, _ in rels])
+        # Chi xet inlier quanh median (+-10deg): 1-2 frame nhieu (vd khoa nham
+        # khung anh in) khong duoc phu dinh ca track nhu spread tho.
+        inl = [(y, t) for (y, t) in rels if abs(y - ymed_all) <= 10.0]
+        if len(inl) < YAW_MIN_SAMPLES:
+            return 0.0, False, "FALLBACK", n, 0.0
+        ys = [y for y, _ in inl]
+        ymed = median(ys)
+        spread = max(ys) - min(ys)
+        tiers = [t for _, t in inl]
+        tier = max(set(tiers), key=tiers.count)
+        box = tr["box"]
+        cx = (box[0] + box[2]) / 2.0
+        at_edge = cx < 120.0 or cx > 520.0
+        kick = (abs(ymed) >= YAW_MAX_DEG - 0.5
+                and (spread > 5.0 or at_edge))
+        if kick or spread > YAW_MAX_SPREAD_DEG:
+            return 0.0, False, "FALLBACK", n, spread
+        return ymed, True, tier, n, spread
 
     def _refine_class(self, frame, box):
         """Pass-2 khi SPACE: crop box + margin, upscale, infer lai san thap.
@@ -627,8 +755,15 @@ class YoloAllGarbageDetectNode(Node):
         self.pubPos_flag = False
         # Yaw truoc, PosInfo sau: grasp doc yaw trong thread rieng
         # nen yaw phai toi truoc (sleep 0.2 de chac chan thu tu).
-        det = {"name": res_name, "box": pick["box"]}
-        yaw_deg, tier = self._publish_yaw(frame, det)
+        # Yaw = median yaw_hist cua track (port stacking), khong do 1 frame.
+        tr = next((t for t in self._tracks if t["id"] == pick["id"]), None)
+        if tr is not None:
+            yaw_raw, reliable, tier, n, spread = self._track_yaw(tr)
+        else:
+            yaw_raw, reliable, tier, n, spread = 0.0, False, "FALLBACK", 0, 0.0
+        self.get_logger().info(
+            f"[{res_name}] yaw median {n} samples spread={spread:.1f}deg")
+        yaw_deg = self._publish_yaw(yaw_raw, reliable, tier, res_name)
         center = AprilTagInfo()
         center.x = fwd_x
         center.y = lat_y
@@ -647,20 +782,11 @@ class YoloAllGarbageDetectNode(Node):
         self.processed_items[item_key] = time.time()
         self.last_publish_time = time.time()
 
-    def _publish_yaw(self, frame, det):
-        """Uoc luong yaw mat vuong tren, publish set_joint5, tra (deg, tier).
+    def _publish_yaw(self, yaw_raw, reliable, tier, name):
+        """Publish yaw (dang median track) len set_joint5, tra deg da dau.
 
         Publish gia tri DA DAU (YAW_SIGN): grasp giu nguyen J5 = J1 - delta.
         """
-        h, w = frame.shape[:2]
-        x1, y1, x2, y2 = det["box"]
-        p = YAW_CROP_PAD_PX
-        crop = frame[max(0, y1 - p):min(h, y2 + p),
-                     max(0, x1 - p):min(w, x2 + p)]
-        if crop.size:
-            yaw_raw, reliable, tier = estimate_yaw_top(crop)
-        else:
-            yaw_raw, reliable, tier = 0.0, False, "EMPTY"
         if not reliable:
             yaw_raw = 0.0
         yaw_deg = YAW_SIGN * yaw_raw
@@ -669,9 +795,9 @@ class YoloAllGarbageDetectNode(Node):
         self.TargetJoint5_pub.publish(yaw_msg)
         time.sleep(0.2)
         self.get_logger().info(
-            f"[{det['name']}] yaw_raw={yaw_raw:+.1f} signed={yaw_deg:+.1f}deg"
+            f"[{name}] yaw_raw={yaw_raw:+.1f} signed={yaw_deg:+.1f}deg"
             f"({tier})")
-        return yaw_deg, tier
+        return yaw_deg
 
     def GraspStatusCallback(self, msg):
         self.get_logger().info(f"GraspStatusCallback received: {msg.data}")
