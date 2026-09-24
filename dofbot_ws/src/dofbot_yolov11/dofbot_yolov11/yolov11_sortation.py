@@ -45,7 +45,7 @@ from ultralytics import YOLO
 warnings.filterwarnings("ignore")
 
 # ---------------- T6 tuning constants (plan B1) ----------------
-CONF_THRESHOLD = 0.40   # ha tu 0.65: vat nho/mo duoc bat, doi lai loc bang TTL+grasp
+CONF_THRESHOLD = 0.30   # ha tu 0.65 (->0.40->0.30): vat nghieng/mo duoc bat
 IMG_SIZE = 640          # khop input onnx [1,3,640,640]
 FORCED_DEVICE = os.environ.get("T6_YOLO_DEVICE", "").strip()  # "" = auto
 # Pixel -> world (goc Yahboom, fit tai pose [90,120]).
