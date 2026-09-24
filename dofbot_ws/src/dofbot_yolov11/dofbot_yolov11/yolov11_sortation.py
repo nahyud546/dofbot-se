@@ -4,7 +4,10 @@
 
 Flow:  /image_raw (cam_pub) -> YOLOv11 (best.onnx, 16 garbage classes)
        -> class->bin id -> PosInfo (AprilTagInfo) -> grasp node (IK + pick/place)
-       -> grasp_done=True -> mo khoa, xu ly vat tiep theo.
+       -> grasp_done=True -> ve scan-only (cho SPACE moi, khong tu dong gap).
+   Che do mac dinh: SCAN-ONLY (chi quet + preview, khong publish).
+   Nhan SPACE (cua so preview --show dang focus) -> publish 1 item conf
+   cao nhat -> grasp thuc hien -> xong ve lai scan-only.
 
 Upgrade 2026-09-24 (plan B1/B2):
 - conf 0.65 -> CONF_THRESHOLD (0.40), them imgsz=IMG_SIZE (640, khop input onnx).
@@ -109,7 +112,8 @@ class YoloAllGarbageDetectNode(Node):
 
         self.pos_info_pub = self.create_publisher(AprilTagInfo, "PosInfo", qos_profile=10)
         self.subscription = self.create_subscription(Bool, 'grasp_done', self.GraspStatusCallback, qos_profile=1)
-        self.pubPos_flag = True  # Mo khoa san: publish ngay item dau tien thay
+        # SCAN-ONLY mac dinh: khong tu publish dau turn; doi SPACE moi gap.
+        self.pubPos_flag = False
         self.pr_time = time.time()
         self.target_id = 31
         self.Center_x_list = []
@@ -240,16 +244,18 @@ class YoloAllGarbageDetectNode(Node):
             cv.imshow("YOLO Inference - All Garbage Detection",
                       cv.resize(annotated_frame, (640, 480)))
             if cv.waitKey(1) == 32:
+                # SPACE: gap 1 item conf cao nhat hien tai, xong ve scan-only.
                 self.pubPos_flag = True
-                self.get_logger().info("Space pressed, pubPos_flag set to True")
+                self.get_logger().info("Space pressed, grasp highest-confidence item")
 
     def GraspStatusCallback(self, msg):
         self.get_logger().info(f"GraspStatusCallback received: {msg.data}")
         if msg.data:
-            self.pubPos_flag = True
+            # Ve scan-only: KHONG tu mo khoa nhu ban cu (tranh tu gap lien tiep).
+            self.pubPos_flag = False
             self.detect_flag = False
             self.compute_height = True
-            self.get_logger().info("Grasp done, pubPos_flag reset to True")
+            self.get_logger().info("Grasp done, back to scan-only (SPACE to grasp next)")
 
 
 def main(args=None):
