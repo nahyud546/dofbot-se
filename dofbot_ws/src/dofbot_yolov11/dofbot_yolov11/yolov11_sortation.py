@@ -56,6 +56,11 @@ PIXEL_TO_M_X = 0.8 / 3000.0
 X_BASE_M = 0.13
 X_OFFSET_M = 0.0
 Y_OFFSET_M = 0.0
+# Dau truc ngang - KIEM CHUNG VAT LY 2026-09-24: cong thuc goc (320-cx) GAP
+# NGUOC trai/phai (Fish_bone px=481 di -Y, Newspaper px=82 di +Y, deu nguoc
+# vi tri that). Camera nay: anh +px = world -Y -> dung (cx-320).
+# Neu doi camera/mount ma thay nguoc lai thi doi LAT_SIGN = -1.0.
+LAT_SIGN = 1.0
 PICK_Z_M = 0.03
 # Item da publish giu trong processed_map TTL giay de vat dung yen duoc thu
 # lai (key luong tu 10px chong nhay pixel).
@@ -66,9 +71,13 @@ FPS_LOG_S = 5.0
 # ---- Yaw bam theo goc xoay vat (port tu stacking_target.get_Sqaure) ----
 # Toan hoc giong het stacking: anh +px = world +Y, +py(down) = world +X ->
 # canh dai minAreaRect cho alpha (anh, [0,180)) -> delta wrap ve [-45,45],
-# J5_pick = J1 - YAW_SIGN*delta (yaw_mo_cang = J1 + 90 - J5, do FK).
-# Neu test thay cang xoay NGUOC huong vat thi doi YAW_SIGN = -1.0.
-YAW_SIGN = 1.0
+# J5_pick = J1 - delta_signed (yaw_mo_cang = J1 + 90 - J5, do FK).
+# DAU YAW 2026-09-24: truc ngang bi mirror (xem LAT_SIGN) nen dx doi dau ->
+# alpha' = 180-alpha -> delta' = -delta_true. Vi vay publish delta_signed =
+# YAW_SIGN * delta_raw voi YAW_SIGN = -1.0 de grasp giu nguyen J5 = J1-delta.
+# Neu test thay cang xoay NGUOC huong vat (sau khi da fix mirror) thi doi
+# YAW_SIGN = +1.0 (1 dong, test lai 1 lan).
+YAW_SIGN = -1.0
 YAW_MAX_DEG = 40.0
 YAW_CROP_PAD_PX = 6
 # Gan vuong (dai/rong < nguong) thi yaw mo -> fallback 0 (J5=J1).
@@ -114,49 +123,97 @@ def prune_processed(processed, now, ttl=PROCESSED_TTL_S):
 
 def pixel_to_world(center_x, center_y):
     """Doi tam box (px) sang (fwd_x, lat_y) theo fit tuyen tinh Yahboom."""
-    lat_y = round((320 - center_x) * PIXEL_TO_M_Y + Y_OFFSET_M, 5)
+    lat_y = round(LAT_SIGN * (center_x - 320) * PIXEL_TO_M_Y + Y_OFFSET_M, 5)
     fwd_x = round((480 - center_y) * PIXEL_TO_M_X + X_BASE_M + X_OFFSET_M, 5)
     return fwd_x, lat_y
 
 
 def _largest_usable_contour(contours, area_wh):
+    # Nguong rong (3%-97%): vat mong/cheo trong box YOLO rong chi chiem vai %
+    # dien tich crop (vd Fish_bone) - nguong 10% cu loai het -> FALLBACK oan.
     for area, cnt in sorted(((cv.contourArea(c), c) for c in contours),
                             reverse=True):
-        if 0.10 * area_wh < area < 0.95 * area_wh:
+        if 0.03 * area_wh < area < 0.97 * area_wh:
             return cnt
     return None
 
 
-def estimate_yaw(crop_bgr):
+def _contour_from_thresh(gray, area_wh):
+    """Otsu + close, thu ca nen sang vat toi va nguoc lai."""
+    for flag in (cv.THRESH_BINARY + cv.THRESH_OTSU,
+                 cv.THRESH_BINARY_INV + cv.THRESH_OTSU):
+        _, th = cv.threshold(gray, 0, 255, flag)
+        kernel = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
+        th = cv.morphologyEx(th, cv.MORPH_CLOSE, kernel)
+        found = cv.findContours(th, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        contours = found[0] if len(found) == 2 else found[1]
+        cnt = _largest_usable_contour(contours, area_wh)
+        if cnt is not None:
+            return cnt
+    return None
+
+
+def _contour_from_edges(gray, area_wh):
+    """Du phong cho nen van/hoa tiet (Otsu gam ca nen vao vat): Canny."""
+    edges = cv.Canny(gray, 50, 150)
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    edges = cv.dilate(edges, kernel, iterations=2)
+    found = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contours = found[0] if len(found) == 2 else found[1]
+    return _largest_usable_contour(contours, area_wh)
+
+
+YAW_DEBUG = os.environ.get("T6_YAW_DEBUG", "").strip() not in ("", "0")
+_YAW_DEBUG_COUNT = 0
+
+
+def _yaw_debug_dump(crop_rgb, cnt, delta, reliable):
+    """Luu crop yaw ra /tmp/yaw_debug (toi da 20 anh) khi T6_YAW_DEBUG=1."""
+    global _YAW_DEBUG_COUNT
+    if not YAW_DEBUG or _YAW_DEBUG_COUNT >= 20:
+        return
+    try:
+        d = "/tmp/yaw_debug"
+        os.makedirs(d, exist_ok=True)
+        vis = cv.cvtColor(crop_rgb, cv.COLOR_RGB2BGR)
+        if cnt is not None:
+            box = cv.boxPoints(cv.minAreaRect(cnt)).astype(int)
+            cv.drawContours(vis, [box], 0, (0, 255, 0), 2)
+        cv.putText(vis, f"{delta:+.1f}{' OK' if reliable else ' FAIL'}",
+                   (5, 18), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        _YAW_DEBUG_COUNT += 1
+        cv.imwrite(f"{d}/yaw_{_YAW_DEBUG_COUNT:02d}.jpg", vis)
+    except Exception:
+        pass
+
+
+def estimate_yaw(crop_rgb):
     """Uoc luong goc xoay vat (deg, world CCW+, wrap [-45,45]).
 
-    Port tu stacking_target.get_Sqaure: Otsu (thu ca invert) -> contour lon
-    nhat -> canh DAI minAreaRect (boxPoints, khong dung w/h) -> alpha anh
-    -> delta. Gan vuong / khong tim duoc contour sach -> (0.0, False).
+    Port tu stacking_target.get_Sqaure: contour lon nhat -> canh DAI
+    minAreaRect (boxPoints, khong dung w/h) -> alpha anh -> delta.
+    Chu y: frame tu cam_pub la RGB -> dung RGB2GRAY (ban cu dung BGR2GRAY
+    tren du lieu RGB, lech trong so xam). Gan vuong / khong tach duoc
+    contour sach -> (0.0, False).
     """
     try:
-        gray = cv.cvtColor(crop_bgr, cv.COLOR_BGR2GRAY)
+        gray = cv.cvtColor(crop_rgb, cv.COLOR_RGB2GRAY)
         gray = cv.GaussianBlur(gray, (5, 5), 1)
         h, w = gray.shape
         area_wh = float(w * h)
-        cnt = None
-        for flag in (cv.THRESH_BINARY + cv.THRESH_OTSU,
-                     cv.THRESH_BINARY_INV + cv.THRESH_OTSU):
-            _, th = cv.threshold(gray, 0, 255, flag)
-            found = cv.findContours(th, cv.RETR_EXTERNAL,
-                                    cv.CHAIN_APPROX_SIMPLE)
-            contours = found[0] if len(found) == 2 else found[1]
-            if not contours:
-                continue
-            cnt = _largest_usable_contour(contours, area_wh)
-            if cnt is not None:
-                break
+        if area_wh <= 0:
+            return 0.0, False
+        cnt = _contour_from_thresh(gray, area_wh)
         if cnt is None:
+            cnt = _contour_from_edges(gray, area_wh)
+        if cnt is None:
+            _yaw_debug_dump(crop_rgb, None, 0.0, False)
             return 0.0, False
         rect = cv.minAreaRect(cnt)
         long_side = max(rect[1])
         short_side = min(rect[1])
         if short_side <= 0 or long_side / short_side < YAW_MIN_ASPECT:
+            _yaw_debug_dump(crop_rgb, cnt, 0.0, False)
             return 0.0, False
         box = cv.boxPoints(rect)
         best_len, alpha = -1.0, 0.0
@@ -169,6 +226,7 @@ def estimate_yaw(crop_bgr):
         r = alpha % 90.0
         delta = -r if r <= 45.0 else 90.0 - r
         delta = max(-YAW_MAX_DEG, min(YAW_MAX_DEG, delta))
+        _yaw_debug_dump(crop_rgb, cnt, delta, True)
         return delta, True
     except Exception:
         return 0.0, False
@@ -369,21 +427,25 @@ class YoloAllGarbageDetectNode(Node):
                 self.get_logger().info("Space pressed, grasp highest-confidence item")
 
     def _publish_yaw(self, frame, det):
-        """Uoc luong yaw tu crop box goc, publish set_joint5, tra ve deg."""
+        """Uoc luong yaw tu crop box goc, publish set_joint5, tra ve deg.
+
+        Publish gia tri DA DAU (YAW_SIGN): grasp giu nguyen J5 = J1 - delta.
+        """
         h, w = frame.shape[:2]
         x1, y1, x2, y2 = det["box"]
         p = YAW_CROP_PAD_PX
         crop = frame[max(0, y1 - p):min(h, y2 + p),
                      max(0, x1 - p):min(w, x2 + p)]
-        yaw_deg, reliable = estimate_yaw(crop) if crop.size else (0.0, False)
+        yaw_raw, reliable = estimate_yaw(crop) if crop.size else (0.0, False)
         if not reliable:
-            yaw_deg = 0.0
+            yaw_raw = 0.0
+        yaw_deg = YAW_SIGN * yaw_raw
         yaw_msg = Int16()
         yaw_msg.data = int(round(yaw_deg))
         self.TargetJoint5_pub.publish(yaw_msg)
         time.sleep(0.2)
         self.get_logger().info(
-            f"[{det['name']}] yaw={yaw_deg:+.1f}deg"
+            f"[{det['name']}] yaw_raw={yaw_raw:+.1f} signed={yaw_deg:+.1f}deg"
             f"{'' if reliable else ' FALLBACK(J5=J1)'}")
         return yaw_deg
 
