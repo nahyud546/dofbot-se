@@ -8,6 +8,7 @@ venv/
 
 # Repo/framework ngoai + bien the khong dung (giu code chinh)
 lerobot/
+dofbot_robot_arm_6dof/
 dofbot_robot_arm_6dof/build/
 dofbot_robot_arm_6dof/log/
 
