@@ -18,8 +18,13 @@ Upgrade 2026-09-24 (plan B1/B2):
   het han TTL de vat dung yen duoc thu lai; van 1 publish/grasp-cycle.
 - Device: mac dinh thu cuda:0 truoc (RTX 2050 + onnxruntime-gpu san),
   tu fallback cpu neu warmup fail. Ep bang env T6_YOLO_DEVICE=cpu|cuda:0.
+- Yaw (port stacking_target.get_Sqaure): uoc luong goc xoay vat tu crop box
+  (canh dai minAreaRect), publish set_joint5 (Int16 deg) TRUOC PosInfo de
+  grasp xoay J5 = J1 - delta, het hut khi vat nghieng. Fallback yaw=0.
+- TTA-rot90: scan-only ma lau khong thay box thi thu frame xoay 90 do.
 """
 import argparse
+import math
 import os
 import threading
 import time
@@ -58,6 +63,21 @@ PROCESSED_TTL_S = 60.0
 PROCESSED_GRID_PX = 10
 FRAME_WAIT_S = 0.005
 FPS_LOG_S = 5.0
+# ---- Yaw bam theo goc xoay vat (port tu stacking_target.get_Sqaure) ----
+# Toan hoc giong het stacking: anh +px = world +Y, +py(down) = world +X ->
+# canh dai minAreaRect cho alpha (anh, [0,180)) -> delta wrap ve [-45,45],
+# J5_pick = J1 - YAW_SIGN*delta (yaw_mo_cang = J1 + 90 - J5, do FK).
+# Neu test thay cang xoay NGUOC huong vat thi doi YAW_SIGN = -1.0.
+YAW_SIGN = 1.0
+YAW_MAX_DEG = 40.0
+YAW_CROP_PAD_PX = 6
+# Gan vuong (dai/rong < nguong) thi yaw mo -> fallback 0 (J5=J1).
+YAW_MIN_ASPECT = 1.15
+# set_joint5 het han sau bao lau thi grasp coi nhu khong co yaw.
+YAW_FRESH_S = 5.0
+# TTA fallback: scan-only ma >N giay khong thay box nao thi thu them 1 lan
+# inference tren frame xoay 90 (vat nghieng/xeo hay rot khoi detector).
+TTA_STALE_S = 8.0
 
 # ---------------- Bin mapping (plan B2) ----------------
 # Tái chế - Xanh dương (Blue), id=1 -> p_1
@@ -99,6 +119,61 @@ def pixel_to_world(center_x, center_y):
     return fwd_x, lat_y
 
 
+def _largest_usable_contour(contours, area_wh):
+    for area, cnt in sorted(((cv.contourArea(c), c) for c in contours),
+                            reverse=True):
+        if 0.10 * area_wh < area < 0.95 * area_wh:
+            return cnt
+    return None
+
+
+def estimate_yaw(crop_bgr):
+    """Uoc luong goc xoay vat (deg, world CCW+, wrap [-45,45]).
+
+    Port tu stacking_target.get_Sqaure: Otsu (thu ca invert) -> contour lon
+    nhat -> canh DAI minAreaRect (boxPoints, khong dung w/h) -> alpha anh
+    -> delta. Gan vuong / khong tim duoc contour sach -> (0.0, False).
+    """
+    try:
+        gray = cv.cvtColor(crop_bgr, cv.COLOR_BGR2GRAY)
+        gray = cv.GaussianBlur(gray, (5, 5), 1)
+        h, w = gray.shape
+        area_wh = float(w * h)
+        cnt = None
+        for flag in (cv.THRESH_BINARY + cv.THRESH_OTSU,
+                     cv.THRESH_BINARY_INV + cv.THRESH_OTSU):
+            _, th = cv.threshold(gray, 0, 255, flag)
+            found = cv.findContours(th, cv.RETR_EXTERNAL,
+                                    cv.CHAIN_APPROX_SIMPLE)
+            contours = found[0] if len(found) == 2 else found[1]
+            if not contours:
+                continue
+            cnt = _largest_usable_contour(contours, area_wh)
+            if cnt is not None:
+                break
+        if cnt is None:
+            return 0.0, False
+        rect = cv.minAreaRect(cnt)
+        long_side = max(rect[1])
+        short_side = min(rect[1])
+        if short_side <= 0 or long_side / short_side < YAW_MIN_ASPECT:
+            return 0.0, False
+        box = cv.boxPoints(rect)
+        best_len, alpha = -1.0, 0.0
+        for i in range(4):
+            dx = float(box[(i + 1) % 4][0] - box[i][0])
+            dy = float(box[(i + 1) % 4][1] - box[i][1])
+            ln = dx * dx + dy * dy
+            if ln > best_len:
+                best_len, alpha = ln, math.degrees(math.atan2(dy, dx)) % 180.0
+        r = alpha % 90.0
+        delta = -r if r <= 45.0 else 90.0 - r
+        delta = max(-YAW_MAX_DEG, min(YAW_MAX_DEG, delta))
+        return delta, True
+    except Exception:
+        return 0.0, False
+
+
 class YoloAllGarbageDetectNode(Node):
     def __init__(self, show=False):
         super().__init__('yolo_all_garbage_detect')
@@ -124,6 +199,7 @@ class YoloAllGarbageDetectNode(Node):
         self.largemodel_arm_done_pub = self.create_publisher(String, '/largemodel_arm_done', 1)
         self.processed_items = {}
         self.last_publish_time = 0
+        self._last_det_time = time.time()
         # Frame moi nhat tu callback (worker thread doc, drop frame cu).
         self._frame_lock = threading.Lock()
         self._latest_frame = None
@@ -190,22 +266,62 @@ class YoloAllGarbageDetectNode(Node):
                 self._infer_count = 0
                 self._cb_t0 = self._infer_t0 = self._fps_t0 = now
 
-    def _infer_once(self, frame):
-        # Suppress verbose output during inference
+    def _detect_on(self, frame):
+        """Chay YOLO 1 frame -> (results, dets). Moi det: name/conf/cx/cy/box."""
         results = model(frame, verbose=False, conf=CONF_THRESHOLD,
                         imgsz=IMG_SIZE, device=self.device)
+        dets = []
         boxes = results[0].boxes
         if boxes is not None:
-            for box in sorted(boxes, key=lambda b: float(b.conf), reverse=True):
-                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
+            for box in boxes:
                 class_id = int(box.cls)
-                confidence = float(box.conf)
                 res_name = model.names[class_id]
                 if res_name not in ALL_WASTE:
                     continue
-                # 计算重心位置
-                center_x = (x_min + x_max) // 2
-                center_y = (y_min + y_max) // 2
+                x_min, y_min, x_max, y_max = map(int, box.xyxy[0])
+                dets.append({
+                    "name": res_name,
+                    "conf": float(box.conf),
+                    "cx": (x_min + x_max) // 2,
+                    "cy": (y_min + y_max) // 2,
+                    "box": (x_min, y_min, x_max, y_max),
+                })
+        return results, dets
+
+    def _infer_once(self, frame):
+        # Suppress verbose output during inference
+        h, w = frame.shape[:2]
+        results, dets = self._detect_on(frame)
+        # TTA fallback cho vat nghieng/xeo: lau khong thay box thi thu frame
+        # xoay 90 do, map box ve toa do goc (xem inverse ROTATE_90_CLOCKWISE).
+        if not dets and time.time() - self._last_det_time > TTA_STALE_S:
+            rot = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
+            rot_results, rot_dets = self._detect_on(rot)
+            if rot_dets:
+                results = rot_results
+                mapped = []
+                for d in rot_dets:
+                    rcx = (d["box"][0] + d["box"][2]) // 2
+                    rcy = (d["box"][1] + d["box"][3]) // 2
+                    cx, cy = rcy, (h - 1) - rcx
+                    x1 = max(0, d["box"][1])
+                    y1 = max(0, (h - 1) - d["box"][2])
+                    x2 = min(w - 1, d["box"][3])
+                    y2 = min(h - 1, (h - 1) - d["box"][0])
+                    if x2 > x1 and y2 > y1:
+                        mapped.append({"name": d["name"], "conf": d["conf"],
+                                       "cx": cx, "cy": cy,
+                                       "box": (x1, y1, x2, y2)})
+                if mapped:
+                    dets = mapped
+                    self.get_logger().info(
+                        f"TTA-rot90 recovered {len(dets)} box(es)")
+        if dets:
+            self._last_det_time = time.time()
+            for det in sorted(dets, key=lambda d: d["conf"], reverse=True):
+                res_name = det["name"]
+                confidence = det["conf"]
+                center_x, center_y = det["cx"], det["cy"]
                 fwd_x, lat_y = pixel_to_world(center_x, center_y)
                 # Vat dung yen: het TTL duoc thu lai; nhay vai px khong tao moi.
                 item_key = quantize_key(res_name, center_x, center_y)
@@ -218,6 +334,9 @@ class YoloAllGarbageDetectNode(Node):
                         f"Publishing position for {res_name} "
                         f"(confidence={confidence:.2f}, pixel=({center_x},{center_y}))")
                     self.pubPos_flag = False
+                    # Yaw truoc, PosInfo sau: grasp doc yaw trong thread rieng
+                    # nen yaw phai toi truoc (sleep 0.2 de chac chan thu tu).
+                    yaw_deg = self._publish_yaw(frame, det)
                     center = AprilTagInfo()
                     center.x = fwd_x
                     center.y = lat_y
@@ -230,7 +349,8 @@ class YoloAllGarbageDetectNode(Node):
                         center.id = 3
                     elif res_name in DRY_GREY:
                         center.id = 4  # TODO(GREY): p_4 tam la pose Vang cu
-                    self.get_logger().info(f"Grasp target: {center}")
+                    self.get_logger().info(
+                        f"Grasp target: {center} yaw={yaw_deg:+.1f}deg")
                     self.pos_info_pub.publish(center)
                     self.processed_items[item_key] = time.time()
                     self.last_publish_time = time.time()
@@ -247,6 +367,25 @@ class YoloAllGarbageDetectNode(Node):
                 # SPACE: gap 1 item conf cao nhat hien tai, xong ve scan-only.
                 self.pubPos_flag = True
                 self.get_logger().info("Space pressed, grasp highest-confidence item")
+
+    def _publish_yaw(self, frame, det):
+        """Uoc luong yaw tu crop box goc, publish set_joint5, tra ve deg."""
+        h, w = frame.shape[:2]
+        x1, y1, x2, y2 = det["box"]
+        p = YAW_CROP_PAD_PX
+        crop = frame[max(0, y1 - p):min(h, y2 + p),
+                     max(0, x1 - p):min(w, x2 + p)]
+        yaw_deg, reliable = estimate_yaw(crop) if crop.size else (0.0, False)
+        if not reliable:
+            yaw_deg = 0.0
+        yaw_msg = Int16()
+        yaw_msg.data = int(round(yaw_deg))
+        self.TargetJoint5_pub.publish(yaw_msg)
+        time.sleep(0.2)
+        self.get_logger().info(
+            f"[{det['name']}] yaw={yaw_deg:+.1f}deg"
+            f"{'' if reliable else ' FALLBACK(J5=J1)'}")
+        return yaw_deg
 
     def GraspStatusCallback(self, msg):
         self.get_logger().info(f"GraspStatusCallback received: {msg.data}")

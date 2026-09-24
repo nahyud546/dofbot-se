@@ -43,14 +43,20 @@ class TagGraspNode(Node):
         self.down_joint = [10.0, 70.0, 34.0, 16.0, 90.0,140.0]
         self.gripper_joint = 90.0
         self.cur_tagId = 0
-        self.joint_5 = 90
+        # Yaw vat (deg, world CCW+, [-45,45]) do sortation publish tren
+        # "set_joint5" TRUOC moi PosInfo (xem yolov11_sortation._publish_yaw).
+        # Giao thuc moi (giong stacking_target): J5 = J1 - delta.
+        self.joint_5 = 0.0
+        self.joint_5_stamp = 0.0
         self.set_joint5 = 90
         self.joint_6 = 140
         print("Init Done")  
 
 
     def get_joint5_callback(self,msg):
-        self.joint_5 = msg.data
+        # Nhan delta yaw (deg) tu sortation, danh dau thoi gian de het han.
+        self.joint_5 = float(msg.data)
+        self.joint_5_stamp = time.time()
 
     def get_joint6_callback(self,msg):
         self.joint_6 = msg.data
@@ -107,22 +113,21 @@ class TagGraspNode(Node):
             joints[2] = response.joint3
             joints[3] = response.joint4
             print("self.joint_5: ",self.joint_5)
-            target_joint5 = self.joint_5
-            if target_joint5>0 and target_joint5 < 45:
-                joint5 = 90 - target_joint5                 
-            elif target_joint5>45 and target_joint5<135:
-                joint5 = target_joint5
-            elif target_joint5>=135:
-                joint5 = target_joint5 - 90                
-            elif target_joint5>-45 and target_joint5<0:
-                joint5 = 90 + abs(target_joint5)                  
-            elif target_joint5<-45 and target_joint5>-135:
-                joint5 = abs(target_joint5)               
-            elif target_joint5<-135:
-                joint5 = abs(target_joint5) - 90
-            self.set_joint5 = joint5
+            # J5 bam theo goc xoay vat (port stacking_target.target_run):
+            # J5 = J1 - delta (yaw_mo_cang = J1 + 90 - J5, do FK).
+            # Yaw het han (>5s) hoac chua nhan -> delta=0 -> J5=J1 (trung tinh,
+            # giong fallback stacking). Bo map piecewise cu + bo hardcode J5=90
+            # (do la ly do gap hut khi vat nghieng: cang khong bao gio xoay).
+            if time.time() - self.joint_5_stamp > 5.0:
+                delta = 0.0
+            else:
+                delta = max(-45.0, min(45.0, float(self.joint_5)))
+            joint5_servo = min(270.0, max(0.0, joints[0] - delta))
+            self.set_joint5 = joint5_servo
             joints[5] = GRIPPER_OPEN_ANGLE
-            self.Arm.Arm_serial_servo_write6(joints[0],joints[1],joints[2],joints[3],90,joints[5],2000)
+            self.get_logger().info(
+                f"cube_yaw={delta:+.1f}deg J1={joints[0]:.1f} -> J5={joint5_servo:.1f}")
+            self.Arm.Arm_serial_servo_write6(joints[0],joints[1],joints[2],joints[3],joint5_servo,joints[5],2000)
             time.sleep(2.0)
             self.move()
 
