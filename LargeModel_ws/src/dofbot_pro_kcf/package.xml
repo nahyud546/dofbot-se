@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>dofbot_pro_kcf</name>
+  <version>0.0.0</version>
+  <description>DOFBOT Pro KCF tracking package</description>
+  <maintainer email="yahboom@yahboom.com">yahboom</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>opencv4</depend>
+  <depend>numpy</depend>
+  <depend>dofbot_info</depend>
+  <depend>dofbot_driver</depend>
+
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

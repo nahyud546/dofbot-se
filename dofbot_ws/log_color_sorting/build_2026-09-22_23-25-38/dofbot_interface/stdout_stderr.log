@@ -1,0 +1,547 @@
+[  1%] Generating C code for ROS interfaces
+[  2%] Generating Rust code for ROS interfaces
+[  2%] Built target ament_cmake_python_copy_dofbot_interface
+[  2%] Generating C++ code for ROS interfaces
+running egg_info
+creating dofbot_interface.egg-info
+writing dofbot_interface.egg-info/PKG-INFO
+writing dependency_links to dofbot_interface.egg-info/dependency_links.txt
+writing top-level names to dofbot_interface.egg-info/top_level.txt
+writing manifest file 'dofbot_interface.egg-info/SOURCES.txt'
+reading manifest file 'dofbot_interface.egg-info/SOURCES.txt'
+writing manifest file 'dofbot_interface.egg-info/SOURCES.txt'
+[  2%] Built target ament_cmake_python_build_dofbot_interface_egg
+[  2%] Built target dofbot_interface__rs
+[  3%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/joint_info__functions.c.o
+[  4%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/srv/detail/kinemarics__functions.c.o
+[  5%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/position__functions.c.o
+[  5%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/arm_joint__functions.c.o
+[  5%] Built target dofbot_interface__cpp
+[  6%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/srv/detail/dofbot_pro_kinemarics__functions.c.o
+[  7%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/image_msg__functions.c.o
+[  8%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/srv/detail/cur_joint__functions.c.o
+[  9%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/pos_info__functions.c.o
+[ 10%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/yolov11_detect__functions.c.o
+[ 11%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/width_info__functions.c.o
+[ 12%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_c.dir/rosidl_generator_c/dofbot_interface/msg/detail/april_tag_info__functions.c.o
+[ 13%] Generating C++ type support dispatch for ROS interfaces
+[ 14%] Generating C++ type support for eProsima Fast-RTPS
+[ 15%] Generating C++ introspection for ROS interfaces
+[ 16%] Linking C shared library libdofbot_interface__rosidl_generator_c.so
+[ 16%] Built target dofbot_interface__rosidl_generator_c
+[ 18%] Generating C introspection for ROS interfaces
+[ 18%] Generating C type support dispatch for ROS interfaces
+[ 19%] Generating C type support for eProsima Fast-RTPS
+[ 20%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/kinemarics__type_support.cpp.o
+[ 21%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/dofbot_pro_kinemarics__type_support.cpp.o
+[ 22%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/cur_joint__type_support.cpp.o
+[ 23%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/arm_joint__type_support.cpp.o
+[ 21%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/joint_info__type_support.cpp.o
+[ 25%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/position__type_support.cpp.o
+[ 25%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/pos_info__type_support.cpp.o
+[ 26%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/image_msg__type_support.cpp.o
+[ 27%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/april_tag_info__type_support.cpp.o
+[ 28%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/width_info__type_support.cpp.o
+[ 29%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/yolov11_detect__type_support.cpp.o
+[ 29%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/srv/kinemarics__type_support.cpp.o
+[ 30%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/srv/cur_joint__type_support.cpp.o
+[ 31%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/srv/dofbot_pro_kinemarics__type_support.cpp.o
+[ 32%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/joint_info__type_support.cpp.o
+[ 33%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/pos_info__type_support.cpp.o
+[ 34%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/srv/detail/kinemarics__type_support.cpp.o
+[ 35%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/srv/detail/cur_joint__type_support.cpp.o
+[ 36%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support.cpp.o
+[ 37%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/position__type_support.cpp.o
+[ 38%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/arm_joint__type_support.cpp.o
+[ 38%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/joint_info__type_support.cpp.o
+[ 39%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/pos_info__type_support.cpp.o
+[ 40%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/position__type_support.cpp.o
+[ 41%] Linking CXX shared library libdofbot_interface__rosidl_typesupport_cpp.so
+[ 43%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/image_msg__type_support.cpp.o
+[ 43%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/arm_joint__type_support.cpp.o
+[ 44%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/image_msg__type_support.cpp.o
+[ 45%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/width_info__type_support.cpp.o
+[ 46%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/april_tag_info__type_support.cpp.o
+[ 47%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/width_info__type_support.cpp.o
+[ 47%] Built target dofbot_interface__rosidl_typesupport_cpp
+[ 48%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/dofbot_interface/msg/detail/yolov11_detect__type_support.cpp.o
+[ 49%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/srv/detail/dds_fastrtps/kinemarics__type_support.cpp.o
+[ 49%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/april_tag_info__type_support.cpp.o
+[ 50%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/srv/detail/dds_fastrtps/cur_joint__type_support.cpp.o
+[ 50%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/srv/detail/kinemarics__type_support.c.o
+[ 51%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_c.dir/rosidl_typesupport_c/dofbot_interface/msg/yolov11_detect__type_support.cpp.o
+[ 52%] Linking CXX shared library libdofbot_interface__rosidl_typesupport_c.so
+[ 53%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/srv/detail/cur_joint__type_support.c.o
+[ 53%] Built target dofbot_interface__rosidl_typesupport_c
+[ 54%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support.c.o
+[ 55%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/joint_info__type_support.c.o
+[ 57%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/pos_info__type_support.c.o
+[ 57%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/srv/detail/dds_fastrtps/dofbot_pro_kinemarics__type_support.cpp.o
+[ 58%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/position__type_support.c.o
+[ 59%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/arm_joint__type_support.c.o
+[ 60%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/pos_info__type_support.cpp.o
+[ 60%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/joint_info__type_support.cpp.o
+[ 61%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/position__type_support.cpp.o
+[ 62%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/image_msg__type_support.c.o
+[ 62%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/srv/detail/kinemarics__type_support_c.cpp.o
+[ 63%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/srv/detail/cur_joint__type_support_c.cpp.o
+[ 64%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/width_info__type_support.c.o
+[ 65%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/arm_joint__type_support.cpp.o
+[ 66%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/image_msg__type_support.cpp.o
+[ 66%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/april_tag_info__type_support.c.o
+[ 67%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support_c.cpp.o
+[ 68%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/dofbot_interface/msg/detail/yolov11_detect__type_support.c.o
+[ 69%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/joint_info__type_support_c.cpp.o
+[ 70%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/width_info__type_support.cpp.o
+[ 71%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/april_tag_info__type_support.cpp.o
+[ 72%] Linking C shared library libdofbot_interface__rosidl_typesupport_introspection_c.so
+[ 73%] Linking CXX shared library libdofbot_interface__rosidl_typesupport_introspection_cpp.so
+[ 74%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/dofbot_interface/msg/detail/dds_fastrtps/yolov11_detect__type_support.cpp.o
+[ 74%] Built target dofbot_interface__rosidl_typesupport_introspection_c
+[ 75%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/pos_info__type_support_c.cpp.o
+[ 76%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/position__type_support_c.cpp.o
+[ 76%] Built target dofbot_interface__rosidl_typesupport_introspection_cpp
+[ 77%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/arm_joint__type_support_c.cpp.o
+[ 78%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/image_msg__type_support_c.cpp.o
+[ 79%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/width_info__type_support_c.cpp.o
+[ 79%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/april_tag_info__type_support_c.cpp.o
+[ 80%] Building CXX object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/dofbot_interface/msg/detail/yolov11_detect__type_support_c.cpp.o
+[ 81%] Linking CXX shared library libdofbot_interface__rosidl_typesupport_fastrtps_cpp.so
+[ 81%] Built target dofbot_interface__rosidl_typesupport_fastrtps_cpp
+[ 82%] Linking CXX shared library libdofbot_interface__rosidl_typesupport_fastrtps_c.so
+[ 82%] Built target dofbot_interface__rosidl_typesupport_fastrtps_c
+[ 82%] Built target dofbot_interface
+[ 83%] Generating Python code for ROS interfaces
+[ 83%] Built target dofbot_interface__py
+[ 85%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_image_msg_s.c.o
+[ 85%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_yolov11_detect_s.c.o
+[ 85%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_joint_info_s.c.o
+[ 86%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_pos_info_s.c.o
+[ 90%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/srv/_kinemarics_s.c.o
+[ 90%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/srv/_dofbot_pro_kinemarics_s.c.o
+[ 90%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_position_s.c.o
+[ 90%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_arm_joint_s.c.o
+[ 91%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/srv/_cur_joint_s.c.o
+[ 92%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_width_info_s.c.o
+[ 93%] Building C object CMakeFiles/dofbot_interface__rosidl_generator_py.dir/rosidl_generator_py/dofbot_interface/msg/_april_tag_info_s.c.o
+[ 94%] Linking C shared library rosidl_generator_py/dofbot_interface/libdofbot_interface__rosidl_generator_py.so
+[ 94%] Built target dofbot_interface__rosidl_generator_py
+[ 96%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/dofbot_interface/_dofbot_interface_s.ep.rosidl_typesupport_introspection_c.c.o
+[ 96%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/dofbot_interface/_dofbot_interface_s.ep.rosidl_typesupport_c.c.o
+[ 97%] Building C object CMakeFiles/dofbot_interface__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/dofbot_interface/_dofbot_interface_s.ep.rosidl_typesupport_fastrtps_c.c.o
+[ 99%] Linking C shared library rosidl_generator_py/dofbot_interface/dofbot_interface_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[ 99%] Linking C shared library rosidl_generator_py/dofbot_interface/dofbot_interface_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[100%] Linking C shared library rosidl_generator_py/dofbot_interface/dofbot_interface_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[100%] Built target dofbot_interface__rosidl_typesupport_c__pyext
+[100%] Built target dofbot_interface__rosidl_typesupport_fastrtps_c__pyext
+[100%] Built target dofbot_interface__rosidl_typesupport_introspection_c__pyext
+-- Install configuration: ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/ament_index/resource_index/rosidl_interfaces/dofbot_interface
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/joint_info.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/yolov11_detect.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/arm_joint.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/rosidl_generator_c__visibility_control.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/position.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/image_msg.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/april_tag_info.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/pos_info.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/width_info.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/cur_joint.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/dofbot_pro_kinemarics.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__functions.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__functions.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__type_support.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__struct.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/kinemarics.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/library_path.sh
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/library_path.dsv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_generator_c.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_generator_c.so" to ""
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__rosidl_typesupport_fastrtps_c.h
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__rosidl_typesupport_fastrtps_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_fastrtps_c.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_fastrtps_c.so" to ""
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/pos_info.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/rosidl_generator_cpp__visibility_control.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/april_tag_info.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/width_info.hpp
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/arm_joint.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/position.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/yolov11_detect.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/joint_info.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/image_msg.hpp
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/cur_joint.hpp
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__struct.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__type_support.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__traits.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__builder.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/dofbot_pro_kinemarics.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/kinemarics.hpp
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/dds_fastrtps
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__rosidl_typesupport_fastrtps_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dds_fastrtps
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_fastrtps_cpp.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_fastrtps_cpp.so" to ""
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/rosidl_typesupport_introspection_c__visibility_control.h
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__type_support.c
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__type_support.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__rosidl_typesupport_introspection_c.h
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_introspection_c.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_introspection_c.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_c.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_c.so" to ""
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/position__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/arm_joint__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/joint_info__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/yolov11_detect__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/pos_info__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/width_info__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/image_msg__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/msg/detail/april_tag_info__rosidl_typesupport_introspection_cpp.hpp
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/dofbot_pro_kinemarics__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/kinemarics__type_support.cpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/include/dofbot_interface/dofbot_interface/srv/detail/cur_joint__rosidl_typesupport_introspection_cpp.hpp
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_introspection_cpp.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_introspection_cpp.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_cpp.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_typesupport_cpp.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/pythonpath.sh
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/pythonpath.dsv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface-0.0.0-py3.10.egg-info
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface-0.0.0-py3.10.egg-info/PKG-INFO
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface-0.0.0-py3.10.egg-info/dependency_links.txt
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface-0.0.0-py3.10.egg-info/SOURCES.txt
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface-0.0.0-py3.10.egg-info/top_level.txt
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_width_info_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_arm_joint_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_arm_joint.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_pos_info.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_yolov11_detect_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_yolov11_detect.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_joint_info.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_position_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_position.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/__init__.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_width_info.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_pos_info_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_image_msg.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_april_tag_info_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_joint_info_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_april_tag_info.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_image_msg_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/_dofbot_interface_s.ep.rosidl_typesupport_fastrtps_c.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/_dofbot_interface_s.ep.rosidl_typesupport_c.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/__init__.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/_dofbot_interface_s.ep.rosidl_typesupport_introspection_c.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/libdofbot_interface__rosidl_generator_py.so
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_dofbot_pro_kinemarics_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_cur_joint.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_kinemarics.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/__init__.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_dofbot_pro_kinemarics.py
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_cur_joint_s.c
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_kinemarics_s.c
+Listing '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/__init__.py'...
+Listing '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/__init__.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_april_tag_info.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_arm_joint.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_image_msg.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_joint_info.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_pos_info.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_position.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_width_info.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/msg/_yolov11_detect.py'...
+Listing '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/__init__.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_cur_joint.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_dofbot_pro_kinemarics.py'...
+Compiling '/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/srv/_kinemarics.py'...
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/local/lib/python3.10/dist-packages/dofbot_interface/dofbot_interface_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_generator_py.so
+-- Set runtime path of "/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/lib/libdofbot_interface__rosidl_generator_py.so" to ""
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/Cargo.toml
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/msg.rs
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/msg/rmw.rs
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/lib.rs
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/srv.rs
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/src/srv/rmw.rs
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/rust/build.rs
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/Kinemarics.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/CurJoint.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/DofbotProKinemarics.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/JointInfo.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/PosInfo.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/Position.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ArmJoint.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ImageMsg.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/WidthInfo.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/AprilTagInfo.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/Yolov11Detect.idl
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/Kinemarics.srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/Kinemarics_Request.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/Kinemarics_Response.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/CurJoint.srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/CurJoint_Request.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/CurJoint_Response.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/DofbotProKinemarics.srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/DofbotProKinemarics_Request.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/DofbotProKinemarics_Response.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/JointInfo.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/PosInfo.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/Position.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ArmJoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ImageMsg.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/WidthInfo.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/AprilTagInfo.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/Yolov11Detect.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/Position.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/joint_info.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ArmJoint.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/WidthInfo.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/PosInfo.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/CenterXY.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/pos_info.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ImageMsg.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/AprilTagInfo.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/Position-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/Posinfo-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/JointInfo-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/CurJoints-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/WidthInfo-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/TargetXYRoll-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/joint_info-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/ArmJoint-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/CenterXY-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/pos_info-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/ShapeInfo-checkpoint.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/.ipynb_checkpoints/AprilTagInfo-checkpoint.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/JointInfo.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/Yolov11Detect.msg
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/msg/ShapeInfo.msg
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/DofbotProKinemarics.srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/CurJoint.srv
+-- Up-to-date: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/Kinemarics.srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/.ipynb_checkpoints
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/.ipynb_checkpoints/Kinemarics-checkpoint.srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/srv/.ipynb_checkpoints/DofbotProKinemarics-checkpoint.srv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/ament_index/resource_index/package_run_dependencies/dofbot_interface
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/ament_index/resource_index/parent_prefix_path/dofbot_interface
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/ament_prefix_path.sh
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/ament_prefix_path.dsv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/path.sh
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/environment/path.dsv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/local_setup.bash
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/local_setup.sh
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/local_setup.zsh
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/local_setup.dsv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/package.dsv
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/ament_index/resource_index/packages/dofbot_interface
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_generator_cExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_generator_cExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_typesupport_fastrtps_cExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_generator_cppExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_typesupport_fastrtps_cppExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_introspection_cExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_introspection_cExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_cExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_cExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_introspection_cppExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_cppExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interface__rosidl_typesupport_cppExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_generator_pyExport.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/export_dofbot_interface__rosidl_generator_pyExport-noconfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/rosidl_cmake-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/ament_cmake_export_libraries-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/ament_cmake_export_targets-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/rosidl_cmake_aggregate_target-extras.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interfaceConfig.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/cmake/dofbot_interfaceConfig-version.cmake
+-- Installing: /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_interface/share/dofbot_interface/package.xml

@@ -1,0 +1,102 @@
+running egg_info
+creating ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info
+writing ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/PKG-INFO
+writing dependency_links to ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/dependency_links.txt
+writing entry points to ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/entry_points.txt
+writing requirements to ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/requires.txt
+writing top-level names to ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/top_level.txt
+writing manifest file '../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/SOURCES.txt'
+reading manifest file '../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/SOURCES.txt'
+writing manifest file '../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/objection_grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/apriltag_sorting_voice.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/yolov11_garbage.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/shape_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/apriltag_gesture_id.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/media_library.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/apriltag_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/camera_publisher.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/mediapipe_detect_fingers.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/mediapipe_gesture.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/color_common.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/vutils.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/point_to.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/compute_joint5.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/aruco_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/apriltag_gesture_dist.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/aruco_gesture_height.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/color_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+copying dofbot_sorting_3d/grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+running install
+running install_lib
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/objection_grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_sorting_voice.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/yolov11_garbage.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/shape_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_gesture_id.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/media_library.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/camera_publisher.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/mediapipe_detect_fingers.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/mediapipe_gesture.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/color_common.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/vutils.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/point_to.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/compute_joint5.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/aruco_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_gesture_dist.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/aruco_gesture_height.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/color_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/objection_grasp.py to objection_grasp.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_sorting_voice.py to apriltag_sorting_voice.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/yolov11_garbage.py to yolov11_garbage.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/shape_sorting.py to shape_sorting.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_gesture_id.py to apriltag_gesture_id.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/media_library.py to media_library.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_sorting.py to apriltag_sorting.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/camera_publisher.py to camera_publisher.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/mediapipe_detect_fingers.py to mediapipe_detect_fingers.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/mediapipe_gesture.py to mediapipe_gesture.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/color_common.py to color_common.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/vutils.py to vutils.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/point_to.py to point_to.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/compute_joint5.py to compute_joint5.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/aruco_sorting.py to aruco_sorting.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_gesture_dist.py to apriltag_gesture_dist.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/aruco_gesture_height.py to aruco_gesture_height.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/color_sorting.py to color_sorting.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/grasp.py to grasp.cpython-310.pyc
+running install_data
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/share/ament_index
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/share/ament_index/resource_index
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/share/ament_index/resource_index/packages
+copying resource/dofbot_sorting_3d -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/share/ament_index/resource_index/packages
+copying package.xml -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/share/dofbot_sorting_3d
+running install_egg_info
+Copying ../../build_color_sorting/dofbot_sorting_3d/dofbot_sorting_3d.egg-info to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d-0.0.0-py3.10.egg-info
+running install_scripts
+Installing apriltag_gesture_dist script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing apriltag_gesture_id script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing apriltag_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing apriltag_sorting_voice script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing aruco_gesture_height script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing aruco_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing camera_publisher script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing color_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing grasp script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing mediapipe_gesture script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing objection_grasp script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing point_to script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing shape_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+Installing yolov11_garbage script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_sorting_3d/lib/dofbot_sorting_3d
+writing list of installed files to '/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_sorting_3d/install.log'

@@ -1,0 +1,79 @@
+# ===== DOFBOT-SE: chi push code, bo file nang/generated =====
+
+# VM + virtualenv (105G + 8G)
+VM/
+.venv/
+venv/
+.env/
+
+# Repo/framework ngoai + bien the khong dung (giu code chinh)
+lerobot/
+dofbot_robot_arm_6dof/build/
+dofbot_robot_arm_6dof/log/
+
+# CAD / font nang (khong phai code)
+*.STEP
+*.step
+*.stp
+*.ttf
+*.otf
+
+# Colcon/ROS build artifacts
+build/
+install/
+install_t6_regular/
+dofbot_ws/build/
+dofbot_ws/install/
+dofbot_ws/log/
+colcon_ws/build/
+colcon_ws/install/
+colcon_ws/log/
+LargeModel_ws/build/
+LargeModel_ws/install/
+LargeModel_ws/log/
+log/build_*/
+
+# Model weights / binary ML (onnx/pt/engine/dat)
+*.onnx
+*.pt
+*.engine
+*.dat
+*.bin
+models/
+
+# Archives / installers
+*.deb
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# Video
+*.mkv
+*.mp4
+*.avi
+*.mov
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Credentials hard-code trong LargeModel (khong bao gio push)
+LargeModel_ws/src/largemodel/config/large_model_interface.yaml
+LargeModel_ws/src/largemodel/config/yahboom.yaml
+# File chua API key that (Dify/Baidu) - khong bao gio push
+LargeModel_ws/src/largemodel/utils/large_model_interface.py
+Dofbot/6.AI_Visual/1.gesture_action.ipynb
+Dofbot/6.AI_Visual/2.gesture_stack.ipynb
+Dofbot/6.AI_Visual/4.Gesture recognition.ipynb
+colcon_ws/src/dofbot_gesture/gesture_action.py
+colcon_ws/src/dofbot_gesture/gesture_action_notebook.py
+colcon_ws/src/dofbot_gesture/gesture_stack copy.py
+colcon_ws/src/dofbot_gesture/gesture_stack_notebook.py
+
+# OS
+.DS_Store
+Thumbs.db

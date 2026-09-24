@@ -1,0 +1,11 @@
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:srv/Kinemarics.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:srv/CurJoint.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:srv/DofbotProKinemarics.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/JointInfo.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/PosInfo.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/Position.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/ArmJoint.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/ImageMsg.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/WidthInfo.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/AprilTagInfo.idl
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/rosidl_adapter/dofbot_interface:msg/Yolov11Detect.idl

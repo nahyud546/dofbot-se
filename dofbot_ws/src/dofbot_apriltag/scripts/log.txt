@@ -1,0 +1,2 @@
+2026-03-05 19:49:53 - WARNING - Got events for closed stream <zmq.eventloop.zmqstream.ZMQStream object at 0x764e90246b30>
+2026-03-05 19:50:18 - WARNING - Got events for closed stream <zmq.eventloop.zmqstream.ZMQStream object at 0x75be36d5e950>

@@ -1,0 +1,4 @@
+gmake[2]: *** No rule to make target '/usr/lib/libkin_srv.so', needed by 'kinemarics_dofbot'.  Stop.
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/kinemarics_dofbot.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

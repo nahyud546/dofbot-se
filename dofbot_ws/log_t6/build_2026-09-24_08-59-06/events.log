@@ -1,0 +1,348 @@
+[0.000000] (-) TimerEvent: {}
+[0.000159] (-) JobUnselected: {'identifier': 'dofbot_color_identify'}
+[0.000452] (-) JobUnselected: {'identifier': 'dofbot_color_stacking'}
+[0.000550] (-) JobUnselected: {'identifier': 'dofbot_driver'}
+[0.000573] (-) JobUnselected: {'identifier': 'dofbot_face_follow'}
+[0.000594] (-) JobUnselected: {'identifier': 'dofbot_follow'}
+[0.000614] (-) JobUnselected: {'identifier': 'dofbot_info'}
+[0.000646] (-) JobUnselected: {'identifier': 'dofbot_interface'}
+[0.000680] (-) JobUnselected: {'identifier': 'dofbot_mediapipe'}
+[0.000752] (-) JobUnselected: {'identifier': 'dofbot_moveit'}
+[0.000771] (-) JobUnselected: {'identifier': 'dofbot_msgs'}
+[0.000794] (-) JobUnselected: {'identifier': 'dofbot_snake_follow'}
+[0.000833] (-) JobUnselected: {'identifier': 'dofbot_sorting'}
+[0.000848] (-) JobUnselected: {'identifier': 'dofbot_sorting_3d'}
+[0.000858] (-) JobUnselected: {'identifier': 'dofbot_urdf'}
+[0.000867] (-) JobUnselected: {'identifier': 'dofbot_voice_ctrl'}
+[0.000875] (-) JobUnselected: {'identifier': 'yahboom_speech'}
+[0.000885] (dofbot_yolov11) JobQueued: {'identifier': 'dofbot_yolov11', 'dependencies': OrderedDict()}
+[0.000896] (dofbot_yolov11) JobStarted: {'identifier': 'dofbot_yolov11'}
+[0.099839] (-) TimerEvent: {}
+[0.199963] (-) TimerEvent: {}
+[0.300123] (-) TimerEvent: {}
+[0.400265] (-) TimerEvent: {}
+[0.500408] (-) TimerEvent: {}
+[0.600581] (-) TimerEvent: {}
+[0.700910] (-) TimerEvent: {}
+[0.801170] (-) TimerEvent: {}
+[0.901439] (-) TimerEvent: {}
+[1.001841] (-) TimerEvent: {}
+[1.102113] (-) TimerEvent: {}
+[1.202472] (-) TimerEvent: {}
+[1.302832] (-) TimerEvent: {}
+[1.403160] (-) TimerEvent: {}
+[1.503492] (-) TimerEvent: {}
+[1.603834] (-) TimerEvent: {}
+[1.704182] (-) TimerEvent: {}
+[1.804532] (-) TimerEvent: {}
+[1.904852] (-) TimerEvent: {}
+[2.005092] (-) TimerEvent: {}
+[2.105376] (-) TimerEvent: {}
+[2.205829] (-) TimerEvent: {}
+[2.306147] (-) TimerEvent: {}
+[2.406464] (-) TimerEvent: {}
+[2.506931] (-) TimerEvent: {}
+[2.607267] (-) TimerEvent: {}
+[2.707566] (-) TimerEvent: {}
+[2.807897] (-) TimerEvent: {}
+[2.908227] (-) TimerEvent: {}
+[3.008519] (-) TimerEvent: {}
+[3.108872] (-) TimerEvent: {}
+[3.209226] (-) TimerEvent: {}
+[3.309636] (-) TimerEvent: {}
+[3.409922] (-) TimerEvent: {}
+[3.510208] (-) TimerEvent: {}
+[3.610562] (-) TimerEvent: {}
+[3.710923] (-) TimerEvent: {}
+[3.811262] (-) TimerEvent: {}
+[3.911508] (-) TimerEvent: {}
+[4.011764] (-) TimerEvent: {}
+[4.112085] (-) TimerEvent: {}
+[4.212421] (-) TimerEvent: {}
+[4.312745] (-) TimerEvent: {}
+[4.413060] (-) TimerEvent: {}
+[4.513455] (-) TimerEvent: {}
+[4.613824] (-) TimerEvent: {}
+[4.714140] (-) TimerEvent: {}
+[4.814447] (-) TimerEvent: {}
+[4.914729] (-) TimerEvent: {}
+[5.015064] (-) TimerEvent: {}
+[5.115435] (-) TimerEvent: {}
+[5.215832] (-) TimerEvent: {}
+[5.316186] (-) TimerEvent: {}
+[5.416541] (-) TimerEvent: {}
+[5.516953] (-) TimerEvent: {}
+[5.617370] (-) TimerEvent: {}
+[5.717770] (-) TimerEvent: {}
+[5.818134] (-) TimerEvent: {}
+[5.918507] (-) TimerEvent: {}
+[6.019011] (-) TimerEvent: {}
+[6.119412] (-) TimerEvent: {}
+[6.219771] (-) TimerEvent: {}
+[6.320154] (-) TimerEvent: {}
+[6.420406] (-) TimerEvent: {}
+[6.520685] (-) TimerEvent: {}
+[6.621089] (-) TimerEvent: {}
+[6.721450] (-) TimerEvent: {}
+[6.821941] (-) TimerEvent: {}
+[6.922434] (-) TimerEvent: {}
+[7.022802] (-) TimerEvent: {}
+[7.123077] (-) TimerEvent: {}
+[7.223354] (-) TimerEvent: {}
+[7.323681] (-) TimerEvent: {}
+[7.423959] (-) TimerEvent: {}
+[7.524298] (-) TimerEvent: {}
+[7.624563] (-) TimerEvent: {}
+[7.724881] (-) TimerEvent: {}
+[7.825417] (-) TimerEvent: {}
+[7.925723] (-) TimerEvent: {}
+[8.026024] (-) TimerEvent: {}
+[8.126368] (-) TimerEvent: {}
+[8.226780] (-) TimerEvent: {}
+[8.327338] (-) TimerEvent: {}
+[8.427780] (-) TimerEvent: {}
+[8.528422] (-) TimerEvent: {}
+[8.628716] (-) TimerEvent: {}
+[8.729209] (-) TimerEvent: {}
+[8.829574] (-) TimerEvent: {}
+[8.929939] (-) TimerEvent: {}
+[9.030310] (-) TimerEvent: {}
+[9.130658] (-) TimerEvent: {}
+[9.230905] (-) TimerEvent: {}
+[9.331221] (-) TimerEvent: {}
+[9.431531] (-) TimerEvent: {}
+[9.531894] (-) TimerEvent: {}
+[9.632136] (-) TimerEvent: {}
+[9.732465] (-) TimerEvent: {}
+[9.832743] (-) TimerEvent: {}
+[9.933036] (-) TimerEvent: {}
+[10.033496] (-) TimerEvent: {}
+[10.133878] (-) TimerEvent: {}
+[10.234158] (-) TimerEvent: {}
+[10.334427] (-) TimerEvent: {}
+[10.434730] (-) TimerEvent: {}
+[10.535043] (-) TimerEvent: {}
+[10.635572] (-) TimerEvent: {}
+[10.735963] (-) TimerEvent: {}
+[10.836424] (-) TimerEvent: {}
+[10.936781] (-) TimerEvent: {}
+[11.037119] (-) TimerEvent: {}
+[11.137446] (-) TimerEvent: {}
+[11.237716] (-) TimerEvent: {}
+[11.337924] (-) TimerEvent: {}
+[11.438178] (-) TimerEvent: {}
+[11.538433] (-) TimerEvent: {}
+[11.638823] (-) TimerEvent: {}
+[11.739183] (-) TimerEvent: {}
+[11.839650] (-) TimerEvent: {}
+[11.940030] (-) TimerEvent: {}
+[12.040349] (-) TimerEvent: {}
+[12.140689] (-) TimerEvent: {}
+[12.241059] (-) TimerEvent: {}
+[12.341354] (-) TimerEvent: {}
+[12.441874] (-) TimerEvent: {}
+[12.542173] (-) TimerEvent: {}
+[12.642382] (-) TimerEvent: {}
+[12.742633] (-) TimerEvent: {}
+[12.842914] (-) TimerEvent: {}
+[12.943230] (-) TimerEvent: {}
+[13.043553] (-) TimerEvent: {}
+[13.143893] (-) TimerEvent: {}
+[13.244154] (-) TimerEvent: {}
+[13.344519] (-) TimerEvent: {}
+[13.444878] (-) TimerEvent: {}
+[13.545096] (-) TimerEvent: {}
+[13.645530] (-) TimerEvent: {}
+[13.746075] (-) TimerEvent: {}
+[13.846421] (-) TimerEvent: {}
+[13.946686] (-) TimerEvent: {}
+[14.047045] (-) TimerEvent: {}
+[14.147345] (-) TimerEvent: {}
+[14.247733] (-) TimerEvent: {}
+[14.348123] (-) TimerEvent: {}
+[14.448414] (-) TimerEvent: {}
+[14.548908] (-) TimerEvent: {}
+[14.649289] (-) TimerEvent: {}
+[14.749737] (-) TimerEvent: {}
+[14.850089] (-) TimerEvent: {}
+[14.950396] (-) TimerEvent: {}
+[15.050685] (-) TimerEvent: {}
+[15.151048] (-) TimerEvent: {}
+[15.251510] (-) TimerEvent: {}
+[15.351908] (-) TimerEvent: {}
+[15.452368] (-) TimerEvent: {}
+[15.552885] (-) TimerEvent: {}
+[15.653398] (-) TimerEvent: {}
+[15.753898] (-) TimerEvent: {}
+[15.854501] (-) TimerEvent: {}
+[15.955001] (-) TimerEvent: {}
+[16.055479] (-) TimerEvent: {}
+[16.155957] (-) TimerEvent: {}
+[16.256358] (-) TimerEvent: {}
+[16.356882] (-) TimerEvent: {}
+[16.457433] (-) TimerEvent: {}
+[16.557963] (-) TimerEvent: {}
+[16.658341] (-) TimerEvent: {}
+[16.758703] (-) TimerEvent: {}
+[16.858967] (-) TimerEvent: {}
+[16.959291] (-) TimerEvent: {}
+[17.059750] (-) TimerEvent: {}
+[17.160101] (-) TimerEvent: {}
+[17.260580] (-) TimerEvent: {}
+[17.360947] (-) TimerEvent: {}
+[17.461409] (-) TimerEvent: {}
+[17.561708] (-) TimerEvent: {}
+[17.661925] (-) TimerEvent: {}
+[17.762234] (-) TimerEvent: {}
+[17.862596] (-) TimerEvent: {}
+[17.962994] (-) TimerEvent: {}
+[18.063345] (-) TimerEvent: {}
+[18.163646] (-) TimerEvent: {}
+[18.263986] (-) TimerEvent: {}
+[18.364273] (-) TimerEvent: {}
+[18.464567] (-) TimerEvent: {}
+[18.564910] (-) TimerEvent: {}
+[18.665211] (-) TimerEvent: {}
+[18.765483] (-) TimerEvent: {}
+[18.865771] (-) TimerEvent: {}
+[18.966125] (-) TimerEvent: {}
+[19.066448] (-) TimerEvent: {}
+[19.166739] (-) TimerEvent: {}
+[19.267075] (-) TimerEvent: {}
+[19.367361] (-) TimerEvent: {}
+[19.467617] (-) TimerEvent: {}
+[19.568036] (-) TimerEvent: {}
+[19.668363] (-) TimerEvent: {}
+[19.768706] (-) TimerEvent: {}
+[19.869285] (-) TimerEvent: {}
+[19.969643] (-) TimerEvent: {}
+[20.069905] (-) TimerEvent: {}
+[20.170221] (-) TimerEvent: {}
+[20.270756] (-) TimerEvent: {}
+[20.371112] (-) TimerEvent: {}
+[20.471414] (-) TimerEvent: {}
+[20.571772] (-) TimerEvent: {}
+[20.672150] (-) TimerEvent: {}
+[20.772512] (-) TimerEvent: {}
+[20.872847] (-) TimerEvent: {}
+[20.973127] (-) TimerEvent: {}
+[21.073447] (-) TimerEvent: {}
+[21.173646] (-) TimerEvent: {}
+[21.273869] (-) TimerEvent: {}
+[21.374079] (-) TimerEvent: {}
+[21.474396] (-) TimerEvent: {}
+[21.574826] (-) TimerEvent: {}
+[21.675209] (-) TimerEvent: {}
+[21.775609] (-) TimerEvent: {}
+[21.876042] (-) TimerEvent: {}
+[21.976368] (-) TimerEvent: {}
+[22.076640] (-) TimerEvent: {}
+[22.177059] (-) TimerEvent: {}
+[22.277434] (-) TimerEvent: {}
+[22.377765] (-) TimerEvent: {}
+[22.478238] (-) TimerEvent: {}
+[22.578575] (-) TimerEvent: {}
+[22.678889] (-) TimerEvent: {}
+[22.779266] (-) TimerEvent: {}
+[22.879626] (-) TimerEvent: {}
+[22.980121] (-) TimerEvent: {}
+[23.080423] (-) TimerEvent: {}
+[23.180656] (-) TimerEvent: {}
+[23.281074] (-) TimerEvent: {}
+[23.381448] (-) TimerEvent: {}
+[23.481933] (-) TimerEvent: {}
+[23.582196] (-) TimerEvent: {}
+[23.682428] (-) TimerEvent: {}
+[23.782672] (-) TimerEvent: {}
+[23.882963] (-) TimerEvent: {}
+[23.983304] (-) TimerEvent: {}
+[24.083742] (-) TimerEvent: {}
+[24.184146] (-) TimerEvent: {}
+[24.284522] (-) TimerEvent: {}
+[24.385085] (-) TimerEvent: {}
+[24.485561] (-) TimerEvent: {}
+[24.586035] (-) TimerEvent: {}
+[24.686363] (-) TimerEvent: {}
+[24.786851] (-) TimerEvent: {}
+[24.887647] (-) TimerEvent: {}
+[24.988004] (-) TimerEvent: {}
+[25.088290] (-) TimerEvent: {}
+[25.188571] (-) TimerEvent: {}
+[25.288876] (-) TimerEvent: {}
+[25.389199] (-) TimerEvent: {}
+[25.489466] (-) TimerEvent: {}
+[25.589771] (-) TimerEvent: {}
+[25.690048] (-) TimerEvent: {}
+[25.790430] (-) TimerEvent: {}
+[25.890819] (-) TimerEvent: {}
+[25.991149] (-) TimerEvent: {}
+[26.091457] (-) TimerEvent: {}
+[26.191782] (-) TimerEvent: {}
+[26.292145] (-) TimerEvent: {}
+[26.392488] (-) TimerEvent: {}
+[26.492835] (-) TimerEvent: {}
+[26.593128] (-) TimerEvent: {}
+[26.693491] (-) TimerEvent: {}
+[26.793843] (-) TimerEvent: {}
+[26.894189] (-) TimerEvent: {}
+[26.994545] (-) TimerEvent: {}
+[27.094996] (-) TimerEvent: {}
+[27.195329] (-) TimerEvent: {}
+[27.295674] (-) TimerEvent: {}
+[27.396024] (-) TimerEvent: {}
+[27.496365] (-) TimerEvent: {}
+[27.596688] (-) TimerEvent: {}
+[27.697051] (-) TimerEvent: {}
+[27.797410] (-) TimerEvent: {}
+[27.897761] (-) TimerEvent: {}
+[27.998132] (-) TimerEvent: {}
+[28.098494] (-) TimerEvent: {}
+[28.198770] (-) TimerEvent: {}
+[28.299100] (-) TimerEvent: {}
+[28.399439] (-) TimerEvent: {}
+[28.499848] (-) TimerEvent: {}
+[28.600329] (-) TimerEvent: {}
+[28.700860] (-) TimerEvent: {}
+[28.801161] (-) TimerEvent: {}
+[28.901540] (-) TimerEvent: {}
+[29.001953] (-) TimerEvent: {}
+[29.102346] (-) TimerEvent: {}
+[29.202613] (-) TimerEvent: {}
+[29.302859] (-) TimerEvent: {}
+[29.403127] (-) TimerEvent: {}
+[29.503405] (-) TimerEvent: {}
+[29.603834] (-) TimerEvent: {}
+[29.704269] (-) TimerEvent: {}
+[29.804496] (-) TimerEvent: {}
+[29.904837] (-) TimerEvent: {}
+[30.005141] (-) TimerEvent: {}
+[30.034004] (dofbot_yolov11) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'develop', '--editable', '--build-directory', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11/build', '--no-deps', 'symlink_data'], 'cwd': '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11', 'env': OrderedDict([('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('CODEX_CI', '1'), ('USER', 'jloy'), ('LC_TIME', 'en_US.UTF-8'), ('XDG_SESSION_TYPE', 'x11'), ('GIT_ASKPASS', '/usr/share/code/resources/app/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('HOME', '/home/jloy'), ('CHROME_DESKTOP', 'code.desktop'), ('TERM_PROGRAM_VERSION', '1.138.0'), ('DESKTOP_SESSION', 'ubuntu'), ('NVM_BIN', '/home/jloy/.nvm/versions/node/v22.23.2/bin'), ('NVM_INC', '/home/jloy/.nvm/versions/node/v22.23.2/include/node'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/code.desktop'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PAGER', 'cat'), ('VSCODE_GIT_ASKPASS_MAIN', '/usr/share/code/resources/app/extensions/git/dist/askpass-main.js'), ('LC_MONETARY', 'en_US.UTF-8'), ('VSCODE_GIT_ASKPASS_NODE', '/usr/share/code/code'), ('MANAGERPID', '2065'), ('LC_CTYPE', 'C.UTF-8'), ('SYSTEMD_EXEC_PID', '2407'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('NO_COLOR', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', ''), ('LIBVIRT_DEFAULT_URI', 'qemu:///system'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '3971'), ('NVM_DIR', '/home/jloy/.nvm'), ('CODEX_PERMISSION_PROFILE', ':workspace'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'jloy'), ('JOURNAL_STREAM', '8:23856'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'jloy'), ('TERM', 'dumb'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('FC_FONTATIONS', '1'), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/jloy/.local/bin:/home/jloy/.local/bin:/home/jloy/.codex/packages/standalone/releases/0.156.1-x86_64-unknown-linux-musl/codex-path:/home/jloy/.codex/tmp/arg0/codex-arg0IBnHdo:/home/jloy/.opencode/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/opt/ros/humble/bin:/home/jloy/.nvm/versions/node/v22.23.2/bin:/home/jloy/.opencode/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin'), ('SESSION_MANAGER', 'local/jloy-Nitro-ANV15-51:@/tmp/.ICE-unix/2379,unix/jloy-Nitro-ANV15-51:/tmp/.ICE-unix/2379'), ('CODEX_VERSION', '0.156.1'), ('CODEX_SESSION_ID', '01a0d117-0265-7fc3-8787-9751857c7552'), ('INVOCATION_ID', 'f8f0d11a65c64614a431d71f6dddbf44'), ('PAPERSIZE', 'letter'), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'en_US.UTF-8'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('GDK_BACKEND', 'x11'), ('DISPLAY', ':1'), ('CODEX_SANDBOX_NETWORK_DISABLED', '1'), ('LANG', 'C.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('LC_TELEPHONE', 'en_US.UTF-8'), ('XMODIFIERS', '@im=ibus'), ('GH_PAGER', 'cat'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/1000/vscode-git-6617e592ad.sock'), ('TERM_PROGRAM', 'vscode'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LC_NAME', 'en_US.UTF-8'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('CODEX_THREAD_ID', '01a0d117-0265-7fc3-8787-9751857c7552'), ('LC_MEASUREMENT', 'en_US.UTF-8'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('LC_IDENTIFICATION', 'en_US.UTF-8'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('GIT_PAGER', 'cat'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11'), ('LC_ALL', 'C.UTF-8'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('NVM_CD_FLAGS', ''), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('LC_NUMERIC', 'en_US.UTF-8'), ('LC_PAPER', 'en_US.UTF-8'), ('COLCON', '1')]), 'shell': False}
+[30.105252] (-) TimerEvent: {}
+[30.205426] (-) TimerEvent: {}
+[30.233223] (dofbot_yolov11) StdoutLine: {'line': b'running develop\n'}
+[30.305511] (-) TimerEvent: {}
+[30.356763] (dofbot_yolov11) StdoutLine: {'line': b'running egg_info\n'}
+[30.356956] (dofbot_yolov11) StdoutLine: {'line': b'creating dofbot_yolov11.egg-info\n'}
+[30.357004] (dofbot_yolov11) StdoutLine: {'line': b'writing dofbot_yolov11.egg-info/PKG-INFO\n'}
+[30.357216] (dofbot_yolov11) StdoutLine: {'line': b'writing dependency_links to dofbot_yolov11.egg-info/dependency_links.txt\n'}
+[30.357257] (dofbot_yolov11) StdoutLine: {'line': b'writing entry points to dofbot_yolov11.egg-info/entry_points.txt\n'}
+[30.357294] (dofbot_yolov11) StdoutLine: {'line': b'writing requirements to dofbot_yolov11.egg-info/requires.txt\n'}
+[30.357335] (dofbot_yolov11) StdoutLine: {'line': b'writing top-level names to dofbot_yolov11.egg-info/top_level.txt\n'}
+[30.357368] (dofbot_yolov11) StdoutLine: {'line': b"writing manifest file 'dofbot_yolov11.egg-info/SOURCES.txt'\n"}
+[30.358353] (dofbot_yolov11) StdoutLine: {'line': b"reading manifest file 'dofbot_yolov11.egg-info/SOURCES.txt'\n"}
+[30.358678] (dofbot_yolov11) StdoutLine: {'line': b"writing manifest file 'dofbot_yolov11.egg-info/SOURCES.txt'\n"}
+[30.359549] (dofbot_yolov11) StdoutLine: {'line': b'running build_ext\n'}
+[30.359611] (dofbot_yolov11) StdoutLine: {'line': b'Creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/lib/python3.10/site-packages/dofbot-yolov11.egg-link (link to .)\n'}
+[30.360147] (dofbot_yolov11) StdoutLine: {'line': b'Installing msgToimg script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/lib/dofbot_yolov11\n'}
+[30.360220] (dofbot_yolov11) StdoutLine: {'line': b'Installing yolov11_sortation script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/lib/dofbot_yolov11\n'}
+[30.360286] (dofbot_yolov11) StdoutLine: {'line': b'\n'}
+[30.360322] (dofbot_yolov11) StdoutLine: {'line': b'Installed /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11\n'}
+[30.360357] (dofbot_yolov11) StdoutLine: {'line': b'running symlink_data\n'}
+[30.360443] (dofbot_yolov11) StdoutLine: {'line': b'creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/share/ament_index\n'}
+[30.360477] (dofbot_yolov11) StdoutLine: {'line': b'creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/share/ament_index/resource_index\n'}
+[30.360508] (dofbot_yolov11) StdoutLine: {'line': b'creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/share/ament_index/resource_index/packages\n'}
+[30.360537] (dofbot_yolov11) StdoutLine: {'line': b'symbolically linking /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11/resource/dofbot_yolov11 -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/share/ament_index/resource_index/packages\n'}
+[30.360570] (dofbot_yolov11) StdoutLine: {'line': b'symbolically linking /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6/dofbot_yolov11/package.xml -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6/dofbot_yolov11/share/dofbot_yolov11\n'}
+[30.377988] (dofbot_yolov11) CommandEnded: {'returncode': 0}
+[30.393730] (dofbot_yolov11) JobEnded: {'identifier': 'dofbot_yolov11', 'rc': 0}
+[30.394136] (-) EventReactorShutdown: {}

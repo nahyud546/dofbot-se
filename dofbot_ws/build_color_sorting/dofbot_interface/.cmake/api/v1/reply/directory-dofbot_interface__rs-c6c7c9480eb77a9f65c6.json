@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "dofbot_interface__rs",
+		"source" : "/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/dofbot_interface__rs"
+	}
+}

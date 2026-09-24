@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-9acfd8634905e2945698.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "dofbot_info",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_info_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_info_uninstall-9271ae013e6300a339a5.json",
+					"name" : "dofbot_info_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "kinemarics_dofbot::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-kinemarics_dofbot-df63aa8132f2b76a99d1.json",
+					"name" : "kinemarics_dofbot",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-3d4e80baafdac28d2050.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info",
+		"source" : "/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_info"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

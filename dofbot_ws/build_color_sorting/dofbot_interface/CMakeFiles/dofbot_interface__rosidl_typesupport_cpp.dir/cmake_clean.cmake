@@ -1,0 +1,42 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/april_tag_info__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/april_tag_info__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/arm_joint__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/arm_joint__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/image_msg__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/image_msg__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/joint_info__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/joint_info__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/pos_info__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/pos_info__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/position__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/position__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/width_info__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/width_info__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/yolov11_detect__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/msg/yolov11_detect__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/cur_joint__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/cur_joint__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/dofbot_pro_kinemarics__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/dofbot_pro_kinemarics__type_support.cpp.o.d"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/kinemarics__type_support.cpp.o"
+  "CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/dofbot_interface/srv/kinemarics__type_support.cpp.o.d"
+  "libdofbot_interface__rosidl_typesupport_cpp.pdb"
+  "libdofbot_interface__rosidl_typesupport_cpp.so"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/april_tag_info__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/arm_joint__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/image_msg__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/joint_info__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/pos_info__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/position__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/width_info__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/msg/yolov11_detect__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/srv/cur_joint__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/srv/dofbot_pro_kinemarics__type_support.cpp"
+  "rosidl_typesupport_cpp/dofbot_interface/srv/kinemarics__type_support.cpp"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/dofbot_interface__rosidl_typesupport_cpp.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

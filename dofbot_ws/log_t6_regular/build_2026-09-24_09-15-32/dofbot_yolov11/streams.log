@@ -1,0 +1,55 @@
+[60.299s] Invoking command in '/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_yolov11': PYTHONPATH=/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build_t6_regular/dofbot_yolov11 build --build-base /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build install --record /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log --install-scripts $base/lib/dofbot_yolov11 --single-version-externally-managed install_data
+[60.458s] running egg_info
+[60.458s] creating ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info
+[60.459s] writing ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/PKG-INFO
+[60.459s] writing dependency_links to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/dependency_links.txt
+[60.459s] writing entry points to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/entry_points.txt
+[60.459s] writing requirements to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/requires.txt
+[60.459s] writing top-level names to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/top_level.txt
+[60.459s] writing manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+[60.460s] reading manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+[60.461s] writing manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+[60.461s] running build
+[60.461s] running build_py
+[60.461s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build
+[60.461s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib
+[60.461s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/yolov11_ALM.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/robot_controller.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/yolov11.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/msgToimg.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/fps.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.461s] copying dofbot_yolov11/best.onnx -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+[60.466s] running install
+[60.466s] running install_lib
+[60.467s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.467s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/best.onnx -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.471s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.471s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11_ALM.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.471s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/robot_controller.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.472s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.472s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.472s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/msgToimg.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.472s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/fps.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+[60.472s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11_sortation.py to yolov11_sortation.cpython-310.pyc
+[60.473s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11_ALM.py to yolov11_ALM.cpython-310.pyc
+[60.474s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/robot_controller.py to robot_controller.cpython-310.pyc
+[60.474s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/__init__.py to __init__.cpython-310.pyc
+[60.474s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11.py to yolov11.cpython-310.pyc
+[60.475s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/msgToimg.py to msgToimg.cpython-310.pyc
+[60.475s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/fps.py to fps.cpython-310.pyc
+[60.476s] running install_data
+[60.476s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index
+[60.476s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index/resource_index
+[60.476s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index/resource_index/packages
+[60.476s] copying resource/dofbot_yolov11 -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index/resource_index/packages
+[60.476s] copying package.xml -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/dofbot_yolov11
+[60.476s] running install_egg_info
+[60.477s] Copying ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11-0.0.0-py3.10.egg-info
+[60.477s] running install_scripts
+[60.490s] Installing msgToimg script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11
+[60.491s] Installing yolov11_sortation script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11
+[60.491s] writing list of installed files to '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log'
+[90.091s] Invoked command in '/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_yolov11' returned '0': PYTHONPATH=/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build_t6_regular/dofbot_yolov11 build --build-base /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build install --record /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log --install-scripts $base/lib/dofbot_yolov11 --single-version-externally-managed install_data

@@ -1,0 +1,29 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from dofbot_interface/srv/CurJoint.srv
+// generated code does not contain a copyright notice
+
+
+module dofbot_interface {
+  module srv {
+    @verbatim (language="comment", text=
+      "request")
+    struct CurJoint_Request {
+      string srv_joints;
+    };
+    @verbatim (language="comment", text=
+      "response")
+    struct CurJoint_Response {
+      double srv_joint1;
+
+      double srv_joint2;
+
+      double srv_joint3;
+
+      double srv_joint4;
+
+      double srv_joint5;
+
+      double srv_joint6;
+    };
+  };
+};

@@ -1,0 +1,23 @@
+running egg_info
+writing ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/PKG-INFO
+writing dependency_links to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/dependency_links.txt
+writing entry points to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/entry_points.txt
+writing requirements to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/requires.txt
+writing top-level names to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/top_level.txt
+reading manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+writing manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+running build
+running build_py
+copying dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+running install
+running install_lib
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11_sortation.py to yolov11_sortation.cpython-310.pyc
+running install_data
+running install_egg_info
+removing '/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11-0.0.0-py3.10.egg-info' (and everything under it)
+Copying ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11-0.0.0-py3.10.egg-info
+running install_scripts
+Installing msgToimg script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11
+Installing yolov11_sortation script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11
+writing list of installed files to '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log'

@@ -1,0 +1,14 @@
+self.pub_playID = self.create_publisher(Int8,"player_id", 1)
+self.sub_voice = self.create_subscription(Int8,"voice_result",self.getVoiceResultCallBack,1
+    def getVoiceResultCallBack(self,msg):
+        if msg.data == 95:
+            self.set_id = 1 
+        elif msg.data == 96:
+            self.set_id = 2
+        elif msg.data == 97:
+            self.set_id = 3
+        elif msg.data == 98:
+            self.set_id = 4       
+        print("id:",self.set_id)
+        self.grasp_flag = True
+if self.grasp_flag == True and self.set_id !=0 and self.cur_tagId == self.set_id:

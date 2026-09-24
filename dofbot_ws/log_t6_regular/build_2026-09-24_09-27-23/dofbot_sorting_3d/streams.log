@@ -1,0 +1,104 @@
+[0.626s] Invoking command in '/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_sorting_3d': PYTHONPATH=/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build_t6_regular/dofbot_sorting_3d build --build-base /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build install --record /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/install.log --install-scripts $base/lib/dofbot_sorting_3d --single-version-externally-managed install_data
+[0.793s] running egg_info
+[0.794s] creating ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info
+[0.794s] writing ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/PKG-INFO
+[0.794s] writing dependency_links to ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/dependency_links.txt
+[0.794s] writing entry points to ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/entry_points.txt
+[0.794s] writing requirements to ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/requires.txt
+[0.794s] writing top-level names to ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/top_level.txt
+[0.794s] writing manifest file '../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/SOURCES.txt'
+[0.795s] reading manifest file '../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/SOURCES.txt'
+[0.796s] writing manifest file '../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info/SOURCES.txt'
+[0.796s] running build
+[0.796s] running build_py
+[0.796s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build
+[0.796s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib
+[0.797s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/cam_pub.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/objection_grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/apriltag_sorting_voice.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/yolov11_garbage.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/shape_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/apriltag_gesture_id.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/media_library.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/apriltag_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/mediapipe_detect_fingers.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/mediapipe_gesture.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/color_common.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.797s] copying dofbot_sorting_3d/vutils.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/point_to.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/compute_joint5.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/aruco_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/apriltag_gesture_dist.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/aruco_gesture_height.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/color_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] copying dofbot_sorting_3d/grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d
+[0.798s] running install
+[0.798s] running install_lib
+[0.798s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/cam_pub.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/objection_grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_sorting_voice.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/yolov11_garbage.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/shape_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_gesture_id.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/media_library.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/mediapipe_detect_fingers.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/mediapipe_gesture.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/color_common.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/vutils.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/point_to.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/compute_joint5.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.799s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/aruco_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.800s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/apriltag_gesture_dist.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.800s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/aruco_gesture_height.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.800s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/color_sorting.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.800s] copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build/lib/dofbot_sorting_3d/grasp.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d
+[0.800s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/cam_pub.py to cam_pub.cpython-310.pyc
+[0.800s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/objection_grasp.py to objection_grasp.cpython-310.pyc
+[0.800s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_sorting_voice.py to apriltag_sorting_voice.cpython-310.pyc
+[0.802s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/yolov11_garbage.py to yolov11_garbage.cpython-310.pyc
+[0.802s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/shape_sorting.py to shape_sorting.cpython-310.pyc
+[0.804s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_gesture_id.py to apriltag_gesture_id.cpython-310.pyc
+[0.805s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/media_library.py to media_library.cpython-310.pyc
+[0.806s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_sorting.py to apriltag_sorting.cpython-310.pyc
+[0.807s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/mediapipe_detect_fingers.py to mediapipe_detect_fingers.cpython-310.pyc
+[0.807s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/mediapipe_gesture.py to mediapipe_gesture.cpython-310.pyc
+[0.808s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/__init__.py to __init__.cpython-310.pyc
+[0.808s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/color_common.py to color_common.cpython-310.pyc
+[0.810s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/vutils.py to vutils.cpython-310.pyc
+[0.810s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/point_to.py to point_to.cpython-310.pyc
+[0.811s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/compute_joint5.py to compute_joint5.cpython-310.pyc
+[0.811s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/aruco_sorting.py to aruco_sorting.cpython-310.pyc
+[0.812s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/apriltag_gesture_dist.py to apriltag_gesture_dist.cpython-310.pyc
+[0.812s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/aruco_gesture_height.py to aruco_gesture_height.cpython-310.pyc
+[0.813s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/color_sorting.py to color_sorting.cpython-310.pyc
+[0.814s] byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d/grasp.py to grasp.cpython-310.pyc
+[0.815s] running install_data
+[0.815s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/share/ament_index
+[0.815s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/share/ament_index/resource_index
+[0.815s] creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/share/ament_index/resource_index/packages
+[0.816s] copying resource/dofbot_sorting_3d -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/share/ament_index/resource_index/packages
+[0.816s] copying package.xml -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/share/dofbot_sorting_3d
+[0.816s] running install_egg_info
+[0.817s] Copying ../../build_t6_regular/dofbot_sorting_3d/dofbot_sorting_3d.egg-info to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages/dofbot_sorting_3d-0.0.0-py3.10.egg-info
+[0.817s] running install_scripts
+[0.838s] Installing apriltag_gesture_dist script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing apriltag_gesture_id script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing apriltag_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing apriltag_sorting_voice script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing aruco_gesture_height script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing aruco_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing cam_pub script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing color_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing grasp script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing mediapipe_gesture script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing objection_grasp script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing point_to script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing shape_sorting script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] Installing yolov11_garbage script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/dofbot_sorting_3d
+[0.838s] writing list of installed files to '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/install.log'
+[0.849s] Invoked command in '/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_sorting_3d' returned '0': PYTHONPATH=/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_sorting_3d/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build_t6_regular/dofbot_sorting_3d build --build-base /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/build install --record /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_sorting_3d/install.log --install-scripts $base/lib/dofbot_sorting_3d --single-version-externally-managed install_data

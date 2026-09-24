@@ -1,0 +1,347 @@
+[0.000000] (-) TimerEvent: {}
+[0.000100] (-) JobUnselected: {'identifier': 'dofbot_color_identify'}
+[0.000138] (-) JobUnselected: {'identifier': 'dofbot_color_stacking'}
+[0.000211] (-) JobUnselected: {'identifier': 'dofbot_driver'}
+[0.000236] (-) JobUnselected: {'identifier': 'dofbot_face_follow'}
+[0.000280] (-) JobUnselected: {'identifier': 'dofbot_follow'}
+[0.000337] (-) JobUnselected: {'identifier': 'dofbot_info'}
+[0.000362] (-) JobUnselected: {'identifier': 'dofbot_interface'}
+[0.000408] (-) JobUnselected: {'identifier': 'dofbot_mediapipe'}
+[0.000440] (-) JobUnselected: {'identifier': 'dofbot_moveit'}
+[0.000498] (-) JobUnselected: {'identifier': 'dofbot_msgs'}
+[0.000651] (-) JobUnselected: {'identifier': 'dofbot_snake_follow'}
+[0.000678] (-) JobUnselected: {'identifier': 'dofbot_sorting'}
+[0.000702] (-) JobUnselected: {'identifier': 'dofbot_sorting_3d'}
+[0.000725] (-) JobUnselected: {'identifier': 'dofbot_urdf'}
+[0.000770] (-) JobUnselected: {'identifier': 'dofbot_voice_ctrl'}
+[0.000794] (-) JobUnselected: {'identifier': 'yahboom_speech'}
+[0.000841] (dofbot_yolov11) JobQueued: {'identifier': 'dofbot_yolov11', 'dependencies': OrderedDict()}
+[0.000875] (dofbot_yolov11) JobStarted: {'identifier': 'dofbot_yolov11'}
+[0.099486] (-) TimerEvent: {}
+[0.199656] (-) TimerEvent: {}
+[0.299924] (-) TimerEvent: {}
+[0.400130] (-) TimerEvent: {}
+[0.500432] (-) TimerEvent: {}
+[0.600721] (-) TimerEvent: {}
+[0.700925] (-) TimerEvent: {}
+[0.801224] (-) TimerEvent: {}
+[0.901547] (-) TimerEvent: {}
+[1.001890] (-) TimerEvent: {}
+[1.102191] (-) TimerEvent: {}
+[1.202382] (-) TimerEvent: {}
+[1.302567] (-) TimerEvent: {}
+[1.402878] (-) TimerEvent: {}
+[1.503059] (-) TimerEvent: {}
+[1.603294] (-) TimerEvent: {}
+[1.703616] (-) TimerEvent: {}
+[1.803934] (-) TimerEvent: {}
+[1.904165] (-) TimerEvent: {}
+[2.004488] (-) TimerEvent: {}
+[2.104659] (-) TimerEvent: {}
+[2.204878] (-) TimerEvent: {}
+[2.305100] (-) TimerEvent: {}
+[2.405396] (-) TimerEvent: {}
+[2.505560] (-) TimerEvent: {}
+[2.605763] (-) TimerEvent: {}
+[2.705988] (-) TimerEvent: {}
+[2.806286] (-) TimerEvent: {}
+[2.906458] (-) TimerEvent: {}
+[3.006626] (-) TimerEvent: {}
+[3.106995] (-) TimerEvent: {}
+[3.207299] (-) TimerEvent: {}
+[3.307608] (-) TimerEvent: {}
+[3.407904] (-) TimerEvent: {}
+[3.508202] (-) TimerEvent: {}
+[3.608511] (-) TimerEvent: {}
+[3.708822] (-) TimerEvent: {}
+[3.809178] (-) TimerEvent: {}
+[3.909452] (-) TimerEvent: {}
+[4.009629] (-) TimerEvent: {}
+[4.109895] (-) TimerEvent: {}
+[4.210232] (-) TimerEvent: {}
+[4.310427] (-) TimerEvent: {}
+[4.410630] (-) TimerEvent: {}
+[4.510853] (-) TimerEvent: {}
+[4.611113] (-) TimerEvent: {}
+[4.711300] (-) TimerEvent: {}
+[4.811499] (-) TimerEvent: {}
+[4.911702] (-) TimerEvent: {}
+[5.012006] (-) TimerEvent: {}
+[5.112224] (-) TimerEvent: {}
+[5.212450] (-) TimerEvent: {}
+[5.312713] (-) TimerEvent: {}
+[5.413020] (-) TimerEvent: {}
+[5.513222] (-) TimerEvent: {}
+[5.613468] (-) TimerEvent: {}
+[5.713726] (-) TimerEvent: {}
+[5.813911] (-) TimerEvent: {}
+[5.914120] (-) TimerEvent: {}
+[6.014386] (-) TimerEvent: {}
+[6.114578] (-) TimerEvent: {}
+[6.214820] (-) TimerEvent: {}
+[6.315148] (-) TimerEvent: {}
+[6.415488] (-) TimerEvent: {}
+[6.515902] (-) TimerEvent: {}
+[6.616232] (-) TimerEvent: {}
+[6.716561] (-) TimerEvent: {}
+[6.816787] (-) TimerEvent: {}
+[6.917171] (-) TimerEvent: {}
+[7.017374] (-) TimerEvent: {}
+[7.117564] (-) TimerEvent: {}
+[7.217780] (-) TimerEvent: {}
+[7.318112] (-) TimerEvent: {}
+[7.418350] (-) TimerEvent: {}
+[7.518687] (-) TimerEvent: {}
+[7.618904] (-) TimerEvent: {}
+[7.719221] (-) TimerEvent: {}
+[7.819445] (-) TimerEvent: {}
+[7.919636] (-) TimerEvent: {}
+[8.019977] (-) TimerEvent: {}
+[8.120195] (-) TimerEvent: {}
+[8.220407] (-) TimerEvent: {}
+[8.320628] (-) TimerEvent: {}
+[8.420859] (-) TimerEvent: {}
+[8.521099] (-) TimerEvent: {}
+[8.621331] (-) TimerEvent: {}
+[8.721528] (-) TimerEvent: {}
+[8.821741] (-) TimerEvent: {}
+[8.922076] (-) TimerEvent: {}
+[9.022369] (-) TimerEvent: {}
+[9.122556] (-) TimerEvent: {}
+[9.222788] (-) TimerEvent: {}
+[9.323026] (-) TimerEvent: {}
+[9.423403] (-) TimerEvent: {}
+[9.523747] (-) TimerEvent: {}
+[9.623944] (-) TimerEvent: {}
+[9.724223] (-) TimerEvent: {}
+[9.824422] (-) TimerEvent: {}
+[9.924659] (-) TimerEvent: {}
+[10.024891] (-) TimerEvent: {}
+[10.125172] (-) TimerEvent: {}
+[10.225368] (-) TimerEvent: {}
+[10.325570] (-) TimerEvent: {}
+[10.425781] (-) TimerEvent: {}
+[10.526049] (-) TimerEvent: {}
+[10.626364] (-) TimerEvent: {}
+[10.726557] (-) TimerEvent: {}
+[10.826747] (-) TimerEvent: {}
+[10.926958] (-) TimerEvent: {}
+[11.027186] (-) TimerEvent: {}
+[11.127300] (-) TimerEvent: {}
+[11.227466] (-) TimerEvent: {}
+[11.327631] (-) TimerEvent: {}
+[11.427806] (-) TimerEvent: {}
+[11.528054] (-) TimerEvent: {}
+[11.628299] (-) TimerEvent: {}
+[11.728467] (-) TimerEvent: {}
+[11.828665] (-) TimerEvent: {}
+[11.928861] (-) TimerEvent: {}
+[12.029058] (-) TimerEvent: {}
+[12.129264] (-) TimerEvent: {}
+[12.229449] (-) TimerEvent: {}
+[12.329671] (-) TimerEvent: {}
+[12.429912] (-) TimerEvent: {}
+[12.530159] (-) TimerEvent: {}
+[12.630360] (-) TimerEvent: {}
+[12.730650] (-) TimerEvent: {}
+[12.830890] (-) TimerEvent: {}
+[12.931146] (-) TimerEvent: {}
+[13.031367] (-) TimerEvent: {}
+[13.131556] (-) TimerEvent: {}
+[13.231738] (-) TimerEvent: {}
+[13.331938] (-) TimerEvent: {}
+[13.432171] (-) TimerEvent: {}
+[13.532410] (-) TimerEvent: {}
+[13.632656] (-) TimerEvent: {}
+[13.732920] (-) TimerEvent: {}
+[13.833380] (-) TimerEvent: {}
+[13.933701] (-) TimerEvent: {}
+[14.034020] (-) TimerEvent: {}
+[14.134334] (-) TimerEvent: {}
+[14.234618] (-) TimerEvent: {}
+[14.334939] (-) TimerEvent: {}
+[14.435280] (-) TimerEvent: {}
+[14.535637] (-) TimerEvent: {}
+[14.635869] (-) TimerEvent: {}
+[14.736107] (-) TimerEvent: {}
+[14.836383] (-) TimerEvent: {}
+[14.936643] (-) TimerEvent: {}
+[15.036914] (-) TimerEvent: {}
+[15.137157] (-) TimerEvent: {}
+[15.237421] (-) TimerEvent: {}
+[15.337729] (-) TimerEvent: {}
+[15.438032] (-) TimerEvent: {}
+[15.538362] (-) TimerEvent: {}
+[15.638696] (-) TimerEvent: {}
+[15.739001] (-) TimerEvent: {}
+[15.839324] (-) TimerEvent: {}
+[15.939604] (-) TimerEvent: {}
+[16.039894] (-) TimerEvent: {}
+[16.140242] (-) TimerEvent: {}
+[16.240641] (-) TimerEvent: {}
+[16.340954] (-) TimerEvent: {}
+[16.441326] (-) TimerEvent: {}
+[16.541690] (-) TimerEvent: {}
+[16.642148] (-) TimerEvent: {}
+[16.742610] (-) TimerEvent: {}
+[16.843031] (-) TimerEvent: {}
+[16.943426] (-) TimerEvent: {}
+[17.043834] (-) TimerEvent: {}
+[17.144234] (-) TimerEvent: {}
+[17.244667] (-) TimerEvent: {}
+[17.345004] (-) TimerEvent: {}
+[17.445461] (-) TimerEvent: {}
+[17.545993] (-) TimerEvent: {}
+[17.646449] (-) TimerEvent: {}
+[17.746775] (-) TimerEvent: {}
+[17.847296] (-) TimerEvent: {}
+[17.947651] (-) TimerEvent: {}
+[18.047967] (-) TimerEvent: {}
+[18.148315] (-) TimerEvent: {}
+[18.248614] (-) TimerEvent: {}
+[18.348841] (-) TimerEvent: {}
+[18.449117] (-) TimerEvent: {}
+[18.549456] (-) TimerEvent: {}
+[18.649783] (-) TimerEvent: {}
+[18.750108] (-) TimerEvent: {}
+[18.850422] (-) TimerEvent: {}
+[18.950712] (-) TimerEvent: {}
+[19.051041] (-) TimerEvent: {}
+[19.151376] (-) TimerEvent: {}
+[19.251670] (-) TimerEvent: {}
+[19.351949] (-) TimerEvent: {}
+[19.452346] (-) TimerEvent: {}
+[19.552611] (-) TimerEvent: {}
+[19.652860] (-) TimerEvent: {}
+[19.753102] (-) TimerEvent: {}
+[19.853379] (-) TimerEvent: {}
+[19.953666] (-) TimerEvent: {}
+[20.053961] (-) TimerEvent: {}
+[20.154212] (-) TimerEvent: {}
+[20.254485] (-) TimerEvent: {}
+[20.354836] (-) TimerEvent: {}
+[20.455146] (-) TimerEvent: {}
+[20.555438] (-) TimerEvent: {}
+[20.655654] (-) TimerEvent: {}
+[20.755907] (-) TimerEvent: {}
+[20.856264] (-) TimerEvent: {}
+[20.956613] (-) TimerEvent: {}
+[21.056961] (-) TimerEvent: {}
+[21.157200] (-) TimerEvent: {}
+[21.257444] (-) TimerEvent: {}
+[21.357728] (-) TimerEvent: {}
+[21.457966] (-) TimerEvent: {}
+[21.558293] (-) TimerEvent: {}
+[21.658500] (-) TimerEvent: {}
+[21.758715] (-) TimerEvent: {}
+[21.858960] (-) TimerEvent: {}
+[21.959158] (-) TimerEvent: {}
+[22.059429] (-) TimerEvent: {}
+[22.159646] (-) TimerEvent: {}
+[22.259843] (-) TimerEvent: {}
+[22.360035] (-) TimerEvent: {}
+[22.460242] (-) TimerEvent: {}
+[22.560433] (-) TimerEvent: {}
+[22.660597] (-) TimerEvent: {}
+[22.760812] (-) TimerEvent: {}
+[22.861049] (-) TimerEvent: {}
+[22.961337] (-) TimerEvent: {}
+[23.061494] (-) TimerEvent: {}
+[23.161678] (-) TimerEvent: {}
+[23.261962] (-) TimerEvent: {}
+[23.362217] (-) TimerEvent: {}
+[23.462500] (-) TimerEvent: {}
+[23.562763] (-) TimerEvent: {}
+[23.663120] (-) TimerEvent: {}
+[23.763379] (-) TimerEvent: {}
+[23.863565] (-) TimerEvent: {}
+[23.963751] (-) TimerEvent: {}
+[24.064036] (-) TimerEvent: {}
+[24.164292] (-) TimerEvent: {}
+[24.264447] (-) TimerEvent: {}
+[24.364600] (-) TimerEvent: {}
+[24.464865] (-) TimerEvent: {}
+[24.565056] (-) TimerEvent: {}
+[24.665301] (-) TimerEvent: {}
+[24.765550] (-) TimerEvent: {}
+[24.865801] (-) TimerEvent: {}
+[24.966056] (-) TimerEvent: {}
+[25.066325] (-) TimerEvent: {}
+[25.166545] (-) TimerEvent: {}
+[25.266722] (-) TimerEvent: {}
+[25.366904] (-) TimerEvent: {}
+[25.467078] (-) TimerEvent: {}
+[25.567265] (-) TimerEvent: {}
+[25.667432] (-) TimerEvent: {}
+[25.767633] (-) TimerEvent: {}
+[25.867849] (-) TimerEvent: {}
+[25.968030] (-) TimerEvent: {}
+[26.068317] (-) TimerEvent: {}
+[26.168555] (-) TimerEvent: {}
+[26.268701] (-) TimerEvent: {}
+[26.368893] (-) TimerEvent: {}
+[26.469148] (-) TimerEvent: {}
+[26.569396] (-) TimerEvent: {}
+[26.669548] (-) TimerEvent: {}
+[26.769728] (-) TimerEvent: {}
+[26.869910] (-) TimerEvent: {}
+[26.970160] (-) TimerEvent: {}
+[27.070413] (-) TimerEvent: {}
+[27.170596] (-) TimerEvent: {}
+[27.270890] (-) TimerEvent: {}
+[27.371146] (-) TimerEvent: {}
+[27.471339] (-) TimerEvent: {}
+[27.571491] (-) TimerEvent: {}
+[27.671667] (-) TimerEvent: {}
+[27.771881] (-) TimerEvent: {}
+[27.872070] (-) TimerEvent: {}
+[27.972318] (-) TimerEvent: {}
+[28.072475] (-) TimerEvent: {}
+[28.172625] (-) TimerEvent: {}
+[28.272812] (-) TimerEvent: {}
+[28.373068] (-) TimerEvent: {}
+[28.473339] (-) TimerEvent: {}
+[28.573494] (-) TimerEvent: {}
+[28.673686] (-) TimerEvent: {}
+[28.773874] (-) TimerEvent: {}
+[28.874053] (-) TimerEvent: {}
+[28.974230] (-) TimerEvent: {}
+[29.074370] (-) TimerEvent: {}
+[29.174514] (-) TimerEvent: {}
+[29.274694] (-) TimerEvent: {}
+[29.374869] (-) TimerEvent: {}
+[29.475034] (-) TimerEvent: {}
+[29.575259] (-) TimerEvent: {}
+[29.675414] (-) TimerEvent: {}
+[29.775705] (-) TimerEvent: {}
+[29.875883] (-) TimerEvent: {}
+[29.976075] (-) TimerEvent: {}
+[30.031699] (dofbot_yolov11) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'egg_info', '--egg-base', '../../build_t6_regular/dofbot_yolov11', 'build', '--build-base', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build', 'install', '--record', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log', '--install-scripts', '$base/lib/dofbot_yolov11', '--single-version-externally-managed', 'install_data'], 'cwd': '/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_yolov11', 'env': OrderedDict([('GJS_DEBUG_TOPICS', 'JS ERROR;JS LOG'), ('LESSOPEN', '| /usr/bin/lesspipe %s'), ('CODEX_CI', '1'), ('USER', 'jloy'), ('LC_TIME', 'en_US.UTF-8'), ('XDG_SESSION_TYPE', 'x11'), ('GIT_ASKPASS', '/usr/share/code/resources/app/extensions/git/dist/askpass.sh'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('HOME', '/home/jloy'), ('CHROME_DESKTOP', 'code.desktop'), ('TERM_PROGRAM_VERSION', '1.138.0'), ('DESKTOP_SESSION', 'ubuntu'), ('NVM_BIN', '/home/jloy/.nvm/versions/node/v22.23.2/bin'), ('NVM_INC', '/home/jloy/.nvm/versions/node/v22.23.2/include/node'), ('GIO_LAUNCHED_DESKTOP_FILE', '/usr/share/applications/code.desktop'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('PAGER', 'cat'), ('VSCODE_GIT_ASKPASS_MAIN', '/usr/share/code/resources/app/extensions/git/dist/askpass-main.js'), ('LC_MONETARY', 'en_US.UTF-8'), ('VSCODE_GIT_ASKPASS_NODE', '/usr/share/code/code'), ('MANAGERPID', '2065'), ('LC_CTYPE', 'C.UTF-8'), ('SYSTEMD_EXEC_PID', '2407'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('NO_COLOR', '1'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', ''), ('LIBVIRT_DEFAULT_URI', 'qemu:///system'), ('GIO_LAUNCHED_DESKTOP_FILE_PID', '3971'), ('NVM_DIR', '/home/jloy/.nvm'), ('CODEX_PERMISSION_PROFILE', ':workspace'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'jloy'), ('JOURNAL_STREAM', '8:23856'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'jloy'), ('TERM', 'dumb'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('FC_FONTATIONS', '1'), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/jloy/.local/bin:/home/jloy/.local/bin:/home/jloy/.codex/packages/standalone/releases/0.156.1-x86_64-unknown-linux-musl/codex-path:/home/jloy/.codex/tmp/arg0/codex-arg0uaAjQK:/home/jloy/.opencode/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/opt/ros/humble/bin:/home/jloy/.nvm/versions/node/v22.23.2/bin:/home/jloy/.opencode/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/home/jloy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin'), ('SESSION_MANAGER', 'local/jloy-Nitro-ANV15-51:@/tmp/.ICE-unix/2379,unix/jloy-Nitro-ANV15-51:/tmp/.ICE-unix/2379'), ('CODEX_VERSION', '0.156.1'), ('CODEX_SESSION_ID', '01a0d117-0265-7fc3-8787-9751857c7552'), ('INVOCATION_ID', 'f8f0d11a65c64614a431d71f6dddbf44'), ('PAPERSIZE', 'letter'), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'en_US.UTF-8'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('GDK_BACKEND', 'x11'), ('DISPLAY', ':1'), ('CODEX_SANDBOX_NETWORK_DISABLED', '1'), ('LANG', 'C.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('LC_TELEPHONE', 'en_US.UTF-8'), ('XMODIFIERS', '@im=ibus'), ('GH_PAGER', 'cat'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/run/user/1000/vscode-git-6617e592ad.sock'), ('TERM_PROGRAM', 'vscode'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('LC_NAME', 'en_US.UTF-8'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('CODEX_THREAD_ID', '01a0d117-0265-7fc3-8787-9751857c7552'), ('LC_MEASUREMENT', 'en_US.UTF-8'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('GJS_DEBUG_OUTPUT', 'stderr'), ('LC_IDENTIFICATION', 'en_US.UTF-8'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('GIT_PAGER', 'cat'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11'), ('LC_ALL', 'C.UTF-8'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('NVM_CD_FLAGS', ''), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('LC_NUMERIC', 'en_US.UTF-8'), ('LC_PAPER', 'en_US.UTF-8'), ('COLCON', '1')]), 'shell': False}
+[30.076194] (-) TimerEvent: {}
+[30.176323] (-) TimerEvent: {}
+[30.208086] (dofbot_yolov11) StdoutLine: {'line': b'running egg_info\n'}
+[30.208570] (dofbot_yolov11) StdoutLine: {'line': b'writing ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/PKG-INFO\n'}
+[30.208874] (dofbot_yolov11) StdoutLine: {'line': b'writing dependency_links to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/dependency_links.txt\n'}
+[30.208943] (dofbot_yolov11) StdoutLine: {'line': b'writing entry points to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/entry_points.txt\n'}
+[30.208978] (dofbot_yolov11) StdoutLine: {'line': b'writing requirements to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/requires.txt\n'}
+[30.209008] (dofbot_yolov11) StdoutLine: {'line': b'writing top-level names to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/top_level.txt\n'}
+[30.210134] (dofbot_yolov11) StdoutLine: {'line': b"reading manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'\n"}
+[30.210655] (dofbot_yolov11) StdoutLine: {'line': b"writing manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'\n"}
+[30.210732] (dofbot_yolov11) StdoutLine: {'line': b'running build\n'}
+[30.210793] (dofbot_yolov11) StdoutLine: {'line': b'running build_py\n'}
+[30.210823] (dofbot_yolov11) StdoutLine: {'line': b'copying dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11\n'}
+[30.211148] (dofbot_yolov11) StdoutLine: {'line': b'running install\n'}
+[30.211379] (dofbot_yolov11) StdoutLine: {'line': b'running install_lib\n'}
+[30.211902] (dofbot_yolov11) StdoutLine: {'line': b'copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11\n'}
+[30.212226] (dofbot_yolov11) StdoutLine: {'line': b'byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11_sortation.py to yolov11_sortation.cpython-310.pyc\n'}
+[30.213342] (dofbot_yolov11) StdoutLine: {'line': b'running install_data\n'}
+[30.213419] (dofbot_yolov11) StdoutLine: {'line': b'running install_egg_info\n'}
+[30.214549] (dofbot_yolov11) StdoutLine: {'line': b"removing '/home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11-0.0.0-py3.10.egg-info' (and everything under it)\n"}
+[30.214662] (dofbot_yolov11) StdoutLine: {'line': b'Copying ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11-0.0.0-py3.10.egg-info\n'}
+[30.215010] (dofbot_yolov11) StdoutLine: {'line': b'running install_scripts\n'}
+[30.228661] (dofbot_yolov11) StdoutLine: {'line': b'Installing msgToimg script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11\n'}
+[30.228777] (dofbot_yolov11) StdoutLine: {'line': b'Installing yolov11_sortation script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11\n'}
+[30.228867] (dofbot_yolov11) StdoutLine: {'line': b"writing list of installed files to '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log'\n"}
+[30.242203] (dofbot_yolov11) CommandEnded: {'returncode': 0}
+[30.248536] (dofbot_yolov11) JobEnded: {'identifier': 'dofbot_yolov11', 'rc': 0}
+[30.248912] (-) EventReactorShutdown: {}

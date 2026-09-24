@@ -1,0 +1,53 @@
+running egg_info
+creating ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info
+writing ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/PKG-INFO
+writing dependency_links to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/dependency_links.txt
+writing entry points to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/entry_points.txt
+writing requirements to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/requires.txt
+writing top-level names to ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/top_level.txt
+writing manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+reading manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+writing manifest file '../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/yolov11_ALM.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/robot_controller.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/yolov11.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/msgToimg.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/fps.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+copying dofbot_yolov11/best.onnx -> /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11
+running install
+running install_lib
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/best.onnx -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11_sortation.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11_ALM.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/robot_controller.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/__init__.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/yolov11.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/msgToimg.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+copying /home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/build/lib/dofbot_yolov11/fps.py -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11_sortation.py to yolov11_sortation.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11_ALM.py to yolov11_ALM.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/robot_controller.py to robot_controller.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/yolov11.py to yolov11.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/msgToimg.py to msgToimg.cpython-310.pyc
+byte-compiling /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11/fps.py to fps.cpython-310.pyc
+running install_data
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index/resource_index
+creating /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index/resource_index/packages
+copying resource/dofbot_yolov11 -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/ament_index/resource_index/packages
+copying package.xml -> /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/share/dofbot_yolov11
+running install_egg_info
+Copying ../../build_t6_regular/dofbot_yolov11/dofbot_yolov11.egg-info to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/python3.10/site-packages/dofbot_yolov11-0.0.0-py3.10.egg-info
+running install_scripts
+Installing msgToimg script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11
+Installing yolov11_sortation script to /home/jloy/Desktop/robot-arm/dofbot_ws/install_t6_regular/dofbot_yolov11/lib/dofbot_yolov11
+writing list of installed files to '/home/jloy/Desktop/robot-arm/dofbot_ws/build_t6_regular/dofbot_yolov11/install.log'

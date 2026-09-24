@@ -1,0 +1,55 @@
+[0.008s] Invoking command in '/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_info -DCMAKE_INSTALL_PREFIX=/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_info
+[0.158s] -- The C compiler identification is GNU 12.3.0
+[0.159s] -- The CXX compiler identification is GNU 11.4.0
+[0.159s] -- Detecting C compiler ABI info
+[0.192s] -- Detecting C compiler ABI info - done
+[0.196s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.196s] -- Detecting C compile features
+[0.197s] -- Detecting C compile features - done
+[0.199s] -- Detecting CXX compiler ABI info
+[0.245s] -- Detecting CXX compiler ABI info - done
+[0.250s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.250s] -- Detecting CXX compile features
+[0.250s] -- Detecting CXX compile features - done
+[0.251s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.350s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.400s] -- Found rclcpp: 16.0.21 (/opt/ros/humble/share/rclcpp/cmake)
+[0.421s] -- Found rosidl_generator_c: 3.1.9 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.424s] -- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.429s] -- Found rosidl_generator_cpp: 3.1.9 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.435s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.443s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.467s] -- Found rmw_implementation_cmake: 6.1.4 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[0.468s] -- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[0.516s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[0.533s] -- Found FastRTPS: /opt/ros/humble/include  
+[0.561s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.561s] -- Looking for pthread.h
+[0.607s] -- Looking for pthread.h - found
+[0.607s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[0.654s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[0.654s] -- Found Threads: TRUE  
+[0.682s] -- Found kdl_parser: 2.6.4 (/opt/ros/humble/share/kdl_parser/cmake)
+[0.688s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[0.689s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[0.689s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[0.696s] CMake Error at CMakeLists.txt:12 (find_package):
+[0.696s]   By not providing "Finddofbot_interface.cmake" in CMAKE_MODULE_PATH this
+[0.696s]   project has asked CMake to find a package configuration file provided by
+[0.696s]   "dofbot_interface", but CMake did not find one.
+[0.696s] 
+[0.696s]   Could not find a package configuration file provided by "dofbot_interface"
+[0.696s]   with any of the following names:
+[0.696s] 
+[0.696s]     dofbot_interfaceConfig.cmake
+[0.696s]     dofbot_interface-config.cmake
+[0.696s] 
+[0.696s]   Add the installation prefix of "dofbot_interface" to CMAKE_PREFIX_PATH or
+[0.696s]   set "dofbot_interface_DIR" to a directory containing one of the above
+[0.696s]   files.  If "dofbot_interface" provides a separate development package or
+[0.696s]   SDK, be sure it has been installed.
+[0.696s] 
+[0.696s] 
+[0.696s] -- Configuring incomplete, errors occurred!
+[0.696s] See also "/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/CMakeOutput.log".
+[0.701s] Invoked command in '/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info' returned '1': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_info -DCMAKE_INSTALL_PREFIX=/home/jloy/Desktop/robot-arm/dofbot_ws/install_color_sorting/dofbot_info

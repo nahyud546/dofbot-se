@@ -1,0 +1,258 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-86c40a66e5f78928f7a5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						17,
+						18
+					]
+				},
+				{
+					"build" : "dofbot_interface__py",
+					"jsonFile" : "directory-dofbot_interface__py-9fb230619db6677dda1a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/dofbot_interface__py",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "dofbot_interface__rs",
+					"jsonFile" : "directory-dofbot_interface__rs-c6c7c9480eb77a9f65c6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface/dofbot_interface__rs",
+					"targetIndexes" : 
+					[
+						16
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2
+					],
+					"name" : "dofbot_interface",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_build_dofbot_interface_egg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_build_dofbot_interface_egg-e4f639a065f94108969a.json",
+					"name" : "ament_cmake_python_build_dofbot_interface_egg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_copy_dofbot_interface::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_copy_dofbot_interface-053f77f3a71c7fc24b33.json",
+					"name" : "ament_cmake_python_copy_dofbot_interface",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface-d9401f0d462a338d4195.json",
+					"name" : "dofbot_interface",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__cpp-522ac77ad8ee83df3e9e.json",
+					"name" : "dofbot_interface__cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "dofbot_interface__py::@93bdaae092eccbbf2260",
+					"jsonFile" : "target-dofbot_interface__py-f810edd06caf5323cc5a.json",
+					"name" : "dofbot_interface__py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_generator_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_generator_c-fba2b2aade2c7cc980ff.json",
+					"name" : "dofbot_interface__rosidl_generator_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_generator_py::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_generator_py-490d25a5eed35498ac76.json",
+					"name" : "dofbot_interface__rosidl_generator_py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_c-d33307a0236fb2b70715.json",
+					"name" : "dofbot_interface__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_c__pyext-8f5effa4a51505e918e2.json",
+					"name" : "dofbot_interface__rosidl_typesupport_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_cpp-773df5b36eb9a9f047d8.json",
+					"name" : "dofbot_interface__rosidl_typesupport_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_fastrtps_c-4de239e336a8695cb868.json",
+					"name" : "dofbot_interface__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_fastrtps_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_fastrtps_c__pyext-ae62fdd2727c5bed1190.json",
+					"name" : "dofbot_interface__rosidl_typesupport_fastrtps_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_fastrtps_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_fastrtps_cpp-ae714704aade0d24cd64.json",
+					"name" : "dofbot_interface__rosidl_typesupport_fastrtps_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_introspection_c-a99502642867974c14bb.json",
+					"name" : "dofbot_interface__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_introspection_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_introspection_c__pyext-f44c7f456d0be5e55b29.json",
+					"name" : "dofbot_interface__rosidl_typesupport_introspection_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface__rosidl_typesupport_introspection_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface__rosidl_typesupport_introspection_cpp-bde28dafe0bc564cf225.json",
+					"name" : "dofbot_interface__rosidl_typesupport_introspection_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "dofbot_interface__rs::@a5c559fb78eaef61ac1a",
+					"jsonFile" : "target-dofbot_interface__rs-e893d502b69e104fa743.json",
+					"name" : "dofbot_interface__rs",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dofbot_interface_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dofbot_interface_uninstall-a28dfa36b7fcc86e08a7.json",
+					"name" : "dofbot_interface_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-aaa4121d52afb4586b76.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_interface",
+		"source" : "/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_interface"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

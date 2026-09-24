@@ -1,0 +1,10 @@
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/uninstall.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/dofbot_info_uninstall.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/kinemarics_dofbot.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/test.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/edit_cache.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/rebuild_cache.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/list_install_components.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/install.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/install/local.dir
+/home/jloy/Desktop/robot-arm/dofbot_ws/build_color_sorting/dofbot_info/CMakeFiles/install/strip.dir

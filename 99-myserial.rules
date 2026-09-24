@@ -1,0 +1,6 @@
+# CH340 (QinHeng 1a86:7523) -> /dev/myserial, group dialout, mode 0660
+# Cài đặt (cần sudo, chạy 1 lần):
+#   sudo cp 99-myserial.rules /etc/udev/rules.d/99-myserial.rules
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#   ls -l /dev/myserial   # phải thấy symlink -> ttyUSB0
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="myserial", GROUP="dialout", MODE="0660"
