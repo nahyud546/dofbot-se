@@ -60,6 +60,7 @@ models/
 __pycache__/
 *.pyc
 *.pyo
+*.bak_*
 .ipynb_checkpoints/
 
 # Credentials hard-code trong LargeModel (khong bao gio push)
