@@ -7,9 +7,11 @@ export ROBOT_ARM_ROOT="${ROBOT_ARM_ROOT:-$_ROOT}"
 export PROJECT="$ROBOT_ARM_ROOT"
 
 # Arm_Lib (Yahboom serial) lives in vendor + .venv; vendor first so ROS never shadows it.
+# vendor/yahboom exposes namespace package `dofbot_voice.scripts` (no __init__.py, PEP 420).
 for _p in \
   "$ROBOT_ARM_ROOT/vendor/yahboom/Dofbot/0.py_install" \
   "$ROBOT_ARM_ROOT/vendor/yahboom/rosmaster" \
+  "$ROBOT_ARM_ROOT/vendor/yahboom" \
   "$ROBOT_ARM_ROOT/scripts/tools" \
   "$ROBOT_ARM_ROOT/projects/vision_experiments" \
   "$ROBOT_ARM_ROOT/projects/t8_pipeline" \
