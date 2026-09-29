@@ -1,6 +1,0 @@
-source;share/dofbot_sorting_3d/hook/pythonpath.ps1
-source;share/dofbot_sorting_3d/hook/pythonpath.dsv
-source;share/dofbot_sorting_3d/hook/pythonpath.sh
-source;share/dofbot_sorting_3d/hook/ament_prefix_path.ps1
-source;share/dofbot_sorting_3d/hook/ament_prefix_path.dsv
-source;share/dofbot_sorting_3d/hook/ament_prefix_path.sh

@@ -1,4 +1,0 @@
-[console_scripts]
-msgToimg = dofbot_yolov11.msgToimg:main
-yolov11_sortation = dofbot_yolov11.yolov11_sortation:main
-

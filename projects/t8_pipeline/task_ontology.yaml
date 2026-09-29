@@ -1,0 +1,124 @@
+# DOFBOT T8 task ontology — single source of truth for Gemini + executor + cheatsheet.
+# Principle (safety): Gemini NEVER touches servo directly. It only emits ONE
+# constrained intent with entities. Python executor validates + executes.
+# Legacy action mapping (color/stack/face/trash/stop) kept for voice_task_manager compat.
+
+version: 1
+language: vi
+
+# ---------------------------------------------------------------- atomic skills
+# Each skill = one safe executor function in t8_executor.py
+atomic_skills:
+  ask_info:
+    desc: "Trả lời thông tin thuần (news/chat/vision mô tả), không chạm robot"
+    params: {}
+    example: "thời tiết Hà Nội hôm nay"
+    maps_to_action: none
+
+  open_task:
+    desc: "Mở một bài toán lớn (giữ nguyên manager cũ)"
+    params: {task: {enum: [color, stack, face, trash], desc: "bài toán nào"}}
+    example: "phân loại màu"
+    maps_to_action: "{task}"
+
+  stop_task:
+    desc: "Dừng bài toán đang chạy"
+    params: {}
+    example: "dừng bài toán"
+    maps_to_action: stop
+
+  rotate_relative:
+    desc: "Xoay 1 khớp thêm delta độ DỰA TRÊN góc hiện tại (state-aware, không góc cứng)"
+    params:
+      joint: {type: int, min: 1, max: 6, default: 1, desc: "khớp 1=đế xoay trái/phải"}
+      delta_deg: {type: float, min: -90, max: 90, desc: "+ phải, - trái. Vd +30 = xoay thêm 30 độ"}
+      speed_ms: {type: int, default: 800, min: 200, max: 3000}
+    examples:
+      - "xoay sang phải thêm 30 độ"
+      - "xoay trái thêm 15 độ nữa"
+    safety:
+      - "executor phải đọc góc hiện tại qua Arm_serial_servo_read rồi mới cộng delta"
+      - "clamp 0-180, từ chối |delta|>90"
+      - "không chạy khi task lớn đang active (trừ khi task đó là hold)"
+    maps_to_action: none
+
+  vision_pick_hold:
+    desc: "Tìm object theo mô tả vision rồi gắp LÊN VÀ GIỮ (không đặt xuống trừ khi có lệnh place)"
+    params:
+      label: {type: string, desc: "vd: xuong_ca (cube dán hình xương cá), khoi_do, rac_tai_che"}
+      hold: {type: bool, default: true, desc: "true=chỉ giữ, false=gắp rồi đặt theo bin"}
+      bin: {type: string, default: "", desc: "chỉ dùng khi hold=false"}
+    examples:
+      - "cầm cục cube có dán hình con xương cá lên"
+      - "gắp khối đỏ lên và giữ nguyên đó"
+    safety:
+      - "phải có detection (get_detections) conf>=threshold mới được grasp"
+      - "không có yêu cầu hạ/đặt => giữ nguyên, không tự đặt xuống"
+      - "sau hold, robot ở trạng thái holding=true, từ chối open_task khác cho tới place/release/stop"
+    maps_to_action: none
+
+  place_held:
+    desc: "Đặt vật đang giữ xuống bin/pose chỉ định"
+    params: {bin: {type: string, default: "ban", desc: "bin hoặc vị trí"}}
+    example: "đặt xuống"
+    safety: ["chỉ chạy khi holding=true, ngược lại trả lỗi"]
+    maps_to_action: none
+
+  release_hold:
+    desc: "Mở kẹp để thả vật đang giữ (giữ nguyên tay, không về home vội)"
+    params: {}
+    example: "thả ra / nhả kẹp"
+    safety: ["chỉ chạy khi holding=true"]
+    maps_to_action: none
+
+  gripper:
+    desc: "Đóng/mở kẹp đơn (không di chuyển tay)"
+    params: {state: {enum: [open, close]}}
+    example: "mở kẹp / kẹp lại"
+    maps_to_action: none
+
+  light_beep:
+    desc: "Đèn/còi (an toàn, không chuyển động)"
+    params: {device: {enum: [red, green, blue, yellow, beep]}, state: {enum: [on, off]}}
+    example: "bật đèn đỏ"
+    maps_to_action: none
+
+# ------------------------------------------------------- compound (executor ghép)
+compound_tasks:
+  sort_then_pick_hold:
+    desc: "Kết hợp phân loại + gắp giữ: vd cube xương cá nằm lẫn trong rác"
+    steps: ["get_detections(label)", "grasp_hold(target)", "hold (không place)"]
+    example: "cầm cục cube xương cá lên (kết hợp phân loại rác + gắp)"
+  rotate_continue:
+    desc: "Xoay tiếp từ state hiện tại: đọc góc -> +delta -> xoay"
+    steps: ["get_joints()", "rotate_relative(joint, delta)"]
+    example: "xoay tiếp thêm 30 độ nữa"
+
+# ------------------------------------------------------------------- intents
+# Gemini output MUST be one of these. Anything else -> validator ép về ask_info/none.
+intents:
+  - ask_info
+  - open_task
+  - stop_task
+  - rotate_relative
+  - vision_pick_hold
+  - place_held
+  - release_hold
+  - gripper
+  - light_beep
+
+# ------------------------------------------------- legacy compat (manager 61-65)
+legacy_action_map:
+  none: null
+  color: 61
+  stack: 62
+  face: 63
+  trash: 64
+  stop: 65
+
+# Entities validation ranges (executor enforces again)
+limits:
+  delta_deg_max: 90
+  joint_range: [1, 6]
+  angle_range: [0, 180]
+  hold_timeout_s: 300

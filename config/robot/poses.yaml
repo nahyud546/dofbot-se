@@ -1,0 +1,39 @@
+# Demo 1 cube do - 4 trang thai teach tay 2026 (base_link, rad/m).
+# Nguon: user jog tay that, sim mirror qua /joint_states + tf2_echo.
+# Chu y QUAN TRONG:
+#  - picked/lift/move cho TF + joints GIONG HET NHAU -> tay chua di chuyen
+#    giua 3 lan do (hoac sim chua cap nhat). Can do lai lift & move that.
+#  - gripper: start 0.325 / picked 0.304 (mo ~ giong nhau, chua thay dong kep).
+#    Can xac nhan gia tri dong-mo that cua gripper khi kep cube 30mm.
+#  - start TCP z=0.096 (cao hon ban 0.045 la 51mm): day la observation scan.
+
+start_scan_all:
+  desc: Thay toan vung quet
+  joints: [0.0, -0.0873, 1.4312, 1.3614, -0.1222]
+  gripper: 0.3246
+  tcp_xyz: [0.140, 0.001, 0.096]
+  tcp_rpy_deg: [173.0, 65.0, 0.0]
+
+picked_red_blind:
+  desc: Da lay cube do (camera mu, khong thay gi)
+  joints: [0.0, 0.5236, 1.4312, 0.5934, -0.1222]
+  gripper: 0.3037
+  tcp_xyz: [0.204, 0.001, 0.048]
+  tcp_rpy_deg: [173.0, 56.0, 0.0]
+
+lift_stable:
+  desc: NANG Z LEN CAO ON DINH - CHUA CO SO LIEU RIENG (giong picked)
+  status: STALE-duplicate-of-picked-needs-remeasure
+  joints: [0.0, 0.5236, 1.4312, 0.5934, -0.1222]
+  gripper: 0.3037
+  tcp_xyz: [0.204, 0.001, 0.048]
+
+move_to_red_zone:
+  desc: CHUYEN TOI ZONE DO - CHUA CO SO LIEU RIENG (giong picked)
+  status: STALE-duplicate-of-picked-needs-remeasure
+  target_zone_red: [0.102, -0.161]
+  joints: [0.0, 0.5236, 1.4312, 0.5934, -0.1222]
+  gripper: 0.3037
+  tcp_xyz: [0.204, 0.001, 0.048]
+
+# start->picked: dx=+64mm, dz=-48mm (cui xuong-ban). Gripper gan nhu khong doi.

@@ -1,0 +1,8 @@
+# TCP (tool-center-point) reference — gripper tip in flange frame.
+# Source: teach 2026-09-22 (mean of 4 touch-downs), kept in sync with
+# workspaces/dofbot_robot_arm_6dof/src/cap_vision/config/red_scene.yaml
+tcp_xyz_m: [0.118, 0.003, 0.128]
+tcp_rpy_deg: [176.0, 56.0, 1.0]
+tcp_contact_offset_m: 0.045
+tcp_calibrated: true
+source: teach-TCP-4pts-2026-09-22-mean

@@ -5,12 +5,11 @@ VM/
 .venv/
 venv/
 .env/
+.env
 
 # Repo/framework ngoai + bien the khong dung (giu code chinh)
-lerobot/
-dofbot_robot_arm_6dof/
-dofbot_robot_arm_6dof/build/
-dofbot_robot_arm_6dof/log/
+ai/lerobot/
+workspaces/dofbot_robot_arm_6dof/
 
 # CAD / font nang (khong phai code)
 *.STEP
@@ -19,10 +18,29 @@ dofbot_robot_arm_6dof/log/
 *.ttf
 *.otf
 
-# Colcon/ROS build artifacts
+# Colcon/ROS build artifacts (new layout: workspaces/*)
 build/
 install/
 install_t6_regular/
+workspaces/dofbot_ws/build/
+workspaces/dofbot_ws/install/
+workspaces/dofbot_ws/log/
+workspaces/dofbot_ws/build_*/
+workspaces/dofbot_ws/install_*/
+workspaces/dofbot_ws/log_*/
+workspaces/legacy/colcon_ws/build/
+workspaces/legacy/colcon_ws/install/
+workspaces/legacy/colcon_ws/log/
+workspaces/LargeModel_ws/build/
+workspaces/LargeModel_ws/install/
+workspaces/LargeModel_ws/log/
+workspaces/dofbot_robot_arm_6dof/build/
+workspaces/dofbot_robot_arm_6dof/install/
+workspaces/dofbot_robot_arm_6dof/log/
+log/
+log/build_*/
+data/logs/
+# legacy pre-restructure paths (giữ để tránh vô tình commit nếu ai còn checkout cũ)
 dofbot_ws/build/
 dofbot_ws/install/
 dofbot_ws/log/
@@ -32,7 +50,6 @@ colcon_ws/log/
 LargeModel_ws/build/
 LargeModel_ws/install/
 LargeModel_ws/log/
-log/build_*/
 
 # Model weights / binary ML (onnx/pt/engine/dat)
 *.onnx
@@ -41,6 +58,12 @@ log/build_*/
 *.dat
 *.bin
 models/
+ai/models/
+# Datasets & captures (nặng, không push)
+ai/datasets/
+data/captures/
+data/exports/
+*.mp4
 
 # Archives / installers
 *.deb
@@ -64,9 +87,20 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Credentials hard-code trong LargeModel (khong bao gio push)
+workspaces/LargeModel_ws/src/largemodel/config/large_model_interface.yaml
+workspaces/LargeModel_ws/src/largemodel/config/yahboom.yaml
+# File chua API key that (Dify/Baidu) - khong bao gio push
+workspaces/LargeModel_ws/src/largemodel/utils/large_model_interface.py
+vendor/yahboom/Dofbot/6.AI_Visual/1.gesture_action.ipynb
+vendor/yahboom/Dofbot/6.AI_Visual/2.gesture_stack.ipynb
+vendor/yahboom/Dofbot/6.AI_Visual/4.Gesture recognition.ipynb
+workspaces/legacy/colcon_ws/src/dofbot_gesture/gesture_action.py
+workspaces/legacy/colcon_ws/src/dofbot_gesture/gesture_action_notebook.py
+workspaces/legacy/colcon_ws/src/dofbot_gesture/gesture_stack copy.py
+workspaces/legacy/colcon_ws/src/dofbot_gesture/gesture_stack_notebook.py
+# legacy pre-restructure (phòng khi còn file cũ chưa dời)
 LargeModel_ws/src/largemodel/config/large_model_interface.yaml
 LargeModel_ws/src/largemodel/config/yahboom.yaml
-# File chua API key that (Dify/Baidu) - khong bao gio push
 LargeModel_ws/src/largemodel/utils/large_model_interface.py
 Dofbot/6.AI_Visual/1.gesture_action.ipynb
 Dofbot/6.AI_Visual/2.gesture_stack.ipynb

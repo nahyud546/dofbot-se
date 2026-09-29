@@ -1,9 +1,0 @@
-source;share/dofbot_yolov11/hook/pythonpath.ps1
-source;share/dofbot_yolov11/hook/pythonpath.dsv
-source;share/dofbot_yolov11/hook/pythonpath.sh
-source;share/dofbot_yolov11/hook/ament_prefix_path.ps1
-source;share/dofbot_yolov11/hook/ament_prefix_path.dsv
-source;share/dofbot_yolov11/hook/ament_prefix_path.sh
-source;../../build_t6/dofbot_yolov11/share/dofbot_yolov11/hook/pythonpath_develop.ps1
-source;../../build_t6/dofbot_yolov11/share/dofbot_yolov11/hook/pythonpath_develop.dsv
-source;../../build_t6/dofbot_yolov11/share/dofbot_yolov11/hook/pythonpath_develop.sh
