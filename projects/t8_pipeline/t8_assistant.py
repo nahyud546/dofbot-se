@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""T8 text/voice assistant with bounded LLM calls and safe task dispatch."""
+"""T8 text/voice assistant: Gemini JSON planning and safe task dispatch."""
 
 import argparse
 from collections import deque
@@ -15,12 +15,11 @@ import termios
 import time
 import uuid
 
-from t8_pipeline import (ACTIONS, assess_needs, make_pipeline,
-                         try_local_hold_place, try_local_motion_sequence,
-                         try_local_stack_sequence)
+from t8_pipeline import ACTIONS, make_pipeline, norm_nodau
 
 
 ROOT = Path(__file__).resolve().parents[1]
+DOF_VOICE_DIR = ROOT.parent / "vendor/yahboom/dofbot_voice"
 TASK_FILE = Path("/tmp/dofbot_task_command")
 LOCK_FILE = Path("/tmp/dofbot_task_manager.lock")
 STATUS_FILE = Path("/tmp/dofbot_task_status.json")
@@ -31,15 +30,23 @@ HOLD_STATE_FILE = Path("/tmp/t8_hold_state.json")
 MAX_SPEAK_CHARS = 800
 
 
+def emergency_command(query):
+    """Only explicit standalone stop/exit commands bypass Gemini."""
+    text = norm_nodau(query).strip(" .!?")
+    if text in {"exit", "quit", "thoat"}:
+        return "exit"
+    if text in {"dung", "dung ngay", "dung lai", "dung robot",
+                "dung bai toan", "stop", "stop now", "stop robot"}:
+        return "stop"
+    return None
+
+
 def wants_camera(query):
-    # 1 nguồn sự thật với router pipeline (assess_needs): thêm từ mới chỉ
-    # cần sửa nhóm từ trong t8_pipeline, không liệt kê keyword ở đây nữa.
+    """Legacy helper for callers; live routing is now Gemini-only."""
     if query.startswith("/see "):
         return True
-    try:
-        return bool(assess_needs(query).need_image)
-    except Exception:
-        return False
+    from t8_pipeline import assess_needs
+    return bool(assess_needs(query).need_image)
 
 
 def enable_user_sherpa():
@@ -132,7 +139,7 @@ def is_pure_info(outcome):
 
 
 SKILL_INTENTS = {"rotate_relative", "vision_pick_hold", "place_held",
-                 "release_hold", "gripper", "light_beep"}
+                 "release_hold", "gripper", "light_beep", "pose_start", "arm_pose"}
 
 
 def make_executor(enable_motion=True):
@@ -172,32 +179,83 @@ def run_motion_sequence(steps, executor, get_frame, prepare=True):
     results = []
     if executor is None:
         return [{"ok": False, "reply": "Bộ điều khiển T8 chưa sẵn sàng."}]
-    if prepare:
+
+    has_vision = any(s[0] == "vision_pick_hold" for s in steps)
+
+    if prepare and has_vision:
         if executor._motion is None:
             return [{"ok": False, "reply": "Bộ điều khiển chuyển động chưa sẵn sàng."}]
         ready = executor._motion.execute("prepare")
         results.append(ready)
         if not ready.get("ok"):
             return results
-    try:
-        frame = get_frame()
-    except Exception as exc:
-        results.append({"ok": False, "reply": f"Không chụp được ảnh camera: {exc}"})
-        return results
-    if frame is None:
-        results.append({"ok": False, "reply": "Chưa có ảnh camera mới để gắp."})
-        return results
+
+    frame = None
+    if has_vision:
+        try:
+            frame = get_frame()
+        except Exception as exc:
+            results.append({"ok": False, "reply": f"Không chụp được ảnh camera: {exc}"})
+            return results
+        if frame is None:
+            results.append({"ok": False, "reply": "Chưa có ảnh camera mới để gắp."})
+            return results
+
     for index, (intent, entities, _reply) in enumerate(steps):
         try:
             result = executor.execute(intent, entities,
-                                      frame=frame if index == 0 else None,
-                                      confirm_frame=get_frame if index == 0 else None)
+                                      frame=frame if intent == "vision_pick_hold" else None,
+                                      confirm_frame=get_frame if intent == "vision_pick_hold" else None)
         except Exception as exc:
             result = {"ok": False, "reply": f"Bước {index + 1} lỗi: {exc}"}
         results.append(result)
         if not result.get("ok"):
             break
     return results
+
+
+def execute_plan(outcome, executor, get_frame, prepare=True):
+    """Single dispatcher for CLI and ROS; stop at the first failed step."""
+    steps = outcome.get("sequence") or []
+    if not steps:
+        return [{"ok": True, "reply": outcome.get("reply", "")}]
+    if outcome.get("need_vision") and not outcome.get("image_used"):
+        return [{"ok": False, "reply": "Chưa có ảnh mới; không chạy kế hoạch vision."}]
+    results = []
+    for intent, entities, _ in steps:
+        if intent == "ask_info":
+            results.append({"ok": True, "reply": outcome.get("reply", "")})
+        elif intent == "stack_cubes":
+            results.extend(run_stack_sequence(entities, executor, get_frame, prepare=prepare))
+        elif intent in {"open_task", "stop_task"}:
+            action = entities["task"] if intent == "open_task" else "stop"
+            status, request_id = dispatch(action)
+            results.append({"ok": request_id is not None, "reply": status,
+                            "task_request_id": request_id, "task_action": action})
+        else:
+            results.extend(run_motion_sequence([(intent, entities, "")], executor,
+                                               get_frame, prepare=prepare))
+        if not results[-1].get("ok"):
+            break
+    return results
+
+
+def report_motion_sequence(results, steps):
+    """Print only an actual prepare result as [pose], not a four-step command."""
+    for index, result in enumerate(results):
+        prefix = "[pose] " if index == 0 and len(results) == len(steps) + 1 else ""
+        print(prefix + result.get("reply", "Lệnh không có phản hồi"), flush=True)
+
+
+def remember_execution(pipe, query, results):
+    """Put real local execution results into the next turn's LLM context."""
+    if not results:
+        return
+    summary = "; ".join(str(item.get("reply", "")) for item in results)
+    if len(summary) > 800:
+        summary = summary[:797] + "..."
+    pipe._push_history(query, summary)
+    pipe._last_reply = summary
 
 
 def run_stack_sequence(labels, executor, get_frame, prepare=True):
@@ -299,6 +357,9 @@ def run_with_vision_retry(pipe, query, frame, camera_device="/dev/video2"):
             return outcome, None
         outcome2 = pipe.run(query, frame2)
         outcome2["image_used"] = True
+        for name in ("gemini", "tavily", "local", "cached"):
+            setattr(outcome2["counts"], name,
+                    getattr(outcome2["counts"], name) + getattr(outcome["counts"], name))
         return outcome2, frame2
     return outcome, frame
 
@@ -337,10 +398,13 @@ def speak_via_edge(text):
         return False
     try:
         result = subprocess.run([sys.executable,
-                                 str(ROOT / "dofbot_voice/scripts/speak_text.py"),
-                                 text], check=False, stdin=subprocess.DEVNULL)
+                                 str(DOF_VOICE_DIR / "scripts/speak_text.py"),
+                                 text], check=False, stdin=subprocess.DEVNULL,
+                                capture_output=True, text=True, timeout=25)
         if result.returncode != 0:
-            print(f"[TTS lỗi] speak_text.py thoát với mã {result.returncode}",
+            detail = (result.stderr or "").strip().splitlines()
+            reason = detail[-1] if detail else f"mã {result.returncode}"
+            print(f"[TTS bỏ qua] {reason}",
                   file=sys.stderr, flush=True)
             return False
         print("[TTS] 1 synthesis job (info -> loa); "
@@ -506,49 +570,46 @@ def ros_loop(pipe, speak=False, speak_info=True, executor=None):
             if not node.queries:
                 continue
             query = node.queries.popleft()
-            see = wants_camera(query)
+            if emergency_command(query) == "stop":
+                status, _ = dispatch("stop")
+                node.text_pub.publish(String(data=status))
+                continue
+            if emergency_command(query) == "exit":
+                exit_safely(executor)
+                break
+            see = query.startswith("/see ")
             if query.startswith("/see "):
                 query = query[5:]
             counts = None
             source = "?"
             try:
-                if see and (node.frame is None or
-                            time.monotonic() - node.frame_time > 2.0):
-                    raise RuntimeError("Chưa có ảnh camera mới từ /image_raw")
-                outcome = pipe.run(query, node.frame if see else None)
+                def fresh_frame():
+                    deadline = time.monotonic() + 3.0
+                    while node.frame is None or time.monotonic() - node.frame_time > 2.0:
+                        if time.monotonic() >= deadline:
+                            raise RuntimeError("Chưa có ảnh camera mới từ /image_raw")
+                        rclpy.spin_once(node, timeout_sec=0.1)
+                    return node.frame
+
+                outcome = pipe.run(query, fresh_frame() if see else None)
+                if outcome.get("need_vision") and not outcome.get("image_used"):
+                    outcome = pipe.run(query, fresh_frame())
                 counts = outcome["counts"]
                 source = outcome.get("source", "?")
-                skilled = run_skill(outcome, executor,
-                                    node.frame if see else None)
-                if skilled is not None:
-                    show, speak_text, _res = skilled
-                    node.text_pub.publish(String(data=show))
-                    print(show, flush=True)
-                    if speak_info and speak_text and speak_text.strip():
-                        node.tts_pub.publish(
-                            String(data=shorten_for_speech(speak_text)))
-                        print("[TTS] skill -> tts_topic (loa)", flush=True)
-                elif is_pure_info(outcome):
-                    # Thông tin thuần (news/chat/vision) -> phát ra loa.
-                    reply = outcome["reply"]
-                    node.text_pub.publish(String(data=reply))
-                    print(reply, flush=True)
-                    if speak_info and reply.strip():
-                        node.tts_pub.publish(
-                            String(data=shorten_for_speech(reply)))
-                        print("[TTS] info -> tts_topic (loa)", flush=True)
-                    elif speak and reply.strip():
-                        node.tts_pub.publish(
-                            String(data=shorten_for_speech(reply)))
-                else:
-                    # Có action -> giữ nguyên hành động robot.
-                    status, request_id = dispatch(outcome["action"])
-                    node.text_pub.publish(String(data=status))
-                    print(f"[task] {status}", flush=True)
-                    if speak and status and request_id:
-                        node.tts_pub.publish(String(data=status))
-                    if request_id is not None:
-                        wait_for_task(request_id)
+                results = execute_plan(outcome, executor, fresh_frame)
+                for result in results:
+                    reply = result.get("reply", "")
+                    if reply:
+                        node.text_pub.publish(String(data=reply))
+                        print(reply, flush=True)
+                if outcome.get("sequence"):
+                    remember_execution(pipe, query, results)
+                spoken = results[-1].get("reply", "")
+                if spoken and (speak or speak_info):
+                    node.tts_pub.publish(String(data=shorten_for_speech(spoken)))
+                request_id = results[-1].get("task_request_id")
+                if request_id is not None:
+                    wait_for_task(request_id)
             except Exception as exc:
                 counts = getattr(exc, "t8_counts", counts)
                 node.text_pub.publish(String(data=f"T8 lỗi: {short_error(exc)}"))
@@ -578,10 +639,10 @@ def main():
     ap.add_argument("--with-manager", action="store_true", help="tự chạy task manager")
     ap.add_argument("--ros", action="store_true", help="nhận /asr, /image_raw; trả /text_response, /tts_topic")
     ap.add_argument("--once", action="store_true", help="xử lý một lượt rồi thoát")
-    ap.add_argument("--no-local", action="store_true", help="tắt router/cache local (luôn gọi Gemini, để debug)")
+    ap.add_argument("--no-local", action="store_true", help="tương thích cũ; Gemini hiện luôn lập kế hoạch")
     ap.add_argument("--dry-run-motion", action="store_true",
                     help="chỉ nhận diện/lập kế hoạch; không gửi lệnh tay máy")
-    ap.add_argument("--clear-cache", action="store_true", help="xóa cache reply/search rồi thoát")
+    ap.add_argument("--clear-cache", action="store_true", help="tương thích cũ; luồng mới không dùng cache")
     args = ap.parse_args()
     if args.image and args.see:
         ap.error("chọn --image hoặc --see")
@@ -593,7 +654,7 @@ def main():
     manager = None
     if args.with_manager and not manager_running():
         manager = subprocess.Popen([sys.executable, "-u",
-            str(ROOT / "dofbot_voice/scripts/voice_task_manager.py")], cwd=ROOT)
+            str(DOF_VOICE_DIR / "scripts/voice_task_manager.py")], cwd=DOF_VOICE_DIR)
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline and not manager_running():
             if manager.poll() is not None:
@@ -615,15 +676,13 @@ def main():
     backend = None
     if args.voice:
         enable_user_sherpa()
-        sys.path.insert(0, str(ROOT / "dofbot_voice/scripts"))
+        sys.path.insert(0, str(DOF_VOICE_DIR / "scripts"))
         from stt_vi import SherpaViBackend
         backend = SherpaViBackend()
     pipe = make_pipeline()
-    if args.no_local:
-        pipe.enable_local = False
     if args.clear_cache:
         pipe.cache_clear()
-        print("[cache] đã xóa", flush=True)
+        print("[cache] luồng Gemini-first không dùng cache câu trả lời", flush=True)
         if args.once and not (args.text or args.voice):
             return
     first = True
@@ -655,115 +714,56 @@ def main():
                 query = input("T8> ").strip()
                 if not query:
                     continue
-            if query.strip().lower() in ("exit", "quit", "thoát", "thoat"):
+            if emergency_command(query) == "exit":
                 exit_safely(executor)
                 return
-            stack = try_local_stack_sequence(query)
-            if stack and not args.no_local:
-                selected_executor = preview_executor if first and args.image else executor
-                results = run_stack_sequence(
-                    stack, selected_executor,
-                    lambda: image_from_file(args.image) if first and args.image
-                    else camera_image(args.camera),
-                    prepare=not args.dry_run_motion and not (first and args.image))
-                for result in results:
-                    print(result.get("reply", "Lệnh không có phản hồi"), flush=True)
-                spoken = results[-1].get("reply", "")
-                if speak_info and spoken:
-                    speak_via_edge(spoken)
-                print(f"[REQ] src=local-stack gemini=0 tavily=0 "
-                      f"local={len(results)} cached=0 total=0", flush=True)
-                first = False
-                if args.once:
-                    if not results[-1].get("ok"):
-                        raise SystemExit(1)
-                    return
-                continue
-            sequence = try_local_motion_sequence(query)
-            if sequence and not args.no_local:
-                selected_executor = preview_executor if first and args.image else executor
-                results = run_motion_sequence(
-                    sequence, selected_executor,
-                    lambda: image_from_file(args.image) if first and args.image
-                    else camera_image(args.camera),
-                    prepare=not args.dry_run_motion and not (first and args.image))
-                for index, result in enumerate(results):
-                    prefix = "[pose] " if index == 0 and len(results) == 4 else ""
-                    print(prefix + result.get("reply", "Lệnh không có phản hồi"), flush=True)
-                spoken = results[-1].get("reply", "")
-                if speak_info and spoken:
-                    speak_via_edge(spoken)
-                print(f"[REQ] src=local-sequence gemini=0 tavily=0 "
-                      f"local={len(results)} cached=0 total=0", flush=True)
-                first = False
-                if args.once:
-                    if not results[-1].get("ok"):
-                        raise SystemExit(1)
-                    return
-                continue
             counts = None
             source = "?"
             try:
-                see_now = (args.see if first else False) or wants_camera(query)
+                if emergency_command(query) == "stop":
+                    status, request_id = dispatch("stop")
+                    print(f"[task] {status}", flush=True)
+                    if request_id is not None:
+                        wait_for_task(request_id)
+                    if args.once and request_id is None:
+                        raise SystemExit(1)
+                    if args.once:
+                        return
+                    first = False
+                    continue
+                see_now = args.see if first else False
                 if query.startswith("/see "):
                     query = query[5:]
                     see_now = True
-                parsed = try_local_hold_place(query)
-                if (not args.dry_run_motion and not args.image and parsed and
-                        parsed[0] == "vision_pick_hold"):
-                    prepared = executor._motion.execute("prepare")
-                    if not prepared.get("ok"):
-                        print(prepared.get("reply", "Không về được pose chờ"), flush=True)
-                        if args.once:
-                            raise SystemExit(1)
-                        continue
-                    print("[pose] " + prepared["reply"], flush=True)
                 frame = image_from_file(args.image) if first and args.image else None
                 if frame is None and see_now:
-                    # Lệnh vision/gắp cần ảnh nhưng camera có thể bận/lỗi ->
-                    # fallback frame=None để router local vẫn trả lời, retry sau.
                     try:
                         frame = camera_image(args.camera)
                     except Exception as exc:
-                        print(f"[cam] không chụp được {args.camera}: {exc} "
-                              "(dùng text-only)", flush=True)
+                        print(f"[cam] không chụp được {args.camera}: {exc}", flush=True)
                         frame = None
                 outcome, frame = run_with_vision_retry(
                     pipe, query, frame, args.camera)
                 counts = outcome["counts"]
                 source = outcome.get("source", "?")
-                # Ảnh file chỉ dùng xem trước: không điều khiển robot theo ảnh cũ.
                 selected_executor = preview_executor if first and args.image else executor
-                skilled = run_skill(outcome, selected_executor, frame,
-                                    confirm_frame=(lambda: camera_image(args.camera))
-                                    if not args.image else None)
-                if skilled is not None:
-                    show, speak_text, _res = skilled
-                    print(show, flush=True)
-                    if speak_info and speak_text:
-                        speak_via_edge(speak_text)
-                    if args.once and not _res.get("ok"):
-                        raise SystemExit(1)
-                elif is_pure_info(outcome):
-                    # Thông tin thuần (news/chat, không action) -> phát ra loa.
-                    print(outcome["reply"], flush=True)
-                    if speak_info:
-                        speak_via_edge(outcome["reply"])
-                    elif args.speak and outcome["reply"]:
-                        speak_via_edge(outcome["reply"])
-                else:
-                    # Có action -> giữ nguyên hành động robot.
-                    status, request_id = dispatch(outcome["action"])
-                    if status:
-                        print(f"[task] {status}", flush=True)
-                    if request_id and outcome["action"] == "stack":
-                        print("[task] Trong cửa sổ stacking: chọn màu 1–4, "
-                              "nhấn d để detect, SPACE/g để gắp, q để hoàn tất.",
-                              flush=True)
-                    if args.speak and status and request_id:
-                        speak_via_edge(status)
-                    if request_id is not None:
-                        wait_for_task(request_id)
+                results = execute_plan(outcome, selected_executor,
+                    lambda: image_from_file(args.image) if first and args.image
+                    else camera_image(args.camera),
+                    prepare=not args.dry_run_motion and not (first and args.image))
+                for result in results:
+                    if result.get("reply"):
+                        print(result["reply"], flush=True)
+                if outcome.get("sequence"):
+                    remember_execution(pipe, query, results)
+                spoken = results[-1].get("reply", "")
+                if spoken and (args.speak or (speak_info and not outcome.get("sequence"))):
+                    speak_via_edge(spoken)
+                request_id = results[-1].get("task_request_id")
+                if request_id is not None:
+                    wait_for_task(request_id)
+                if args.once and not results[-1].get("ok"):
+                    raise SystemExit(1)
             except Exception as exc:
                 counts = getattr(exc, "t8_counts", counts)
                 print(f"[lỗi] {short_error(exc)}", file=sys.stderr, flush=True)

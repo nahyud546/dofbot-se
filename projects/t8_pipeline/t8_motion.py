@@ -8,15 +8,16 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WS = ROOT / "dofbot_ws"
+WS = ROOT.parent / "workspaces/dofbot_ws"
 RESULT_PREFIX = "T8_RESULT:"
 
 
 class MotionBridge:
     def execute(self, command, **params):
-        script = ("source ../.venv/bin/activate && "
-                  "source ./setup_t6.bash && "
-                  "exec python3 ../LargeModel_ws/t8_motion_worker.py")
+        project_root = ROOT.parent
+        script = (f"source {project_root}/.venv/bin/activate && "
+                  f"source {project_root}/scripts/run/setup_t6.bash && "
+                  f"exec python3 {project_root}/projects/t8_pipeline/t8_motion_worker.py")
         env = os.environ.copy()
         env.setdefault("ROS_LOG_DIR", "/tmp/t8_ros_logs")
         proc = subprocess.Popen(["bash", "-c", script], cwd=WS,

@@ -228,7 +228,7 @@ class TrashDetector:
     Cosine similarity over 256 stored vectors (16 classes x 16).
     """
 
-    DB_PATH_TMPL = "ai/datasets/trash-images/processed/vector_database_{}.pt"
+    DB_PATH_TMPL = __file__.split("projects")[0] + "ai/datasets/trash-images/processed/vector_database_{}.pt"
     IMG_SIZE = 224
     # Provisional until independent images from /dev/video2 are available.
     DEFAULT_THRESH = 0.40

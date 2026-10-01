@@ -6,6 +6,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(kdl_parser REQUIRED)
@@ -46,6 +47,7 @@ target_include_directories(kinemarics_dofbot PUBLIC
 )
 
 ament_target_dependencies(kinemarics_dofbot
+  ament_index_cpp
   rclcpp
   kdl_parser
   std_msgs

@@ -73,25 +73,36 @@ def main():
     if not args.text:
         ap.error("thiếu text. VD: speak_text.py \"Xin chào\"")
 
-    keep = args.out or os.path.join(tempfile.gettempdir(), "speak_text.mp3")
-    asyncio.run(_save(args.text, args.voice, args.rate, keep))
-    size = os.path.getsize(keep)
-    print(f"đã tạo {keep} ({size} bytes, voice={args.voice})")
-    if size == 0:
-        print("file rỗng, TTS thất bại", file=sys.stderr)
-        sys.exit(1)
-    if not args.no_play:
-        print("đang phát qua loa...")
-        rc = play_file(keep)
-        print("phát xong" if rc == 0 else "phát lỗi")
-        if not args.out:
+    temporary = args.out is None
+    if temporary:
+        descriptor, keep = tempfile.mkstemp(prefix="dofbot_tts_", suffix=".mp3")
+        os.close(descriptor)
+    else:
+        keep = args.out
+    try:
+        asyncio.run(asyncio.wait_for(
+            _save(args.text, args.voice, args.rate, keep), timeout=20))
+        size = os.path.getsize(keep)
+        if size == 0:
+            raise RuntimeError("Edge TTS không trả âm thanh")
+        print(f"đã tạo {keep} ({size} bytes, voice={args.voice})")
+        if not args.no_play:
+            print("đang phát qua loa...")
+            rc = play_file(keep)
+            print("phát xong" if rc == 0 else "phát lỗi")
+            return rc
+        return 0
+    except Exception as exc:
+        print(f"Không phát được TTS online: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
+        return 1
+    finally:
+        if temporary:
             try:
                 os.remove(keep)
             except OSError:
                 pass
-        if rc != 0:
-            sys.exit(rc)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

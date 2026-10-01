@@ -50,13 +50,32 @@ class Executor:
               "stop_task": self._stop_task, "rotate_relative": self._rotate,
               "vision_pick_hold": self._pick_hold, "place_held": self._place,
               "release_hold": self._release, "gripper": self._gripper,
-              "light_beep": self._light}.get(intent)
+              "light_beep": self._light, "pose_start": self._pose_start,
+              "arm_pose": self._arm_pose}.get(intent)
         if fn is None:
             return {"ok": False, "reply": f"Intent lạ '{intent}', từ chối để an toàn.",
                     "action": "none"}
         return fn(ent)
 
     # -- pure / legacy ----------------------------------------------------
+    def _arm_pose(self, ent):
+        pose = ent.get("pose", "")
+        if pose not in ("up", "down"):
+            return {"ok": False, "reply": "Lệnh tay không rõ.", "action": "none"}
+        if self._motion is None:
+            return {"ok": True, "dry_run": True, "action": "none", "reply": f"[dry-run] Tay {pose}."}
+        res = self._motion.execute("arm_pose", pose=pose)
+        res["action"] = "none"
+        return res
+    def _pose_start(self, ent):
+        if self._motion is None:
+            return {"ok": True, "dry_run": True,
+                    "reply": "[dry-run] Về tư thế chuẩn; chưa gửi lệnh robot.",
+                    "action": "none"}
+        res = self._motion.execute("prepare")
+        res["action"] = "none"
+        return res
+
     def _ask_info(self, ent):
         return {"ok": True, "reply": "", "action": "none", "passthrough": True}
 
@@ -216,15 +235,22 @@ class Executor:
         s = ent.get("state", "")
         if s not in ("open", "close"):
             return {"ok": False, "reply": "Kẹp chỉ có mở/đóng.", "action": "none"}
-        if self._arm_factory is None:
+        if self._motion is None:
             return {"ok": True, "dry_run": True, "action": "none",
                     "reply": f"[dry-run] Kẹp {'mở' if s=='open' else 'đóng'} (servo 6)."}
-        return {"ok": True, "action": "none",
-                "reply": f"Đã {'mở kẹp' if s=='open' else 'kẹp lại'}."}
+        res = self._motion.execute("gripper", state=s)
+        res["action"] = "none"
+        if res.get("ok"):
+            self.state.mark_released() if s == "open" else self.state.mark_held("unknown")
+        return res
 
     def _light(self, ent):
         dev, st = ent.get("device", ""), ent.get("state", "")
         if dev not in ("red", "green", "blue", "yellow", "beep") or st not in ("on", "off"):
             return {"ok": False, "reply": "Lệnh đèn/còi không rõ.", "action": "none"}
-        return {"ok": True, "dry_run": True, "action": "none",
-                "reply": f"[dry-run] {dev} {st} (qua module speech/serial)."}
+        if self._motion is None:
+            return {"ok": True, "dry_run": True, "action": "none",
+                    "reply": f"[dry-run] {dev} {st} (qua module speech/serial)."}
+        res = self._motion.execute("light", device=dev, state=st)
+        res["action"] = "none"
+        return res

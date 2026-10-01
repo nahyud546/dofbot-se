@@ -12,8 +12,8 @@ import sys
 import time
 
 
-ROOT = Path(__file__).resolve().parents[2]
-WS = ROOT / "dofbot_ws"
+ROOT = Path(__file__).resolve().parents[4]
+WS = ROOT / "workspaces/dofbot_ws"
 TASK_FILE = Path("/tmp/dofbot_task_command")
 ACTIVE_FILE = Path("/tmp/dofbot_task_active")
 STATUS_FILE = Path("/tmp/dofbot_task_status.json")

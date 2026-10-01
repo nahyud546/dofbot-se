@@ -1,11 +1,14 @@
-cd ~/Desktop/robot-arm/dofbot_robot_arm_6dof
+cd ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof
 source /opt/ros/humble/setup.bash && source install/setup.bash
 
-ls -la /dev/video*
+ls -l /dev/ttyUSB* /dev/video* 
+
+# Robot Sonix cam = thiet bi moi nhat (vd /dev/video2); dung by-id de chac chan:
+# ls -l /dev/v4l/by-id/
 
 ros2 pkg list | grep cap_vision
 
-ros2 run cap_vision camera_test --ros-args -p device_index:=0 -p width:=640 -p height:=480 -p show:=true -p snapshot_path:=/tmp/robot_cam.png
+ros2 run cap_vision camera_test --ros-args -p device_index:=2 -p width:=640 -p height:=480 -p show:=true -p snapshot_path:=/tmp/robot_cam.png
 
 
 #state robot

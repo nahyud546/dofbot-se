@@ -1,0 +1,390 @@
+schema_version: 1
+units: meter
+geometry:
+  cube_size_m:
+  - 0.03
+  - 0.03
+  - 0.03
+  cube_half_extent_m: 0.015
+  apriltag_black_square_size_m: 0.02
+  object_frame:
+    origin: cube geometric center
+    axis_convention:
+      +Z: AprilTag face outward normal
+      -Z: solid color face outward normal
+      +X: first trash face shown after AprilTag in the supplied video
+      +Y: second trash face shown after AprilTag
+      -X: third trash face shown after AprilTag
+      -Y: fourth trash face shown after AprilTag
+    face_orientation_definition: orientation_xyzw rotates a face-local frame whose +Z axis is the outward surface normal into
+      cube frame
+  vertices_xyz_m:
+  - - -0.015
+    - -0.015
+    - -0.015
+  - - 0.015
+    - -0.015
+    - -0.015
+  - - 0.015
+    - 0.015
+    - -0.015
+  - - -0.015
+    - 0.015
+    - -0.015
+  - - -0.015
+    - -0.015
+    - 0.015
+  - - 0.015
+    - -0.015
+    - 0.015
+  - - 0.015
+    - 0.015
+    - 0.015
+  - - -0.015
+    - 0.015
+    - 0.015
+  apriltag_local_corners_on_plus_z_xyz_m:
+    corner_0:
+    - -0.01
+    - 0.01
+    - 0.015
+    corner_1:
+    - 0.01
+    - 0.01
+    - 0.015
+    corner_2:
+    - 0.01
+    - -0.01
+    - 0.015
+    corner_3:
+    - -0.01
+    - -0.01
+    - 0.015
+notes:
+- All XYZ values are in each cube's local object frame, not base_link or camera frame.
+- The face centers are exactly 15 mm from the cube center because the physical cube is 30 mm per side.
+- The AprilTag black inner square is modeled as 20 mm x 20 mm, centered on the +Z face.
+- Trash-face ring order was inferred from the order/adjacency visible in the four supplied videos. Verify once against the
+  physical cubes before treating semantic axis labels as permanent calibration.
+- To obtain camera/world coordinates, transform these local points by T_camera_cube or T_base_cube.
+cubes:
+  1:
+    name: blue
+    video_source: 1993373042244751738.mp4
+    size_m:
+    - 0.03
+    - 0.03
+    - 0.03
+    faces:
+      +Z:
+        center_xyz_m: &id001
+        - 0.0
+        - 0.0
+        - 0.015
+        normal_xyz: &id002
+        - 0.0
+        - 0.0
+        - 1.0
+        orientation_xyzw: &id003
+        - 0.0
+        - 0.0
+        - 0.0
+        - 1.0
+        semantic: apriltag
+        apriltag_id: 1
+        surface_size_m:
+        - 0.03
+        - 0.03
+        black_square_size_m:
+        - 0.02
+        - 0.02
+      -Z:
+        center_xyz_m: &id004
+        - 0.0
+        - 0.0
+        - -0.015
+        normal_xyz: &id005
+        - 0.0
+        - 0.0
+        - -1.0
+        orientation_xyzw: &id006
+        - 1.0
+        - 0.0
+        - 0.0
+        - 0.0
+        semantic: color
+        label: khoi_xanh_duong
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +X:
+        center_xyz_m: &id007
+        - 0.015
+        - 0.0
+        - 0.0
+        normal_xyz: &id008
+        - 1.0
+        - 0.0
+        - 0.0
+        orientation_xyzw: &id009
+        - 0.0
+        - 0.707106781187
+        - 0.0
+        - 0.707106781187
+        semantic: trash
+        label: book
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +Y:
+        center_xyz_m: &id010
+        - 0.0
+        - 0.015
+        - 0.0
+        normal_xyz: &id011
+        - 0.0
+        - 1.0
+        - 0.0
+        orientation_xyzw: &id012
+        - -0.707106781187
+        - 0.0
+        - 0.0
+        - 0.707106781187
+        semantic: trash
+        label: zip_top_can
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -X:
+        center_xyz_m: &id013
+        - -0.015
+        - 0.0
+        - 0.0
+        normal_xyz: &id014
+        - -1.0
+        - 0.0
+        - 0.0
+        orientation_xyzw: &id015
+        - 0.0
+        - -0.707106781187
+        - 0.0
+        - 0.707106781187
+        semantic: trash
+        label: old_school_bag
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -Y:
+        center_xyz_m: &id016
+        - 0.0
+        - -0.015
+        - 0.0
+        normal_xyz: &id017
+        - 0.0
+        - -1.0
+        - 0.0
+        orientation_xyzw: &id018
+        - 0.707106781187
+        - 0.0
+        - 0.0
+        - 0.707106781187
+        semantic: trash
+        label: newspaper
+        surface_size_m:
+        - 0.03
+        - 0.03
+  2:
+    name: green
+    video_source: 7120389901890757137.mp4
+    size_m:
+    - 0.03
+    - 0.03
+    - 0.03
+    faces:
+      +Z:
+        center_xyz_m: *id001
+        normal_xyz: *id002
+        orientation_xyzw: *id003
+        semantic: apriltag
+        apriltag_id: 2
+        surface_size_m:
+        - 0.03
+        - 0.03
+        black_square_size_m:
+        - 0.02
+        - 0.02
+      -Z:
+        center_xyz_m: *id004
+        normal_xyz: *id005
+        orientation_xyzw: *id006
+        semantic: color
+        label: khoi_xanh
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +X:
+        center_xyz_m: *id007
+        normal_xyz: *id008
+        orientation_xyzw: *id009
+        semantic: trash
+        label: watermelon_rind
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +Y:
+        center_xyz_m: *id010
+        normal_xyz: *id011
+        orientation_xyzw: *id012
+        semantic: trash
+        label: egg_shell
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -X:
+        center_xyz_m: *id013
+        normal_xyz: *id014
+        orientation_xyzw: *id015
+        semantic: trash
+        label: fish_bone
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -Y:
+        center_xyz_m: *id016
+        normal_xyz: *id017
+        orientation_xyzw: *id018
+        semantic: trash
+        label: apple_core
+        surface_size_m:
+        - 0.03
+        - 0.03
+  3:
+    name: red
+    video_source: 7177895674023573708.mp4
+    size_m:
+    - 0.03
+    - 0.03
+    - 0.03
+    faces:
+      +Z:
+        center_xyz_m: *id001
+        normal_xyz: *id002
+        orientation_xyzw: *id003
+        semantic: apriltag
+        apriltag_id: 3
+        surface_size_m:
+        - 0.03
+        - 0.03
+        black_square_size_m:
+        - 0.02
+        - 0.02
+      -Z:
+        center_xyz_m: *id004
+        normal_xyz: *id005
+        orientation_xyzw: *id006
+        semantic: color
+        label: khoi_do
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +X:
+        center_xyz_m: *id007
+        normal_xyz: *id008
+        orientation_xyzw: *id009
+        semantic: trash
+        label: used_batteries
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +Y:
+        center_xyz_m: *id010
+        normal_xyz: *id011
+        orientation_xyzw: *id012
+        semantic: trash
+        label: expired_cosmetics
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -X:
+        center_xyz_m: *id013
+        normal_xyz: *id014
+        orientation_xyzw: *id015
+        semantic: trash
+        label: expired_tablets
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -Y:
+        center_xyz_m: *id016
+        normal_xyz: *id017
+        orientation_xyzw: *id018
+        semantic: trash
+        label: syringe
+        surface_size_m:
+        - 0.03
+        - 0.03
+  4:
+    name: yellow
+    video_source: 3819333677794381856.mp4
+    size_m:
+    - 0.03
+    - 0.03
+    - 0.03
+    faces:
+      +Z:
+        center_xyz_m: *id001
+        normal_xyz: *id002
+        orientation_xyzw: *id003
+        semantic: apriltag
+        apriltag_id: 4
+        surface_size_m:
+        - 0.03
+        - 0.03
+        black_square_size_m:
+        - 0.02
+        - 0.02
+      -Z:
+        center_xyz_m: *id004
+        normal_xyz: *id005
+        orientation_xyzw: *id006
+        semantic: color
+        label: khoi_vang
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +X:
+        center_xyz_m: *id007
+        normal_xyz: *id008
+        orientation_xyzw: *id009
+        semantic: trash
+        label: cigarette_butts
+        surface_size_m:
+        - 0.03
+        - 0.03
+      +Y:
+        center_xyz_m: *id010
+        normal_xyz: *id011
+        orientation_xyzw: *id012
+        semantic: trash
+        label: disposable_chopsticks
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -X:
+        center_xyz_m: *id013
+        normal_xyz: *id014
+        orientation_xyzw: *id015
+        semantic: trash
+        label: peach_pit
+        surface_size_m:
+        - 0.03
+        - 0.03
+      -Y:
+        center_xyz_m: *id016
+        normal_xyz: *id017
+        orientation_xyzw: *id018
+        semantic: trash
+        label: toilet_paper
+        surface_size_m:
+        - 0.03
+        - 0.03

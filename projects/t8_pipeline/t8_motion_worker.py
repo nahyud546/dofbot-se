@@ -15,7 +15,7 @@ STATE_FILE = Path("/tmp/t8_hold_state.json")
 LOCK_FILE = Path("/tmp/t8_motion.lock")
 ACTIVE_TASK = Path("/tmp/dofbot_task_active")
 SERIAL = "/dev/ttyUSB0"
-IK_BINARY = (Path(__file__).resolve().parents[1] / "dofbot_ws" / "install" /
+IK_BINARY = (Path(__file__).resolve().parents[2] / "workspaces" / "dofbot_ws" / "install" /
              "dofbot_info" / "lib" / "dofbot_info" / "kinemarics_dofbot")
 OPEN_ANGLE = 25
 CLOSE_ANGLE = 140
@@ -23,6 +23,96 @@ PICK_Z = 0.03 + 0.03 / 2  # T6 table height + cube half height
 STACK_Z = PICK_Z + 0.03  # second cube center above a 3 cm cube
 X_OFFSET = 0.010
 READY_POSE = [90.0, 125.0, 0.0, 0.0, 90.0, OPEN_ANGLE]
+
+# Poses calibrated by color_bin_grasp.py, indexed by canonical cube ID.
+BIN_POSES = {1: [30, 70, 0, 54, 265], 2: [150, 70, 7, 56, 265],
+             3: [50, 70, 7, 58, 265], 4: [135, 70, 7, 54, 265]}
+BIN_RELEASE_POSES = {
+    1: [30, 65.7098, 0.379519, 56.1977, 265],
+    2: [150, 66.6198, 7.04465, 57.3374, 265],
+    3: [50, 66.7004, 7.04872, 59.2308, 265],
+    4: [135, 66.5425, 7.0367, 55.4436, 265],
+}
+BIN_LIFT_POSES = {
+    1: [30, 89.348, 5.94074, 40.3418, 265],
+    2: [150, 85.7708, 12.7032, 47.1349, 265],
+    3: [50, 85.3714, 12.4169, 49.9596, 265],
+    4: [135, 86.139, 13.0342, 44.3005, 265],
+}
+
+
+class IKNoSolution(RuntimeError):
+    """The requested pose has no safe IK solution; no arm motion has started."""
+
+
+def cube_pick_target(center, quad, image_size, x_offset_mm=0.0, z_offset_mm=0.0):
+    """Map the observed top-face center and axis to a calibrated KDL pick."""
+    if list(image_size) != [640, 480] or len(center) != 2 or len(quad) != 4:
+        raise ValueError("Cần tâm và tứ giác mặt trên trong ảnh 640x480")
+    points = [center] + list(quad)
+    if any(len(point) != 2 or not all(isinstance(v, (int, float)) and
+            math.isfinite(v) for v in point) for point in points):
+        raise ValueError("Tọa độ mặt trên không hợp lệ")
+    cx, cy = center
+    if not (0 <= cx < 640 and 0 <= cy < 480) or any(
+            not (0 <= p[0] < 640 and 0 <= p[1] < 480) for p in quad):
+        raise ValueError("Mặt trên nằm ngoài ảnh")
+    edges = [(quad[(i + 1) % 4][0] - quad[i][0],
+              quad[(i + 1) % 4][1] - quad[i][1]) for i in range(4)]
+    dx, dy = max(edges, key=lambda edge: edge[0] ** 2 + edge[1] ** 2)
+    if dx * dx + dy * dy < 100:
+        raise ValueError("Mặt trên quá nhỏ để gắp")
+    angle = math.degrees(math.atan2(dy, dx)) % 90
+    yaw = -angle if angle <= 45 else 90 - angle
+    yaw = max(-40.0, min(40.0, yaw))
+    rn2 = ((cx - 320) / 320) ** 2 + ((cy - 240) / 240) ** 2
+    scale = 1 + 0.06 * rn2
+    ux, uy = 320 + (cx - 320) * scale, 240 + (cy - 240) * scale
+    x = -((480 - uy) * (0.8 / 3000) + 0.15)
+    y = (ux - 320) / 4000
+    if (not isinstance(x_offset_mm, (int, float)) or
+            not math.isfinite(x_offset_mm) or abs(x_offset_mm) > 20 or
+            not isinstance(z_offset_mm, (int, float)) or
+            not math.isfinite(z_offset_mm) or abs(z_offset_mm) > 8):
+        raise ValueError("Độ bù gắp phải trong khoảng X ±20 mm, Z ±8 mm")
+    x += x_offset_mm / 1000  # KDL X dương: kéo kẹp về phía chân robot.
+    if not (-0.30 <= x <= -0.10 and -0.12 <= y <= 0.12):
+        raise ValueError("Tâm gắp nằm ngoài vùng làm việc")
+    return round(x, 5), round(y, 5), round(0.047 + z_offset_mm / 1000, 5), yaw
+
+
+def solve_cube_pick(data, arm, kin, x_offset_mm=0.0, z_offset_mm=0.0):
+    """Validate a detected cube and solve its pick pose without moving the arm."""
+    cube_id = data.get("cube_id")
+    if type(cube_id) is not int or cube_id not in BIN_POSES:
+        raise ValueError("ID cube phải là 1, 2, 3 hoặc 4")
+    if data.get("geometry_valid") is not True or data.get("id_confirmed") is not True:
+        raise ValueError("ID và hình học mặt trên chưa được xác nhận")
+    x, y, z, yaw = cube_pick_target(data["top_center_px"],
+                                    data["top_quad_px"], data["image_size"],
+                                    x_offset_mm, z_offset_mm)
+    check_readback(arm, READY_POSE)
+    if not gripper_is_open(arm):
+        raise RuntimeError("Kẹp chưa mở tại pose quan sát")
+    joints = None
+    for z_try in (z, 0.058 + z_offset_mm / 1000,
+                  0.068 + z_offset_mm / 1000):
+        try:
+            joints = kin.ik(x, y, z_try)
+            z = z_try
+            break
+        except IKNoSolution:
+            continue
+    if joints is None:
+        raise IKNoSolution(
+            f"IK không tìm được pose gắp tại x={x:.5f}, y={y:.5f}, "
+            f"z=({z:.3f}, {0.058 + z_offset_mm / 1000:.3f}, "
+            f"{0.068 + z_offset_mm / 1000:.3f}) m; "
+            "kiểm tra URDF/service và hiệu chuẩn camera")
+    joints[4] = min(270, max(0, joints[0] - yaw))
+    if not valid_ik(joints):
+        raise RuntimeError("Góc kẹp của mục tiêu vượt giới hạn")
+    return cube_id, (x, y, z), joints
 
 
 def pixel_target(box, image_size):
@@ -94,10 +184,39 @@ def gripper_is_open(arm):
 
 
 def check_readback(arm, expected, joints=(1, 2, 3, 4, 5), tolerance=12):
+    errors = []
     for joint in joints:
         actual = read_joint(arm, joint)
         if abs(actual - expected[joint - 1]) > tolerance:
-            raise RuntimeError(f"Khớp {joint} chưa tới đích ({actual:.0f}° / {expected[joint-1]:.0f}°)")
+            errors.append(f"J{joint} {actual:.0f}°/{expected[joint-1]:.0f}°")
+    if errors:
+        raise RuntimeError("Khớp chưa tới đích: " + ", ".join(errors))
+
+
+def write_pose_and_wait(arm, joints, gripper_angle, move_ms):
+    """Command a 5-axis arm target and verify it has actually settled.
+
+    USB serial arms do not always complete a large base/wrist move within the
+    nominal servo duration.  A bounded poll avoids reporting that execution
+    failure as an IK failure, and leaves the persistent moving state intact if
+    the target is genuinely not reached.
+    """
+    before = read_joints(arm)
+    arm.Arm_serial_servo_write6(*joints, gripper_angle, move_ms)
+    max_delta = max(abs(float(target) - actual)
+                    for target, actual in zip(joints, before))
+    deadline = time.monotonic() + max(move_ms / 1000.0 + 0.35,
+                                     min(4.0, 0.9 + max_delta / 28.0))
+    last_error = None
+    while time.monotonic() < deadline:
+        time.sleep(0.18)
+        try:
+            check_readback(arm, joints)
+            actual = read_joints(arm)
+            return actual
+        except RuntimeError as exc:
+            last_error = exc
+    raise RuntimeError(f"Motion timeout after {max_delta:.0f}° move: {last_error}")
 
 
 def go_ready(arm):
@@ -132,6 +251,11 @@ class Kinematics:
                                               stderr=subprocess.DEVNULL)
                 if not self.client.wait_for_service(timeout_sec=8.0):
                     raise RuntimeError("IK service không khởi động trong 8 giây")
+            try:
+                self.fk([90, 35, 65, 15, 90])
+            except RuntimeError as exc:
+                raise RuntimeError(
+                    "IK service không đọc được URDF; kiểm tra ROS server cũ và build dofbot_info") from exc
         except Exception:
             self.close()
             raise
@@ -151,7 +275,8 @@ class Kinematics:
         out = self.call(req)
         joints = [out.joint1, out.joint2, out.joint3, out.joint4, out.joint5]
         if not valid_ik(joints):
-            raise RuntimeError("IK không có nghiệm trong giới hạn an toàn")
+            raise IKNoSolution(f"IK trả về góc không hợp lệ tại "
+                               f"({x:.5f}, {y:.5f}, {z:.3f}): {joints}")
         return joints
 
     def fk(self, joints):
@@ -180,8 +305,42 @@ def execute(data, arm, kin=None):
     command = data.get("command")
     state = load_state()
     phase = state.get("phase", "empty")
-    if phase == "moving" and not (command == "prepare" and state.get("command") == "prepare"):
+    # A previous motion can stop after writing the persistent `moving` state.
+    # Permit only explicit prepare/recovery through this gate; all pick commands
+    # remain blocked until the arm is verified back at READY_POSE.
+    if phase == "moving" and command != "prepare":
         raise RuntimeError("Lệnh trước dừng giữa chừng; kiểm tra tay máy và trạng thái trước khi chạy tiếp")
+
+    if command == "light":
+        dev = data.get("device")
+        st = data.get("state")
+        if dev == "red": arm.Arm_RGB_set(50, 0, 0)
+        elif dev == "green": arm.Arm_RGB_set(0, 50, 0)
+        elif dev == "blue": arm.Arm_RGB_set(0, 0, 50)
+        elif dev == "yellow": arm.Arm_RGB_set(50, 50, 0)
+        elif dev == "beep":
+            if st == "on":
+                for _ in range(3):
+                    arm.Arm_Buzzer_On(); time.sleep(0.2)
+                    arm.Arm_Buzzer_Off(); time.sleep(0.2)
+        return {"ok": True, "reply": f"Đã chỉnh {dev} {st}."}
+
+    if command == "gripper":
+        st = data.get("state")
+        angle = OPEN_ANGLE if st == "open" else CLOSE_ANGLE
+        arm.Arm_serial_servo_write(6, angle, 500)
+        time.sleep(1)
+        return {"ok": True, "reply": f"Đã {'mở' if st == 'open' else 'đóng'} kẹp."}
+
+    if command == "arm_pose":
+        pose = data.get("pose")
+        if pose == "up":
+            for j in [2, 3, 4]: arm.Arm_serial_servo_write(j, 90, 1000); time.sleep(0.001)
+        elif pose == "down":
+            for j in [2, 3]: arm.Arm_serial_servo_write(j, 50, 1000); time.sleep(0.001)
+        time.sleep(1.2)
+        return {"ok": True, "reply": f"Đã nâng tay lên." if pose == "up" else "Đã hạ tay xuống."}
+
     if command == "preflight_stack":
         if phase != "empty":
             raise RuntimeError("Tay phải trống trước khi xếp chồng")
@@ -211,10 +370,145 @@ def execute(data, arm, kin=None):
     if command == "prepare":
         if phase == "holding":
             raise RuntimeError("Kẹp vẫn đóng và T8 đang ghi nhận giữ vật; đặt vật hoặc mở kẹp trước")
+        if phase == "moving":
+            # Do not blindly send the robot home if it may still be holding a
+            # cube. Once the gripper is confirmed open, READY_POSE is the
+            # controlled recovery path and clears the stale motion marker.
+            if not gripper_is_open(arm):
+                raise RuntimeError("Motion dang do; kep van dong. Hay lay cube/mở kẹp an toàn rồi chạy lại để recovery pose-start")
+            save_state({"phase": "moving", "command": "prepare", "recovery": True,
+                        "updated": time.time()})
+            go_ready(arm)
+            save_state({"phase": "empty", "ready": True, "recovered": True,
+                        "updated": time.time()})
+            return {"ok": True, "reply": "Đã recovery motion fail: kẹp mở, tay về pose quan sát và xác nhận khớp."}
+        if phase == "empty":
+            try:
+                check_readback(arm, READY_POSE)
+                if gripper_is_open(arm):
+                    return {"ok": True, "reply": "Tay đã ở pose quan sát; không cần di chuyển lại."}
+            except RuntimeError:
+                pass
         save_state({"phase": "moving", "command": "prepare"})
         go_ready(arm)
         save_state({"phase": "empty", "ready": True, "updated": time.time()})
         return {"ok": True, "reply": "Tay đã về pose chờ; đã xác nhận các khớp và kẹp mở."}
+    if command in ("preflight_cube_pick", "sort_cube_zone", "sort_cube_candidates", "sort_cube_3d"):
+        if phase != "empty":
+            raise RuntimeError("Tay phải trống trước khi phân loại cube")
+        candidates = data.get("candidates") if command == "sort_cube_candidates" else [data]
+        if not isinstance(candidates, list) or not candidates:
+            raise ValueError("Cần ít nhất một cube đã xác nhận để phân loại")
+        skipped = []
+        yaw_from_vision = 0.0
+
+        if command == "sort_cube_3d":
+            candidate_index = 0
+            cube_id = data.get("cube_id")
+            if type(cube_id) is not int or cube_id not in BIN_POSES:
+                raise ValueError("ID cube phải là 1, 2, 3 hoặc 4")
+            # Đóng vòng GraspCandidate -> TCP -> worker: worker KHÔNG tự suy
+            # grasp từ object XYZ/quaternion. Bridge phải gửi selected TCP.
+            tcp = data.get("tcp_position_base")
+            surface_id = data.get("surface_id")
+            if (not isinstance(tcp, (list, tuple)) or len(tcp) != 3 or
+                    not isinstance(surface_id, str) or not surface_id):
+                raise ValueError("Thiếu selected TCP từ grasp planner (tcp_position_base/surface_id); worker không tự suy từ XYZ")
+            try:
+                x, y, z = float(tcp[0]), float(tcp[1]), float(tcp[2])
+            except (TypeError, ValueError):
+                raise ValueError("Selected TCP không hợp lệ")
+            if not all(math.isfinite(v) for v in (x, y, z)):
+                raise ValueError("Selected TCP không hợp lệ")
+            try:
+                preferred_yaw = float(data.get("preferred_yaw_rad", 0.0))
+                gripper_width = float(data.get("gripper_width_m", 0.033))
+            except (TypeError, ValueError):
+                raise ValueError("preferred_yaw_rad/gripper_width_m không hợp lệ")
+            if not math.isfinite(preferred_yaw) or abs(preferred_yaw) > math.pi:
+                raise ValueError("preferred_yaw_rad ngoài [-pi, pi]")
+            if not (0.02 <= gripper_width <= 0.08):
+                raise ValueError("gripper_width_m ngoài [20mm, 80mm]")
+            # Yaw kẹp từ grasp planner (5-DOF), chuẩn hoá về [-45,45] cho T8.
+            yaw_from_vision = math.degrees(preferred_yaw)
+            yaw_from_vision = (yaw_from_vision + 180) % 360 - 180
+            while yaw_from_vision > 45:
+                yaw_from_vision -= 90
+            while yaw_from_vision < -45:
+                yaw_from_vision += 90
+            quat = None  # worker không dùng quaternion object trực tiếp nữa
+            pose_method = str(data.get("pose_method", "unknown"))
+            if pose_method in ("conflict", "rgb_geometry"):
+                raise ValueError(f"Pose {pose_method} không đủ full-6D để grasp")
+            check_readback(arm, READY_POSE)
+            if not gripper_is_open(arm):
+                raise RuntimeError("Kẹp chưa mở tại pose quan sát")
+            joints = None
+            for z_try in (z, 0.058, 0.068):
+                try:
+                    joints = kin.ik(x, y, z_try)
+                    z = z_try
+                    break
+                except IKNoSolution:
+                    pass
+            if joints is None:
+                raise IKNoSolution(f"Không có giải pháp IK cho 3D pose ({x:.3f}, {y:.3f}, {z:.3f})")
+            # 5 arm DOF + 1 gripper DOF: J5 từ yaw vision (không coi gripper là DOF6).
+            if len(joints) >= 5:
+                joints[4] = min(270, max(0, joints[0] - yaw_from_vision))
+            if not valid_ik(joints):
+                raise RuntimeError("Góc J5 sau yaw vision vượt giới hạn an toàn")
+        else:
+            for candidate_index, candidate in enumerate(candidates):
+                if not isinstance(candidate, dict):
+                    raise ValueError("Dữ liệu cube không hợp lệ")
+                try:
+                    cube_id, (x, y, z), joints = solve_cube_pick(
+                        candidate, arm, kin, data.get("pick_x_offset_mm", 0.0),
+                        data.get("pick_z_offset_mm", 0.0))
+                    break
+                except IKNoSolution as exc:
+                    skipped.append({"cube_id": candidate.get("cube_id"), "reply": str(exc)})
+            else:
+                raise IKNoSolution("Không cube nào trong lượt có pose gắp IK hợp lệ: " +
+                                   "; ".join(item["reply"] for item in skipped))
+        if command == "preflight_cube_pick":
+            return {"ok": True, "cube_id": cube_id, "target_xyz": [x, y, z],
+                    "joints": joints, "reply": f"IK hợp lệ cho cube ID {cube_id}; chưa di chuyển tay."}
+        save_state({"phase": "moving", "command": command, "cube_id": cube_id,
+                    "target_xy": [x, y], "updated": time.time()})
+        arm.Arm_Buzzer_On(1)
+        pick_actual = write_pose_and_wait(arm, joints, OPEN_ANGLE, 1200)
+        arm.Arm_serial_servo_write(6, CLOSE_ANGLE, 600)
+        time.sleep(0.8)
+        if read_joint(arm, 6) < 60:
+            raise RuntimeError("Không xác nhận được kẹp đã đóng")
+        arm.Arm_serial_servo_write(2, 120, 2000)
+        time.sleep(2.3)
+        if abs(read_joint(arm, 2) - 120) > 12:
+            raise RuntimeError("Không xác nhận được bước nâng tay")
+        approach = BIN_POSES[cube_id]
+        release = BIN_RELEASE_POSES[cube_id]
+        lift = BIN_LIFT_POSES[cube_id]
+        write_pose_and_wait(arm, approach, CLOSE_ANGLE, 1200)
+        write_pose_and_wait(arm, release, CLOSE_ANGLE, 900)
+        arm.Arm_serial_servo_write(6, OPEN_ANGLE, 600)
+        time.sleep(0.8)
+        if not gripper_is_open(arm):
+            raise RuntimeError("Không xác nhận được kẹp đã mở tại zone")
+        write_pose_and_wait(arm, lift, OPEN_ANGLE, 900)
+        go_ready(arm)
+        save_state({"phase": "empty", "ready": True, "updated": time.time()})
+        return {"ok": True, "holding": False, "cube_id": cube_id,
+                "target_xyz": [x, y, z],
+                "surface_id": data.get("surface_id") if command == "sort_cube_3d" else None,
+                "yaw_from_vision_deg": yaw_from_vision if command == "sort_cube_3d" else 0.0,
+                "pose_method": data.get("pose_method", "unknown") if command == "sort_cube_3d" else "2d",
+                "candidate_index": candidate_index, "skipped": skipped,
+                "reply": (f"Đã thả cube ID {cube_id} vào zone {cube_id} và về pose quan sát. "
+                          f"yaw={yaw_from_vision:.1f}°, "
+                          f"J1/J5={joints[0]:.0f}/{joints[4]:.0f}° "
+                          f"(readback {pick_actual[0]:.0f}/{pick_actual[4]:.0f}°).")}
     if command == "pick":
         if phase == "holding":
             raise RuntimeError("Tay đang giữ vật; hãy đặt hoặc thả trước")
@@ -344,7 +638,16 @@ def main():
     try:
         data = json.loads(sys.stdin.read())
         with LOCK_FILE.open("a+") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # Mirror joint (Terminal 1) giu lock trong luc doc serial.
+            # Cho toi 12s thay vi fail ngay voi [Errno 11].
+            for _ in range(60):
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    time.sleep(0.2)
+            else:
+                raise RuntimeError("Kenh dieu khien ban (qua 12s); kiem tra tien trinh giu /tmp/t8_motion.lock")
             if ACTIVE_TASK.exists():
                 raise RuntimeError("Bài toán robot khác đang chạy; dừng bài đó trước")
             if not Path(SERIAL).exists():
@@ -357,7 +660,7 @@ def main():
             arm = Arm_Device(SERIAL)
             kin = None
             try:
-                if data.get("command") in ("pick", "preflight_stack", "place_target") or (data.get("command") == "place" and
+                if data.get("command") in ("pick", "preflight_stack", "preflight_cube_pick", "place_target", "sort_cube_zone", "sort_cube_candidates", "sort_cube_3d") or (data.get("command") == "place" and
                     not isinstance(load_state().get("grasp_joints"), list)):
                     kin = Kinematics()
                 result = execute(data, arm, kin)
@@ -367,6 +670,8 @@ def main():
                 del arm
     except Exception as exc:
         result = {"ok": False, "reply": str(exc)}
+        if isinstance(exc, IKNoSolution):
+            result["code"] = "ik_no_solution"
     print("T8_RESULT:" + json.dumps(result, ensure_ascii=False), flush=True)
 
 

@@ -8,6 +8,7 @@
 #include <kdl/chainiksolverpos_lma.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl_parser/kdl_parser.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "dofbot_interface/srv/kinemarics.hpp"
 #include "dofbot_kinematics.h"
 
@@ -19,7 +20,8 @@ using namespace dofbot_kinematics;
 const float RA2DE = 180.0f / M_PI;
 // 角度转弧度
 const float DE2RA = M_PI / 180.0f;
-const char *urdf_file = "/home/jloy/Desktop/robot-arm/dofbot_ws/src/dofbot_urdf/urdf/dofbot.urdf";
+// Resolve the installed package instead of assuming a particular checkout path.
+static std::string urdf_file;
 
 // ROS 2 服务回调函数
 bool srvicecallback(
@@ -89,6 +91,20 @@ bool srvicecallback(
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
+    try {
+        urdf_file = ament_index_cpp::get_package_share_directory("dofbot_urdf") +
+                    "/urdf/dofbot.urdf";
+        KDL::Tree tree;
+        if (!kdl_parser::treeFromFile(urdf_file, tree)) {
+            RCLCPP_FATAL(rclcpp::get_logger("rclcpp"), "Cannot load URDF: %s", urdf_file.c_str());
+            rclcpp::shutdown();
+            return 1;
+        }
+    } catch (const std::exception &exc) {
+        RCLCPP_FATAL(rclcpp::get_logger("rclcpp"), "Cannot locate dofbot_urdf: %s", exc.what());
+        rclcpp::shutdown();
+        return 1;
+    }
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Dofbot is waiting to receive.....");
     
     auto server_node = rclcpp::Node::make_shared("kinemarics_dofbot");

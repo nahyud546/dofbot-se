@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 import tty
 
 import cv2
+import numpy as np
 
 from identify_cube import (CUBES, FRAME_SIZE, OneSecondAverager, TagDetector,
                            TrashDetector, detect_frame, draw_tracked_frame,
@@ -27,6 +28,10 @@ ROOT = repo_root()
 WORKER = ROOT / "projects/t8_pipeline/t8_motion_worker.py"
 ROS_SETUP = ROOT / "workspaces/dofbot_ws/install/setup.bash"
 AUTO_RETRY_SECONDS = 8.0
+# Tọa độ zone cũ được vẽ trên screenshot image.png 650x585 (kèm viền cửa sổ),
+# trong khi frame detector chạy 640x480. Tự scale khi phát hiện tọa độ legacy.
+VALIDATE_REF_SIZE = (650, 585)
+VALIDATE_FRAMES_DEFAULT = 3
 
 
 class TerminalKeys:
@@ -51,7 +56,8 @@ class TerminalKeys:
 
 
 def run_motion(command, **params):
-    script = f"source /opt/ros/humble/setup.bash && source {ROS_SETUP} && exec {ROOT}/.venv/bin/python {WORKER}"
+    # Worker can import rclpy (IK) -> system python (numpy 1.x); .venv numpy 2.x crash.
+    script = f"source /opt/ros/humble/setup.bash && source {ROS_SETUP} && exec /usr/bin/python3 {WORKER}"
     env = os.environ.copy()
     env.setdefault("ROS_LOG_DIR", "/tmp/cube_sort_ros_logs")
     try:
@@ -163,6 +169,151 @@ def same_target(left, right, max_drift_px=15):
     return (ax - bx) ** 2 + (ay - by) ** 2 <= max_drift_px ** 2
 
 
+def load_validate_zones(path):
+    """Load 4 zone quads; auto-scale tọa độ legacy (vẽ trên screenshot
+    650x585) về FRAME_SIZE 640x480. Trả {} khi file thiếu/sai để caller
+    bỏ qua validate thay vì crash."""
+    try:
+        raw = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return {}
+    zones = {}
+    for key in ("1", "2", "3", "4"):
+        pts = raw.get(key) if isinstance(raw, dict) else None
+        if not isinstance(pts, list) or len(pts) != 4:
+            continue
+        try:
+            quad = [[float(p[0]), float(p[1])] for p in pts]
+        except (TypeError, ValueError, IndexError):
+            continue
+        zones[key] = quad
+    if not zones:
+        return {}
+    ref_w, ref_h = VALIDATE_REF_SIZE
+    fw, fh = FRAME_SIZE
+    legacy = any(not (0 <= x < fw and 0 <= y < fh)
+                 for quad in zones.values() for x, y in quad)
+    if legacy:
+        sx, sy = fw / ref_w, fh / ref_h
+        zones = {k: [[x * sx, y * sy] for x, y in quad]
+                 for k, quad in zones.items()}
+    return zones
+
+
+def observation_point(obs):
+    """Điểm đại diện để gate zone: ưu tiên tâm mặt trên, fallback tâm box
+    (validate chấp nhận bất kỳ mặt nào cho ID nên không đòi geometry)."""
+    top = getattr(obs, "top_center_px", None)
+    if top is not None:
+        return (float(top[0]), float(top[1]))
+    try:
+        x, y, w, h = obs.group.box
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return (float(x + w / 2), float(y + h / 2))
+
+
+def validate_observations(observations, cube_id, zones):
+    """Any-face ID + zone gate (pure, unit-testable).
+
+    Pass khi có ≥1 observation có verdict.cube_id == cube_id và điểm đại
+    diện nằm trong polygon zone[cube_id]. Mọi detection ngoài zone hoặc
+    khác ID bị loại ngay — đó là lớp chống bắt nhầm sang vật khác.
+    """
+    key = str(cube_id)
+    poly = zones.get(key)
+    if poly is None or len(poly) != 4:
+        return False, f"thiếu zone ID {cube_id}"
+    contour = np.array(poly, dtype=np.float32)
+    seen_ids = set()
+    for obs in observations or []:
+        verdict = getattr(obs, "verdict", None)
+        vid = getattr(verdict, "cube_id", None)
+        if vid is None:
+            continue
+        seen_ids.add(vid)
+        if vid != cube_id:
+            continue
+        pt = observation_point(obs)
+        if pt is None:
+            continue
+        if cv2.pointPolygonTest(contour, pt, False) >= 0:
+            return True, f"ID {cube_id} trong zone {cube_id}"
+    if seen_ids:
+        return False, (f"ID {cube_id} không trong zone {cube_id}; "
+                       f"thấy ID {sorted(seen_ids)}")
+    return False, f"không thấy ID {cube_id} trên cam validate"
+
+
+def validate_cube_in_zone(cap, tag_detector, trash_detector, cube_id, zones,
+                          frames=VALIDATE_FRAMES_DEFAULT):
+    """Chụp ≤frames ảnh cam validate (đồng bộ, gọi khi tay đang rảnh sau
+    go_ready) và vote: pass khi đa số frame thấy ID trong zone.
+
+    Tái dùng tag/trash detector của luồng chính + fast_known=True để bỏ qua
+    DINO khi tag/màu đã cho ID — đó là điểm tối ưu để không x2 chi phí.
+    """
+    frames = max(1, int(frames))
+    try:
+        for _ in range(3):
+            cap.grab()
+    except Exception:
+        pass
+    hits, notes = 0, ""
+    used = 0
+    for _ in range(frames):
+        try:
+            ok, frame = cap.read()
+        except Exception as exc:
+            notes = f"không đọc được cam validate: {exc}"
+            break
+        if not ok or frame is None:
+            continue
+        if (frame.shape[1], frame.shape[0]) != FRAME_SIZE:
+            frame = cv2.resize(frame, FRAME_SIZE)
+        try:
+            observations = detect_frame(frame, tag_detector, trash_detector,
+                                        True)
+        except Exception as exc:
+            notes = f"detect lỗi: {exc}"
+            continue
+        used += 1
+        ok_one, notes = validate_observations(observations, cube_id, zones)
+        if ok_one:
+            hits += 1
+    if used == 0:
+        return False, notes or "không chụp được frame validate nào"
+    need = 2 if used >= 3 else 1
+    if hits >= need:
+        return True, f"validate {hits}/{used} frame: {notes}"
+    return False, f"validate {hits}/{used} frame: {notes}"
+
+
+def _show_validate_frame(cap, zones):
+    """Vẽ bbox 4 zone lên 1 frame validate live (chỉ khi --validate-show)."""
+    try:
+        ok, frame = cap.read()
+    except Exception:
+        return
+    if not ok or frame is None:
+        return
+    if (frame.shape[1], frame.shape[0]) != FRAME_SIZE:
+        frame = cv2.resize(frame, FRAME_SIZE)
+    colors = {"1": (255, 0, 0), "2": (0, 200, 0),
+              "3": (0, 0, 255), "4": (0, 255, 255)}
+    for zid, poly in zones.items():
+        if len(poly) != 4:
+            continue
+        pts = np.array(poly, dtype=np.int32)
+        cv2.polylines(frame, [pts], True, colors.get(zid, (0, 255, 0)), 2)
+        cx, cy = int(pts[:, 0].mean()), int(pts[:, 1].mean())
+        cv2.putText(frame, f"Zone ID{zid}", (cx - 40, cy),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                    colors.get(zid, (0, 255, 0)), 2)
+    cv2.imshow("validate zones (live)", frame)
+    cv2.waitKey(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--camera", default="/dev/video2")
@@ -178,6 +329,17 @@ def main():
                         help="bù X cho tâm gắp: dương kéo kẹp về phía chân robot (mặc định +15 mm, ±20 mm)")
     parser.add_argument("--pick-z-offset-mm", type=float, default=0.0,
                         help="bù độ cao tâm gắp: dương nâng kẹp lên (±8 mm)")
+    parser.add_argument("--validate-camera", default=None,
+                        help="cam ngoài toàn cảnh để kiểm tra đúng ID vào đúng zone "
+                             "(vd /dev/video0 hoặc http://192.168.1.30:4747/video); "
+                             "bỏ trống = tắt validate")
+    parser.add_argument("--validate-zones", default=str(
+        ROOT / "config/camera/validate_zones.json"),
+                        help="JSON 4 tứ giác zone theo ID 1-4")
+    parser.add_argument("--validate-frames", type=int, default=3,
+                        help="số frame validate mỗi lần sort (1-5)")
+    parser.add_argument("--validate-show", action="store_true",
+                        help="mở thêm cửa sổ cam validate để xem bbox zone live")
     args = parser.parse_args()
     if (not math.isfinite(args.pick_x_offset_mm) or abs(args.pick_x_offset_mm) > 20 or
             not math.isfinite(args.pick_z_offset_mm) or abs(args.pick_z_offset_mm) > 8):
@@ -200,6 +362,24 @@ def main():
     if cap is None:
         print(f"[FAIL] cannot open camera {args.camera}")
         return 1
+    # Cam validate: mở lười, lỗi thì cảnh báo và chạy tiếp như cũ (không chặn sort).
+    validate_cap = None
+    validate_zones = {}
+    validate_frames = max(1, min(5, args.validate_frames))
+    if args.validate_camera:
+        validate_zones = load_validate_zones(args.validate_zones)
+        if not validate_zones:
+            print(f"[VALIDATE WARN] không đọc được zone {args.validate_zones}; "
+                  "tắt validate cho lượt này")
+        else:
+            validate_cap = open_camera(args.validate_camera)
+            if validate_cap is None:
+                print(f"[VALIDATE WARN] cannot open camera {args.validate_camera}; "
+                      "tắt validate cho lượt này")
+                validate_zones = {}
+            else:
+                print(f"[VALIDATE OK] cam {args.validate_camera} + "
+                      f"{len(validate_zones)} zone, {validate_frames} frame/lần")
     averager = OneSecondAverager()
     last_result_at = 0.0
     last_unknown_log_at = 0.0
@@ -263,14 +443,52 @@ def main():
                               f"KDL xyz={result['target_xyz']}")
                     print("[SORT OK]" if result.get("ok") else "[SORT FAIL]", result.get("reply"))
                     if result.get("ok"):
-                        averager = OneSecondAverager()
-                        tracked = []
-                        votes = []
-                        last_result_at = 0.0
-                        last_unknown_notes = None
-                        auto_next_at = 0.0
-                        for _ in range(5):
-                            cap.grab()
+                        validated = True
+                        expected = result.get("cube_id")
+                        # Validate đồng bộ khi tay đã về pose chờ (rảnh): tốn
+                        # thêm ~1s/sort thay vì x2 luồng CV liên tục.
+                        if (validate_cap is not None and validate_zones
+                                and not args.dry_run and expected is not None):
+                            validated, note = validate_cube_in_zone(
+                                validate_cap, tag_detector, trash_detector,
+                                expected, validate_zones, validate_frames)
+                            print(f"[VALIDATE {'OK' if validated else 'FAIL'}] {note}")
+                            if args.validate_show:
+                                _show_validate_frame(validate_cap, validate_zones)
+                            if not validated:
+                                # Retry đúng 1 lần với cùng candidates rồi validate lại.
+                                print("[RETRY] sort lại 1 lần với cùng candidates...")
+                                retry = run_motion(
+                                    "sort_cube_candidates", candidates=sorting_candidates,
+                                    pick_x_offset_mm=args.pick_x_offset_mm,
+                                    pick_z_offset_mm=args.pick_z_offset_mm)
+                                print("[RETRY OK]" if retry.get("ok") else "[RETRY FAIL]",
+                                      retry.get("reply"))
+                                if retry.get("ok") and retry.get("cube_id") is not None:
+                                    expected = retry.get("cube_id")
+                                    validated, note = validate_cube_in_zone(
+                                        validate_cap, tag_detector, trash_detector,
+                                        expected, validate_zones, validate_frames)
+                                    print(f"[VALIDATE {'OK' if validated else 'FAIL'}] "
+                                          f"(retry) {note}")
+                                    if args.validate_show:
+                                        _show_validate_frame(validate_cap, validate_zones)
+                                    result = retry
+                                else:
+                                    result = retry
+                                    validated = False
+                        if validated:
+                            averager = OneSecondAverager()
+                            tracked = []
+                            votes = []
+                            last_result_at = 0.0
+                            last_unknown_notes = None
+                            auto_next_at = 0.0
+                            for _ in range(5):
+                                cap.grab()
+                        else:
+                            motion_error = result.get("reply") or "validate fail"
+                            print(f"[VALIDATE] giữ lỗi để kiểm tra tay: {motion_error}")
                     elif result.get("code") == "ik_no_solution":
                         auto_next_at = now + AUTO_RETRY_SECONDS
                     else:
@@ -349,6 +567,11 @@ def main():
         print("[OK] stopped")
     finally:
         cap.release()
+        try:
+            if validate_cap is not None:
+                validate_cap.release()
+        except Exception:
+            pass
         cv2.destroyAllWindows()
     return 0
 

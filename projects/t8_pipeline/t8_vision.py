@@ -3,7 +3,7 @@
 from pathlib import Path
 
 
-DEFAULT_MODEL = (Path(__file__).resolve().parents[1] / "dofbot_ws" / "src" /
+DEFAULT_MODEL = (Path(__file__).resolve().parents[2] / "workspaces" / "dofbot_ws" / "src" /
                  "dofbot_yolov11" / "dofbot_yolov11" / "best.onnx")
 LABEL_CLASSES = {"xuong_ca": {"fish_bone"},
                  "giay_ve_sinh": {"toilet_paper"},

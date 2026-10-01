@@ -10,13 +10,23 @@ from t8_pipeline import (Pipeline, validate_intent, try_local_rotate,
                           try_local_stack_sequence, assess_needs)
 from t8_assistant import (wants_camera, dispatch, is_pure_info, shorten_for_speech,
                           run_skill, run_motion_sequence, run_stack_sequence,
-                          exit_safely, SKILL_INTENTS)
+                          exit_safely, SKILL_INTENTS, remember_execution,
+                          report_motion_sequence, speak_via_edge)
 from t8_executor import Executor
 from t8_vision import VisionDetector
 import t8_motion_worker as motion_worker
 from rag.retriever import LocalRetriever
 from dofbot_voice.scripts import voice_task_manager as task_manager
 from dofbot_voice.scripts.stt_vi import VI_CMD, VI_TASK_CMD, match_command
+from dofbot_voice.scripts import speak_text as tts_script
+
+
+class LegacyPipeline(Pipeline):
+    """Keep historical parser/cache regression cases separate from live routing."""
+    run = Pipeline._run_legacy
+
+
+Pipeline = LegacyPipeline
 
 
 class FakeModels:
@@ -53,6 +63,50 @@ class FakeTavily:
 
 
 class TestPipeline(unittest.TestCase):
+    def test_four_step_sequence_keeps_final_start_pose(self):
+        class Motion:
+            def __init__(self):
+                self.calls = []
+
+            def execute(self, command, **params):
+                self.calls.append((command, params))
+                return {"ok": True, "reply": command}
+
+        query = ("xoay sang phải 45 độ, rồi quay sang trái 90 độ "
+                 "sau đó đứng dậy cuối cùng thì về trạng thái start")
+        steps = try_local_motion_sequence(query)
+        self.assertEqual([step[0] for step in steps],
+                         ["rotate_relative", "rotate_relative", "arm_pose", "pose_start"])
+        motion = Motion()
+        results = run_motion_sequence(steps, Executor(motion=motion), lambda: None)
+        self.assertTrue(all(result["ok"] for result in results))
+        self.assertEqual([command for command, _ in motion.calls],
+                         ["rotate", "rotate", "arm_pose", "prepare"])
+        self.assertEqual(motion.calls[0][1]["delta_deg"], 45)
+        self.assertEqual(motion.calls[1][1]["delta_deg"], -90)
+        with patch("builtins.print") as printed:
+            report_motion_sequence(results, steps)
+        self.assertNotIn("[pose] ", str(printed.call_args_list[0]))
+
+    def test_local_execution_enters_followup_context(self):
+        pipe = SimpleNamespace(history=[], _last_reply="")
+        pipe._push_history = lambda query, reply: pipe.history.append((query, reply))
+        remember_execution(pipe, "xoay phải rồi về start", [
+            {"ok": True, "reply": "Đã xoay phải"},
+            {"ok": True, "reply": "Đã về start"}])
+        self.assertIn("Đã về start", pipe.history[-1][1])
+        self.assertEqual(pipe._last_reply, pipe.history[-1][1])
+
+    def test_tts_failure_is_nonfatal_and_has_no_traceback(self):
+        async def no_audio(*_args):
+            raise RuntimeError("No audio was received")
+
+        with patch.object(tts_script, "_save", no_audio), \
+                patch("sys.argv", ["speak_text.py", "xin chào"]):
+            self.assertEqual(tts_script.main(), 1)
+        with patch("t8_assistant.subprocess.run", side_effect=TimeoutError("offline")):
+            self.assertFalse(speak_via_edge("xin chào"))
+
     def test_stack_parser_and_sequence_preflight_before_pick(self):
         from PIL import Image
         labels = try_local_stack_sequence("gắp khối đỏ lên rồi đặt lên khối xanh")
@@ -701,17 +755,17 @@ class TestPipeline(unittest.TestCase):
     # ---- intent v2 / single tasks / RAG / executor / cheatsheet ----
     def test_validate_intent_constrained(self):
         i, e, a = validate_intent({"intent": "rotate_relative",
-                                   "entities": {"joint": 1, "delta_deg": 30}})
+                                   "entities": {"joint": 1, "delta_deg": 30}})[0]
         self.assertEqual((i, a), ("rotate_relative", "none"))
         # intent lạ => ask_info
-        i, e, a = validate_intent({"intent": "servo_hack", "entities": {}})
+        i, e, a = validate_intent({"intent": "servo_hack", "entities": {}})[0]
         self.assertEqual((i, a), ("ask_info", "none"))
         # delta quá lớn => clamp
         i, e, a = validate_intent({"intent": "rotate_relative",
-                                   "entities": {"joint": 1, "delta_deg": 500}})
+                                   "entities": {"joint": 1, "delta_deg": 500}})[0]
         self.assertEqual(e["delta_deg"], 90.0)
         # compat model cũ chỉ có action
-        i, e, a = validate_intent({"reply": "x", "action": "color", "search_query": ""})
+        i, e, a = validate_intent({"reply": "x", "action": "color", "search_query": ""})[0]
         self.assertEqual((i, e, a), ("open_task", {"task": "color"}, "color"))
 
     def test_local_rotate_hold_parsers(self):
