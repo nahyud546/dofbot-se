@@ -4,6 +4,100 @@ Script vision độc lập (không phải ROS package):
 - Model: `ai/models/detection/yolov8n-face.pt` — code resolve qua `ROBOT_ARM_ROOT` + fallback path cũ.
 - Chạy: `source scripts/setup/setup_env.sh && .venv/bin/python projects/vision_experiments/face_follow_gpu.py`
 
+## cube_sort_3d.py — mapping gắp tại READY_POSE (bản commit a7be00e)
+
+Bridge đã quay lại mapping pixel → TCP được tune tại `READY_POSE =
+[90, 125, 0, 0, 90, OPEN_ANGLE]`. Mặc định khi chạy bridge, lệnh `prepare`
+đưa tay về pose này; `--skip-prepare` chỉ dùng khi tay đã ở đúng pose. Sau khi
+thả cube, worker trở lại pose quan sát. Mapping này dùng ảnh 640×480, XY từ
+pixel mặt nhìn thấy, Z gắp cố định 47 mm và `--pick-x-offset-mm 15`.
+Không dùng mapping đó khi camera/tay hoặc vị trí bàn đã thay đổi. Worker
+kiểm tra readback ở `READY_POSE` trước khi gắp.
+
+Terminal 1:
+
+```bash
+cd ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch cap_vision cube_6d_camera.launch.py device_index:=2 dino_enabled:=true viewer:=false
+```
+
+Terminal 2:
+
+```bash
+cd ~/Desktop/robot-arm
+source /opt/ros/humble/setup.bash
+source ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof/install/setup.bash
+/usr/bin/python3 projects/vision_experiments/cube_sort_3d.py --pick-x-offset-mm 15
+```
+
+Phần dưới ghi lại chẩn đoán và quy trình hiệu chuẩn cho nhánh gắp bằng pose
+base động. Bridge hiện tại không sử dụng quy trình đó; muốn gắp khi tay ở tư
+thế khác thì cần hiệu chuẩn camera và camera–tay trước.
+
+### Ghi chú chẩn đoán pose động
+
+Chẩn đoán `Ready 0` (2026-10-05): `Arm_Lib.Arm_serial_servo_read()` đã đổi
+góc wire của servo 2–4 sang góc logical. Mirror đọc thật dùng
+`radians(readback - 90)` cho cả 5 joint tay, giống T8 IK/FK; không áp dụng
+lại phép đảo góc của write mapping trong `hardware/safety_gate.py`.
+Preset joints `relaxed` giữ lịch sử 4 giây để chứa hai mẫu cách nhau khoảng
+1,5 giây, vẫn kiểm tra tuổi mẫu cuối ≤ 1,6 giây và độ dịch chuyển.
+Bridge in `[READY]` kèm lý do loại cube ra terminal. Xác nhận hai pose ổn định
+độc lập với tạo TCP, nên lỗi vùng gắp không bị che bởi thông báo chờ frame thứ hai.
+
+Trong lần kiểm tra chỉ đọc bằng camera `/dev/video2`, cube tag ID 3 có
+`apriltag_ippe` và `top_grasp_ready=true`. Mirror cũ cho X khoảng +250 mm.
+Sau sửa readback, cấu hình camera giả định cho XYZ khoảng
+(-157, +39, -31) mm và không có mặt trên vừa ngang trong base vừa hướng về
+camera. Joints đã ổn định nhưng TCP vẫn bị loại. Cần đo intrinsics/hand-eye;
+không đổi dấu XYZ, nâng Z hoặc mở rộng vùng gắp để ép kết quả thành Ready.
+Khởi động lại launch và bridge để nhận sửa đổi. Nếu đã thu bộ dữ liệu hiệu
+chuẩn với mirror cũ, thu lại TF/joints với phép đổi readback đúng.
+
+`cube_6d_urdf.yaml` là cấu hình hình học giả định, không được dùng để xác nhận
+tọa độ gắp. K và độ méo ảnh cần đo ở đúng chế độ 640×480; `Camera_Link` tới
+camera optical cần đo hand-eye. Khi thay pose quan sát, hệ thống dùng joint thực
+và TF tại thời điểm ảnh để tính `T_base_cube`; không cộng chênh lệch góc joint
+vào XYZ của pose cũ. Tay phải đứng yên khi chụp ảnh hiệu chuẩn hoặc preflight.
+
+Quy trình hiệu chuẩn, không có lệnh tự di chuyển robot:
+
+1. Giữ bảng checkerboard cố định trên bàn. Chụp bộ ảnh intrinsic đa dạng góc
+   nhìn bằng `ros2 run cap_vision calibrate_intrinsic -- --images '/path/intrinsic/*.png' --pattern 9x6 --square 0.015 --output /path/intrinsic.yaml`.
+   Thay `--square` bằng kích thước ô đo thực tế (m). Giữ cùng độ phân giải và
+   tiêu cự/cài đặt camera khi chạy nhận diện.
+2. Đưa tay bằng điều khiển riêng tới ít nhất 11 pose quan sát an toàn, gồm
+   pose cũ và pose mới; có quay quanh ít nhất hai trục. Ở mỗi pose, đợi tay
+   dừng và chạy `ros2 run cap_vision capture_calibration -- --output /path/dataset/pose01`.
+   Lệnh này chỉ lưu `image.png` và TF/joint đo được; không mở cổng serial.
+   Đánh dấu ít nhất 3 pose cuối bằng `--validation` để giữ riêng cho kiểm chứng.
+3. Tạo `/path/dataset/dataset.yaml` với ví dụ sau; chép chính xác
+   `base_T_mount` 16 số từ từng `poseNN/sample.yaml`:
+
+   ```yaml
+   pattern: [9, 6]
+   square_m: 0.015
+   samples:
+     - image: pose01/image.png
+       base_T_mount: [16 numbers from pose01/sample.yaml]
+       validation: false
+     # ... at least 7 more fit samples and 3 validation samples
+   ```
+
+4. Chạy `ros2 run cap_vision calibrate_eye_in_hand -- --dataset /path/dataset/dataset.yaml --config /home/jloy/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof/src/cap_vision/config/cube_6d_urdf.yaml --intrinsic /path/intrinsic.yaml --output /path/cube_6d_measured.yaml`.
+   Sau đó chạy `python3 workspaces/dofbot_robot_arm_6dof/src/cap_vision/cap_vision/validate_calibration.py --dataset /path/dataset/dataset.yaml --calibration /path/cube_6d_measured.yaml --intrinsic /path/intrinsic.yaml`.
+   Chỉ dùng file mới khi phép kiểm chứng độc lập đạt tối đa 5 mm.
+5. Khi phát triển lại chế độ gắp pose động, chạy perception với
+   `config:=/path/cube_6d_measured.yaml` và kiểm tra nhiều pose bằng công cụ
+   preflight riêng trước khi cho phép chuyển động. Bridge mapping cố định hiện
+   tại không đọc `T_base_cube` để tạo TCP.
+
+Độ lệch ≤ 5 mm ở đây là độ lặp lại của tọa độ camera trong `base_link` và
+IK/FK, chưa chứng minh sai số TCP khi robot gắp thật. Giữ `--dry-run` cho tới
+khi đã đo TCP và có phiên thử gắp có giám sát riêng.
+
 ## identify_cube.py — nhận diện cube và tìm tâm mặt trên
 Script này chỉ kiểm tra nhận diện; nhấn `Space` không điều khiển tay. Để gắp và
 phân loại, chạy `cube_sort_stage1.py` theo lệnh ở phần dưới.

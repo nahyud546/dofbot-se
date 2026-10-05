@@ -71,6 +71,10 @@ CONFIRM_MAX_POSITION_M = 0.005
 CONFIRM_MAX_ROTATION_DEG = 10.0
 CONFIRM_MAX_TCP_PX = 3.0
 MAX_LIVE_AGE_S = 0.75
+# Current CPU perception can finish more than 0.75 s after image capture.
+# Keep receipt freshness strict, but allow the completed image observation.
+MAX_OBSERVATION_AGE_S = 2.0
+MAX_ANNOTATED_DISPLAY_AGE_S = 2.0
 # Same mapping used by t8_motion_worker.cube_pick_target at the fixed READY_POSE.
 PICK_K = np.array([[902.0, 0.0, 320.0],
                    [0.0, 875.4, 240.0],
@@ -295,7 +299,7 @@ def run_motion(command, **params):
 
 def visible_camera_frame(node, now_s):
     """Prefer live annotated video, then live raw video, then a wait screen."""
-    if node.latest_image is not None and now_s - node.latest_image_at <= MAX_LIVE_AGE_S:
+    if node.latest_image is not None and now_s - node.latest_image_at <= MAX_ANNOTATED_DISPLAY_AGE_S:
         return node.latest_image, "annotated"
     if node.latest_raw_image is not None and now_s - node.latest_raw_at <= MAX_LIVE_AGE_S:
         return node.latest_raw_image, "raw"
@@ -328,7 +332,7 @@ class CubeSort3D(Node):
         now_s = time.monotonic()
         stamp_s = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         ros_now_s = self.get_clock().now().nanoseconds * 1e-9
-        if not 0 <= ros_now_s - stamp_s <= MAX_LIVE_AGE_S:
+        if not 0 <= ros_now_s - stamp_s <= MAX_OBSERVATION_AGE_S:
             self.latest_states = None
             self.confirmations.clear()
             return

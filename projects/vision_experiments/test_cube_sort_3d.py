@@ -1,12 +1,20 @@
 import math
+import sys
 import time
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 
-from cap_scene_interfaces.msg import ObjectState
+from cap_scene_interfaces.msg import ObjectState, ObjectStates
 
-from cube_sort_3d import is_graspable, update_confirmation, visible_camera_frame
+from cube_sort_3d import (CubeSort3D, grasp_candidates_for_obj, is_graspable,
+                          update_confirmation, visible_camera_frame)
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "t8_pipeline"))
+import t8_motion_worker as worker
 
 
 def observed_cube(ready=True, yaw_deg=0.0, x=0.0):
@@ -46,12 +54,54 @@ def test_confirmation_uses_tcp_and_square_yaw_symmetry():
 def test_camera_display_falls_back_to_raw_then_wait_screen():
     annotated = np.full((480, 640, 3), 200, np.uint8)
     raw = np.full((480, 640, 3), 100, np.uint8)
-    node = SimpleNamespace(latest_image=annotated, latest_image_at=1.0,
+    node = SimpleNamespace(latest_image=annotated, latest_image_at=0.0,
                            latest_raw_image=raw, latest_raw_at=2.0)
     frame, kind = visible_camera_frame(node, 2.1)
     assert kind == "raw" and frame is raw
     node.latest_image_at = 2.0
     frame, kind = visible_camera_frame(node, 2.1)
     assert kind == "annotated" and frame is annotated
-    frame, kind = visible_camera_frame(node, 3.0)
+    frame, kind = visible_camera_frame(node, 4.1)
     assert kind == "waiting" and not np.any(frame)
+
+
+def test_ready_pose_pixel_map_does_not_need_base_pose():
+    obj = observed_cube()
+    obj.base_pose_valid = False
+    target = grasp_candidates_for_obj(obj, pick_x_offset_mm=15)[0]
+    assert target["tcp_position_base"] == [-0.199, 0.0, 0.047]
+    obj.base_pose.pose.position.x = 0.25
+    assert grasp_candidates_for_obj(obj, pick_x_offset_mm=15)[0] == target
+
+
+def test_fixed_pose_bridge_accepts_completed_one_second_old_observation():
+    node = SimpleNamespace(
+        confirmations={}, latest_states=None,
+        get_clock=lambda: SimpleNamespace(
+            now=lambda: SimpleNamespace(nanoseconds=10_000_000_000)))
+    msg = ObjectStates()
+    msg.header.stamp.sec = 9
+    obj = observed_cube()
+    obj.track_id = "cube_1"
+    msg.objects.append(obj)
+    CubeSort3D.on_states(node, msg)
+    assert node.latest_states is msg
+
+
+def test_worker_rejects_sort_when_arm_is_not_at_ready_pose():
+    class Arm:
+        def Arm_serial_servo_read(self, joint):
+            return [110, 90, 70, 80, 120, 25][joint - 1]
+
+    payload = {"command": "sort_cube_3d", "cube_id": 1,
+               "tcp_position_base": [-0.2, 0.0, 0.047],
+               "surface_id": "-Z", "pose_method": "apriltag_ippe"}
+    with TemporaryDirectory() as directory, \
+            patch.object(worker, "STATE_FILE", Path(directory) / "state.json"):
+        try:
+            worker.execute(payload, Arm(), kin=None)
+        except RuntimeError as exc:
+            assert "pose" in str(exc).lower() or "khớp" in str(exc).lower()
+        else:
+            raise AssertionError("fixed-pose map requires READY_POSE")
+        assert worker.load_state()["phase"] == "empty"
