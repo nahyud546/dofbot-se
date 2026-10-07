@@ -33,8 +33,13 @@ TAG_SIZE_M = 0.020
 CUBE_EDGE_M = 0.030
 MAX_LAYER = 3
 # Tiêu chí chấp nhận một lần hiệu chuẩn.
-MAX_FIT_RMS_PX = 3.0
+# Thước đo chính là mm trên mặt phẳng ở vị trí CHƯA dùng để fit (kiểm chéo bỏ-một-vị-trí): đó là cách
+# runtime dùng. RMS pixel chỉ là chốt chặn thô: ở 1280x720, 3 px ~ 2 mm, chặt hơn cả sai số camera tay.
+MAX_FIT_RMS_PX = 6.0
 MAX_HOLDOUT_MEDIAN_M = 0.006
+MAX_CV_MEDIAN_M = 0.003
+MAX_CV_WORST_M = 0.008
+CV_CELL_M = 0.015              # hai mẫu cùng ô này và cùng độ cao coi là một vị trí
 MIN_Z_LEVELS = 3
 MIN_POINTS = 24
 MAX_DRIFT_PX = 12.0            # tâm các ô màu lệch quá mức này => camera đã bị dời
@@ -165,6 +170,30 @@ def z_levels(points, step=0.01):
     return sorted({round(float(z) / step) for z in np.asarray(points, float)[:, 2]})
 
 
+def cross_validate(points, pixels, size, groups):
+    """Bỏ lần lượt từng VỊ TRÍ (mọi mẫu của nó), fit phần còn lại, đo sai số tâm nhóm trên mặt phẳng (m).
+
+    Trả list sai số, mỗi nhóm bị bỏ một số; rỗng khi chỉ có một vị trí hoặc phần còn lại quá ít điểm.
+    """
+    groups = np.asarray([str(g) for g in groups])
+    place = {}
+    for g in dict.fromkeys(groups.tolist()):
+        c = points[groups == g].mean(axis=0)
+        place[g] = (round(c[0] / CV_CELL_M), round(c[1] / CV_CELL_M), round(c[2] / 0.01))
+    errors = []
+    for cell in dict.fromkeys(place.values()):
+        members = [g for g, key in place.items() if key == cell]
+        held = np.isin(groups, members)
+        if (~held).sum() < 6 or len(set(place.values())) < 2:
+            return []
+        K, k1, T, _ = _fit(points[~held], pixels[~held], size)
+        for g in members:
+            centre, (u, v) = points[groups == g].mean(axis=0), pixels[groups == g].mean(axis=0)
+            hit = pixel_to_plane(u, v, centre[2], K, k1, T)
+            errors.append(math.inf if hit is None else float(np.hypot(hit[0] - centre[0], hit[1] - centre[1])))
+    return errors
+
+
 def solve(points, pixels, image_size, groups=None, holdout_every=5):
     """Hiệu chuẩn từ điểm base ↔ pixel.
 
@@ -190,6 +219,7 @@ def solve(points, pixels, image_size, groups=None, holdout_every=5):
         holdout_m = plane_errors_m(points[val], pixels[val], K, k1, T).tolist()
     K, k1, T, rms = _fit(points, pixels, size)
     levels = z_levels(points)
+    cv_m = cross_validate(points, pixels, size, groups) if len(order) >= holdout_every else []
     reasons = []
     if len(points) < MIN_POINTS:
         reasons.append(f"chỉ có {len(points)} điểm (cần ≥ {MIN_POINTS})")
@@ -202,12 +232,19 @@ def solve(points, pixels, image_size, groups=None, holdout_every=5):
     elif float(np.median(holdout_m)) > MAX_HOLDOUT_MEDIAN_M:
         reasons.append(f"sai số kiểm định trung vị {np.median(holdout_m) * 1000:.1f} mm "
                        f"(cần ≤ {MAX_HOLDOUT_MEDIAN_M * 1000:g})")
+    if cv_m and float(np.median(cv_m)) > MAX_CV_MEDIAN_M:
+        reasons.append(f"kiểm chéo: tâm cube ở vị trí mới lệch trung vị {np.median(cv_m) * 1000:.1f} mm "
+                       f"(cần ≤ {MAX_CV_MEDIAN_M * 1000:g})")
+    if cv_m and max(cv_m) > MAX_CV_WORST_M:
+        reasons.append(f"kiểm chéo: vị trí tệ nhất lệch {max(cv_m) * 1000:.1f} mm (cần ≤ {MAX_CV_WORST_M * 1000:g})")
     w, h = size
     if not (0.4 * w < K[0] < 3.0 * w) or abs(k1) > 1.0 or T[2, 3] < 0.05:
         reasons.append("nghiệm phi vật lý (tiêu cự/méo/độ cao camera)")
     return {"K": [float(v) for v in K], "k1": float(k1), "base_T_ext": T.tolist(), "image_size": list(size),
             "fit_rms_px": rms, "n_points": int(len(points)), "n_groups": len(order),
             "holdout_px": [float(v) for v in holdout_px], "holdout_m": [float(v) for v in holdout_m],
+            "cv_m": [float(v) for v in cv_m],
+            "cv_m": [float(v) for v in cv_m],
             "z_levels_m": [round(l * 0.01, 3) for l in levels],
             "accepted": not reasons, "reasons": reasons}
 
@@ -327,13 +364,19 @@ class ExternalCalibration:
         return out
 
     def drift_px(self, frame):
-        """Độ lệch trung vị (px) của tâm các ô màu so với lúc hiệu chuẩn; None nếu không so được."""
+        """Độ lệch (px) của tâm các ô màu so với lúc hiệu chuẩn; None nếu không so được.
+
+        Camera bị dời thì MỌI ô cùng lệch; cube nằm trên ô chỉ làm lệch tâm của riêng ô đó. Vì vậy lấy độ lệch
+        nhỏ thứ hai (hai ô đứng yên là đủ kết luận camera đứng yên), không lấy trung vị.
+        """
         if not self.landmarks or not self.matches(frame):
             return None
         now = pad_landmarks(frame)
         shifts = [math.hypot(now[z][0] - uv[0], now[z][1] - uv[1])
                   for z, uv in self.landmarks.items() if z in now]
-        return float(np.median(shifts)) if len(shifts) >= 2 else None
+        if len(shifts) < 2:
+            return None
+        return float(sorted(shifts)[1 if len(shifts) >= 3 else 0])
 
     def moved(self, frame) -> bool:
         drift = self.drift_px(frame)

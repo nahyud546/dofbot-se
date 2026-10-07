@@ -284,6 +284,10 @@ def report(result) -> str:
              f"Ống kính: f={result['K'][0]:.0f} px, tâm=({result['K'][1]:.0f}, {result['K'][2]:.0f}), k1={result['k1']:+.3f}",
              f"Camera trong base: x={T[0, 3]:+.3f} y={T[1, 3]:+.3f} z={T[2, 3]:+.3f} m",
              f"RMS chiếu lại: {result['fit_rms_px']:.2f} px"]
+    if result.get("cv_m"):
+        mm = np.array(result["cv_m"]) * 1000
+        lines.append(f"Kiểm chéo (bỏ từng vị trí rồi đoán lại tâm cube, {len(mm)} mẫu): trung vị {np.median(mm):.1f} mm, "
+                     f"lớn nhất {mm.max():.1f} mm")
     if result["holdout_m"]:
         mm = np.array(result["holdout_m"]) * 1000
         lines.append(f"Kiểm định ({len(mm)} điểm không tham gia fit): trung vị {np.median(mm):.1f} mm, "

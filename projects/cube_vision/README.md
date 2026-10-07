@@ -88,5 +88,5 @@ Mô hình pinhole + k1 và pose `base_T_ext` của camera ngoài (1280×720), b�
 tay định vị ở nhiều độ cao), `project` / `pixel_to_base(u, v, z)` / `locate_tags(frame)` / `drift_px(frame)` (so tâm ô màu
 với lúc hiệu chuẩn) / `relocalize` (camera bị dời: giữ ống kính, giải lại pose). Thu mẫu thật và các lệnh:
 `projects/vision_experiments/calibrate_external.py` (`--collect` nhiều bộ, `--solve`, `--validate`, `--status`, `--relocalize`).
-Chỉ dùng khi `accepted` (RMS ≤ 3 px, kiểm định ≤ 6 mm, ≥ 3 độ cao). T8 chỉ lấy thêm số đo "cube cách tâm ô N mm";
+Chỉ dùng khi `accepted` (kiểm chéo bỏ-một-vị-trí: trung vị ≤ 3 mm, tệ nhất ≤ 8 mm; RMS ≤ 6 px; ≥ 3 độ cao). T8 chỉ lấy thêm số đo "cube cách tâm ô N mm";
 kết luận đúng/sai ô vẫn theo so màu trong `placement_check`.

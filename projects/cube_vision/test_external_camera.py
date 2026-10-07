@@ -70,12 +70,33 @@ class Model(unittest.TestCase):
 
 
 class Solver(unittest.TestCase):
+    def test_measurements_that_disagree_by_position_fail_cross_validation(self):
+        # Mỗi vị trí bị đo lệch một kiểu (như camera tay sai ở rìa): fit vẫn khớp tạm, đoán vị trí mới thì không.
+        points, pixels, groups = dataset()
+        rng = np.random.default_rng(3)
+        shifted = pixels.copy()
+        for g in dict.fromkeys(groups):
+            shifted[np.array([x == g for x in groups])] += rng.normal(0, 14.0, 2)
+        result = X.solve(points, shifted, SIZE, groups)
+        self.assertFalse(result["accepted"])
+        self.assertTrue(any("kiểm chéo" in r or "RMS" in r for r in result["reasons"]), result["reasons"])
+
+    def test_repeated_samples_of_one_position_are_held_out_together(self):
+        points, pixels, groups = dataset()
+        doubled = list(groups) + [f"again-{g}" for g in groups]
+        errors = X.cross_validate(np.vstack([points, points]), np.vstack([pixels, pixels]), SIZE, doubled)
+        single = X.cross_validate(points, pixels, SIZE, groups)
+        self.assertEqual(len(errors), 2 * len(single))
+        np.testing.assert_allclose(sorted(errors)[::2], sorted(single), atol=5e-4)
+
     def test_recovers_a_known_camera_from_noisy_multi_height_tags(self):
         points, pixels, groups = dataset()
         result = X.solve(points, pixels, SIZE, groups)
         self.assertTrue(result["accepted"], result["reasons"])
         self.assertLess(result["fit_rms_px"], 1.5)
         self.assertLess(np.median(result["holdout_m"]), 0.003)
+        self.assertTrue(result["cv_m"])
+        self.assertLess(max(result["cv_m"]), X.MAX_CV_WORST_M)
         self.assertAlmostEqual(result["K"][0], TRUE_K[0], delta=0.06 * TRUE_K[0])
         T = np.array(result["base_T_ext"])
         self.assertLess(np.linalg.norm(T[:3, 3] - TRUE_T[:3, 3]), 0.03)
@@ -171,6 +192,10 @@ class Runtime(unittest.TestCase):
             self.assertFalse(cal.moved(frame))
             X.pad_landmarks = lambda f: {1: [240.0, 330.0], 2: [1040.0, 340.0], 3: [190.0, 450.0]}
             self.assertTrue(cal.moved(frame))
+            # Cube nằm trên một ô chỉ làm lệch tâm ô đó: không phải camera bị dời.
+            X.pad_landmarks = lambda f: {1: [200.0, 300.0], 2: [1030.0, 300.0], 3: [150.0, 420.0]}
+            self.assertLess(cal.drift_px(frame), 1.0)
+            self.assertFalse(cal.moved(frame))
             X.pad_landmarks = lambda f: {1: [240.0, 330.0]}
             self.assertIsNone(cal.drift_px(frame))                  # chỉ một ô: không đủ để kết luận
         finally:

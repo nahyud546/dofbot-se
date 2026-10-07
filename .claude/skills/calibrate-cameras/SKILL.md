@@ -35,7 +35,7 @@ python $P --validate    # bày vị trí MỚI rồi so camera ngoài với came
 Yêu cầu: tag ngửa và nằm phẳng; cube trong tầm camera tay (giữa bàn) **và** camera ngoài; cần ≥ 3 độ cao khác nhau,
 ≥ 24 điểm (6 tag-mẫu), ≥ 5 tag-mẫu. Mỗi `--collect` in tag nào được nhận, tag nào bị bỏ và vì sao.
 
-Tiêu chí đạt (`accepted=true`): RMS chiếu lại ≤ 3 px, sai số kiểm định trung vị ≤ 6 mm. Chưa đạt thì file vẫn được
+Tiêu chí đạt (`accepted=true`): kiểm chéo bỏ-một-vị-trí (đoán tâm cube ở chỗ chưa fit) trung vị ≤ 3 mm và tệ nhất ≤ 8 mm, RMS chiếu lại ≤ 6 px. Mẫu phải rải rộng cả hai bên bàn, không dồn một cụm. Chưa đạt thì file vẫn được
 ghi với `accepted=false` và **không** được dùng; đọc phần "CHƯA ĐẠT" để biết thiếu gì. Đừng nới ngưỡng cho qua:
 thu thêm bộ mẫu trải rộng hơn.
 
