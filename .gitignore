@@ -9,6 +9,7 @@ venv/
 
 # Repo/framework ngoai + bien the khong dung (giu code chinh)
 ai/lerobot/
+# Kho git rieng long ben trong (chess/teleop/sim). Perception dang dung da nam o ros/src.
 workspaces/dofbot_robot_arm_6dof/
 
 # CAD / font nang (khong phai code)
@@ -114,3 +115,15 @@ colcon_ws/src/dofbot_gesture/gesture_stack_notebook.py
 .DS_Store
 Thumbs.db
 mobileclip_blt.ts
+
+# Workspace ROS cua repo (ros/src duoc theo doi, artefact thi khong)
+ros/build/
+ros/install/
+ros/log/
+
+# Anh chup/tam, scratch ca nhan (co the chua khoa API), cau hinh Claude theo may
+temp_imgs/
+.local/
+.claude/settings.local.json
+.pytest_cache/
+*.egg-info/

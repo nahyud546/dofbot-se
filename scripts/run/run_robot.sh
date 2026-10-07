@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_robot.sh — bring-up tay máy chính (dofbot_robot_arm_6dof).
+# run_robot.sh — bring-up tay máy chính (workspace ros/).
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export ROBOT_ARM_ROOT="$ROOT"

@@ -1,0 +1,16 @@
+# HSV for the fixed 640x480 eye-in-hand camera at cube_sort_stage1 READY_POSE.
+# They retain the centres tuned in dofbot_color_sorting, with wider S/V bounds
+# for a tilted face, shadows and auto-exposure.  This is the one runtime source.
+colors:
+  blue:
+    id: 1
+    ranges: [[[90, 55, 25], [135, 255, 255]]]
+  green:
+    id: 2
+    ranges: [[[35, 35, 20], [95, 255, 255]]]
+  red:
+    id: 3
+    ranges: [[[0, 60, 25], [20, 255, 255]], [[165, 60, 25], [179, 255, 255]]]
+  yellow:
+    id: 4
+    ranges: [[[15, 45, 35], [45, 255, 255]]]

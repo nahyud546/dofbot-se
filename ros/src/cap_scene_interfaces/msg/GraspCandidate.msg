@@ -1,0 +1,13 @@
+std_msgs/Header header
+string track_id
+int32 object_id
+string surface_id
+geometry_msgs/Point position_base
+geometry_msgs/Vector3 surface_normal_base
+geometry_msgs/Vector3 approach_vector_base
+float32 preferred_yaw_rad
+float32 gripper_width_m
+float32 quality_score
+float32 collision_score
+bool ik_feasible
+string reason

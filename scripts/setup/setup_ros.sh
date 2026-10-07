@@ -5,7 +5,7 @@ set -u
 _WS_ORDER=(
   "$ROBOT_ARM_ROOT/workspaces/dofbot_ws"
   "$ROBOT_ARM_ROOT/workspaces/LargeModel_ws"
-  "$ROBOT_ARM_ROOT/workspaces/dofbot_robot_arm_6dof"
+  "${ROBOT_ARM_ROS_WS:-$ROBOT_ARM_ROOT/ros}"
 )
 if [ -f /opt/ros/humble/setup.bash ]; then
   # ROS setup scripts reference unbound vars -> relax set -u temporarily.

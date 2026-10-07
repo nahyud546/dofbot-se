@@ -7,4 +7,4 @@ export ROBOT_ARM_ROOT="$ROOT"
 source "$ROOT/scripts/setup/setup_env.sh"
 # shellcheck disable=SC1091
 source "$ROOT/scripts/setup/setup_ros.sh"
-ros2 launch cap_vision vision.launch.py
+ros2 launch cap_vision cube_6d_camera.launch.py viewer:=true "$@"

@@ -1,0 +1,14 @@
+# Bootstrap intrinsic 640x480 tu FOV do that (chua phai checkerboard).
+# REV2 2026: FOV 110x85mm @ Z155mm (thay 90x77 @ Z120).
+# fx = (W/2)/((Fw/2)/Z) = 320/(0.055/0.155) = 902.0
+# fy = (H/2)/((Fh/2)/Z) = 240/(0.0425/0.155) = 875.4
+# Cap moi (902/876, lech 3%) hop ly hon cap cu (853/748) -> tin cap moi.
+image_width: 640
+image_height: 480
+camera_matrix: [902.0, 0.0, 320.0, 0.0, 875.4, 240.0, 0.0, 0.0, 1.0]
+distortion_coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+distortion_model: plumb_bob
+calibrated: false
+method: FOV-bootstrap-Z155-FW110-FH85
+reprojection_error_px: -1.0
+notes: "Tam thoi de chay B3/B4. Checkerboard de thay so that. Gate: fx 880-930, fy 850-900, reproj <0.5px."

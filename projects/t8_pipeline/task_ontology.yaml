@@ -1,14 +1,33 @@
 # DOFBOT T8 task ontology — single source of truth for Gemini + executor + cheatsheet.
-# Principle (safety): Gemini NEVER touches servo directly. It only emits ONE
-# constrained intent with entities. Python executor validates + executes.
+# Gemini emits a validated array of intents. ROS 3D defaults to read-only;
+# --enable-motion adds a mandatory live viewer/Space approval gate.
 # Legacy action mapping (color/stack/face/trash/stop) kept for voice_task_manager compat.
 
 version: 1
 language: vi
+default_mode: ros3d_dry_run
+scene_topic: /vision/object_states
 
 # ---------------------------------------------------------------- atomic skills
 # Each skill = one safe executor function in t8_executor.py
 atomic_skills:
+  observe_scene:
+    desc: "Liệt kê ID, pose và độ mới từ scene ROS 3D; không mở camera riêng"
+    params: {}
+    example: "trên bàn đang thấy những cube nào"
+    maps_to_action: none
+
+  robot_status:
+    desc: "Đọc joint đo được, trạng thái giữ vật và trạng thái hiệu chuẩn"
+    params: {}
+    example: "tay đang ở trạng thái nào, đã hiệu chuẩn chưa"
+    maps_to_action: none
+
+  capabilities:
+    desc: "Báo chức năng thực có và phân biệt preview với chuyển động thật"
+    params: {}
+    example: "bạn có thể làm gì trong chế độ hiện tại"
+    maps_to_action: none
   ask_info:
     desc: "Trả lời thông tin thuần (news/chat/vision mô tả), không chạm robot"
     params: {}
@@ -16,7 +35,7 @@ atomic_skills:
     maps_to_action: none
 
   open_task:
-    desc: "Mở một bài toán lớn (giữ nguyên manager cũ)"
+    desc: "Task manager legacy; chỉ chạy khi legacy2d và enable-motion, ROS 3D từ chối"
     params: {task: {enum: [color, stack, face, trash], desc: "bài toán nào"}}
     example: "phân loại màu"
     maps_to_action: "{task}"
@@ -30,7 +49,7 @@ atomic_skills:
   rotate_relative:
     desc: "Xoay 1 khớp thêm delta độ DỰA TRÊN góc hiện tại (state-aware, không góc cứng)"
     params:
-      joint: {type: int, min: 1, max: 6, default: 1, desc: "khớp 1=đế xoay trái/phải"}
+      joint: {type: int, min: 1, max: 1, default: 1, desc: "khớp 1=đế xoay trái/phải"}
       delta_deg: {type: float, min: -90, max: 90, desc: "+ phải, - trái. Vd +30 = xoay thêm 30 độ"}
       speed_ms: {type: int, default: 800, min: 200, max: 3000}
     examples:
@@ -43,7 +62,7 @@ atomic_skills:
     maps_to_action: none
 
   vision_pick_hold:
-    desc: "Tìm object theo mô tả vision rồi gắp LÊN VÀ GIỮ (không đặt xuống trừ khi có lệnh place)"
+    desc: "ROS 3D: xác thực cube ID/model và preview; motion cần target lock + Space"
     params:
       label: {type: string, desc: "vd: xuong_ca (cube dán hình xương cá), khoi_do, rac_tai_che"}
       hold: {type: bool, default: true, desc: "true=chỉ giữ, false=gắp rồi đặt theo bin"}
@@ -55,6 +74,18 @@ atomic_skills:
       - "phải có detection (get_detections) conf>=threshold mới được grasp"
       - "không có yêu cầu hạ/đặt => giữ nguyên, không tự đặt xuống"
       - "sau hold, robot ở trạng thái holding=true, từ chối open_task khác cho tới place/release/stop"
+      - "không suy cube ID từ HSV/màu để thực hiện chuyển động"
+      - "ROS3D motion yêu cầu approval token mới tối đa 15 giây và preflight lại"
+    maps_to_action: none
+
+  sort_cube:
+    desc: "Gắp một cube ROS3D đã xác thực và thả vào zone theo ID"
+    params: {label: {type: string, desc: "màu hoặc cube ID 1-4; \"all\" = tất cả cube thấy được, chạy tuần tự"}}
+    example: "phân loại cube đỏ | phân loại tất cả các cube (label=all)"
+    safety:
+      - "object_id phải bằng geometry_model_id qua nhiều frame"
+      - "motion yêu cầu viewer READY, Space, lock 15 giây và preflight lại"
+      - "không fallback ID từ HSV"
     maps_to_action: none
 
   place_held:
@@ -83,6 +114,37 @@ atomic_skills:
     example: "bật đèn đỏ"
     maps_to_action: none
 
+  detection_mode:
+    desc: "ROS 3D: bật/tắt đề xuất quét J1 hai phía, không gửi lệnh motor"
+    params: {state: {enum: [on, off]}}
+    example: "tự quan sát xung quanh"
+    safety:
+      - "pose quét chỉ là đề xuất, cần kiểm chứng đường đi và va chạm"
+      - "không đổi trạng thái holding hoặc xoay tay trong dry run"
+    maps_to_action: none
+
+  search_object:
+    desc: "Tìm cube từ object_id/geometry_model_id thực; lưu pose trong base_link tối đa 15 giây"
+    params: {label: {type: string, desc: "vd khoi_do, cube_1 (cube id 1), xuong_ca"}}
+    examples:
+      - "tìm cube đỏ đang ở đâu"
+      - "cube id 1 ở đâu"
+    safety:
+      - "0 ứng viên -> needs_observation và đề xuất quét, không tự xoay"
+      - ">1 ứng viên -> hỏi lại, không đoán"
+      - "đúng 1 + IK ok mới được gắp ở bước sau"
+    maps_to_action: none
+
+  stack_cubes:
+    desc: "Một tác vụ preview: xác thực nguồn/đích, nhớ nguồn qua góc nhìn khác, kiểm tra IK/FK 5 TCP stage; chưa chuyển động"
+    params: {source: {type: string}, target: {type: string}}
+    example: "tự tìm cube đỏ rồi gắp đặt lên cube id 1"
+    safety:
+      - "calibrated, TF động, joint đứng yên và hai frame nhất quán trước preflight"
+      - "chưa gắp nguồn khi thiếu đích; tái xác nhận trước chuyển động thật"
+      - "place_target từ chối nếu lệch J1 quá 45° khi đang giữ vật"
+    maps_to_action: none
+
 # ------------------------------------------------------- compound (executor ghép)
 compound_tasks:
   sort_then_pick_hold:
@@ -93,19 +155,32 @@ compound_tasks:
     desc: "Xoay tiếp từ state hiện tại: đọc góc -> +delta -> xoay"
     steps: ["get_joints()", "rotate_relative(joint, delta)"]
     example: "xoay tiếp thêm 30 độ nữa"
+  active_search_pick_place:
+    desc: "Một stack_cubes sở hữu cả tác vụ; motion ROS3D chỉ chạy sau viewer/Space và preflight lại."
+    steps: ["stack_cubes(source, target)"]
+    example: "tự quan sát tìm cube đỏ rồi gắp đặt lên cube id 1"
 
 # ------------------------------------------------------------------- intents
 # Gemini output MUST be one of these. Anything else -> validator ép về ask_info/none.
 intents:
+  - observe_scene
+  - robot_status
+  - capabilities
   - ask_info
   - open_task
   - stop_task
   - rotate_relative
   - vision_pick_hold
+  - sort_cube
   - place_held
   - release_hold
   - gripper
   - light_beep
+  - pose_start
+  - arm_pose
+  - detection_mode
+  - search_object
+  - stack_cubes
 
 # ------------------------------------------------- legacy compat (manager 61-65)
 legacy_action_map:
@@ -119,6 +194,6 @@ legacy_action_map:
 # Entities validation ranges (executor enforces again)
 limits:
   delta_deg_max: 90
-  joint_range: [1, 6]
+  joint_range: [1, 1]
   angle_range: [0, 180]
   hold_timeout_s: 300

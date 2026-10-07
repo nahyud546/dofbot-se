@@ -1,0 +1,90 @@
+camera:
+  source: fixed_apriltag_eye_in_hand_intrinsics_only
+  width: 640
+  height: 480
+  K:
+  - 935.2567514301579
+  - 0.0
+  - 322.5719978015452
+  - 0.0
+  - 990.3161300359387
+  - 229.6848424737809
+  - 0.0
+  - 0.0
+  - 1.0
+  distortion:
+  - -0.4440440532242386
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  calibrated: false
+  mount_T_optical:
+  - 0.0
+  - 1.0
+  - 0.0
+  - 0.0
+  - -1.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  extrinsic_calibrated: false
+table:
+  base_T_table: null
+  calibrated: false
+perception:
+  red_ranges:
+  - - - 0
+      - 90
+      - 30
+    - - 8
+      - 255
+      - 255
+  - - - 155
+      - 90
+      - 30
+    - - 179
+      - 255
+      - 255
+  min_area_px: 80
+  min_fill: 0.75
+  cube_size: 0.03
+  cube_size_tolerance: 0.008
+  zone_side_min: 0.06
+  zone_side_max: 0.18
+  max_aspect: 1.5
+  max_age_sec: 1.0
+  joint_max_age_sec: 0.5
+  stationary_window_sec: 0.35
+  stationary_delta_rad: 0.005
+  stable_frames: 5
+  stable_radius_m: 0.005
+task:
+  object_kind: cube
+  object_color: red
+  target_kind: zone
+  target_color: red
+  snapshot_age_sec: 30.0
+  placement_tolerance_m: 0.01
+  observation_poses: []
+  observation_dwell_sec: 3.0
+  approach_m: 0.06
+  placement_clearance_m: 0.002
+  tcp_contact_offset_m: null
+  tcp_calibrated: false
+  tcp_orientation_xyzw: null
+  gripper_open_rad: null
+  gripper_closed_rad: null
+  gripper_calibrated: false
+  gripper_open_width_m: null
+  velocity_scale: 0.1
+  acceleration_scale: 0.1
+  environment_boxes: []

@@ -51,7 +51,7 @@ def run_text(weights, img, prompts, conf):
 def run_visual(weights, img, enrollment, conf):
     import sys
 
-    sys.path.insert(0, str(Path("workspaces/dofbot_robot_arm_6dof/src/cap_vision")))
+    sys.path.insert(0, str(Path("ros/src/cap_vision")))
     from cap_vision.yoloe_segmenter import YOLOESegmenter
 
     seg = YOLOESegmenter(weights, conf=conf)
@@ -66,7 +66,7 @@ def run_visual(weights, img, enrollment, conf):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--images", required=True)
-    ap.add_argument("--weights", default="workspaces/dofbot_robot_arm_6dof/src/cap_vision/config/yoloe-11s-seg.pt")
+    ap.add_argument("--weights", default="ai/models/segmentation/yoloe-11s-seg.pt")
     ap.add_argument("--out-dir", default="/tmp/yoloe_test")
     ap.add_argument("--conf", type=float, default=0.3)
     ap.add_argument("--enroll-image", default="")

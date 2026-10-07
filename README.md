@@ -15,8 +15,12 @@ all reorganized into one clean layout.
   with motion/vision executors and a Vietnamese voice command set.
 - **One entrypoint for env** — `scripts/setup/setup_env.sh` (PYTHONPATH)
   + `scripts/setup/setup_ros.sh` (ROS + workspace overlays).
-- **Verified** — `colcon build` passes, `ros2 pkg`/`interface` smoke
-  passes, `pytest projects/t8_pipeline` passes **52/52**.
+- **Cube tasks on the real arm** — sort/stack any or all cubes from any start
+  pose: wrist camera surveys the drop zones, the external camera verifies each
+  placement (retry lower and slower if the cube bounced out), optional metric
+  calibration of the external camera to the robot base.
+- **Tests** — `/usr/bin/python3 -m pytest` from the repo root (config in
+  `pyproject.toml`); see `CLAUDE.md` for the working commands and gotchas.
 
 ## Repository layout
 
@@ -25,9 +29,10 @@ all reorganized into one clean layout.
 | `workspaces/dofbot_ws/` | Main ROS 2 workspace (17 src entries; 13 ament packages built, 4 legacy ROS 1 catkin packages kept but skipped) |
 | `workspaces/LargeModel_ws/` | LLM/arm-integration workspace (separate build, not part of default build) |
 | `workspaces/legacy/` | Archived `colcon_ws` (ROS 1 / Arm_Lib era, never auto-sourced) |
-| `projects/t8_pipeline/` | LLM task pipeline + 52 unit tests |
-| `projects/vision_experiments/` | Standalone vision scripts (apriltag / face / KCF) |
-| `projects/hand_teleop/`, `projects/bottle_cap_sorting/` | Task projects |
+| `ros/` | Perception workspace used by T8: `cap_vision`, `cap_scene_interfaces`, `dofbot_moveit` (+ `dofbot_urdf` symlink). Build with system Python (see `CLAUDE.md`) |
+| `projects/cube_vision/` | Standalone vision library: tags, faces, zone survey, placement check, external-camera calibration, batch planning (no ROS/T8 imports) |
+| `projects/t8_pipeline/` | T8 assistant: Gemini planner, executor, ROS scene worker, motion worker |
+| `projects/vision_experiments/` | Geometry, hand-eye / external calibration scripts, standalone experiments |
 | `config/` | Camera (`camera.yaml`, `homography.yaml`), robot (`joint_limits.yaml`, `poses.yaml`, `tcp.yaml`), udev rules |
 | `scripts/setup/` | `setup_env.sh`, `setup_ros.sh`, `setup_serial.sh` |
 | `scripts/run/` | `run_robot.sh`, `run_camera.sh`, `run_moveit.sh`, `run_yahboom.sh` |
@@ -39,7 +44,8 @@ all reorganized into one clean layout.
 | `assets/` | Images and static assets |
 
 > Ignored on purpose: `ai/lerobot/`, `workspaces/dofbot_robot_arm_6dof/`
-> (external git checkouts), all `build/`/`install/`/`log/`, model weights
+> (external git checkouts; the perception packages T8 needs live in `ros/src`),
+> all `build/`/`install/`/`log/`, `temp_imgs/`, `.local/`, model weights
 > (`*.onnx`, `*.pt`, `*.engine`), datasets/captures, and credential files.
 
 ## Requirements

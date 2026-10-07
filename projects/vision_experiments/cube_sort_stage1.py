@@ -316,7 +316,8 @@ def _show_validate_frame(cap, zones):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--camera", default="/dev/video2")
+    parser.add_argument("--camera", default="auto",
+                    help="auto = camera tay tự nhận (cube_vision.cameras), hoặc /dev/videoN")
     parser.add_argument("--dry-run", action="store_true",
                         help="simulate one sort per Space without accessing the arm or buzzer")
     parser.add_argument("--no-trash", action="store_true")
@@ -341,6 +342,12 @@ def main():
     parser.add_argument("--validate-show", action="store_true",
                         help="mở thêm cửa sổ cam validate để xem bbox zone live")
     args = parser.parse_args()
+    if str(args.camera) == "auto":
+        import sys as _sys
+        from pathlib import Path as _Path
+        _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+        from cube_vision.cameras import resolve_arg as _resolve_camera
+        args.camera = _resolve_camera(args.camera)
     if (not math.isfinite(args.pick_x_offset_mm) or abs(args.pick_x_offset_mm) > 20 or
             not math.isfinite(args.pick_z_offset_mm) or abs(args.pick_z_offset_mm) > 8):
         parser.error("độ bù gắp phải trong khoảng X ±20 mm, Z ±8 mm")

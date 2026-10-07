@@ -42,41 +42,17 @@ import numpy as np
 # Registry
 # --------------------------------------------------------------------------
 
-# HSV ranges copied from projects/t8_pipeline/t8_vision.py (single source
-# of truth for T8 color labels; duplicated here so this script stays
-# runnable without PYTHONPATH setup).
-HSV_RANGES = {
-    "khoi_do": [((0, 80, 50), (10, 255, 255)), ((170, 80, 50), (179, 255, 255))],
-    "khoi_xanh": [((35, 70, 40), (85, 255, 255))],
-    "khoi_xanh_duong": [((90, 70, 40), (130, 255, 255))],
-    "khoi_vang": [((20, 70, 50), (35, 255, 255))],
-}
+# Bảng cube và HSV nay nằm ở cube_vision.registry (nguồn duy nhất); giữ nguyên tên cũ.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cube_vision import registry as _registry  # noqa: E402
+from cube_vision.tag import TagDetector as _SharedTagDetector  # noqa: E402
+from cube_vision.trash import TrashDetector  # noqa: E402,F401  (re-export)
 
-CUBES = {
-    1: {"name": "blue",
-        "color": "khoi_xanh_duong",
-        "tag_id": 1,
-        "trash": {"newspaper", "zip_top_can", "book", "old_school_bag"}},
-    2: {"name": "green",
-        "color": "khoi_xanh",
-        "tag_id": 2,
-        "trash": {"fish_bone", "egg_shell", "apple_core", "watermelon_rind"}},
-    3: {"name": "red",
-        "color": "khoi_do",
-        "tag_id": 3,
-        "trash": {"syringe", "expired_cosmetics", "used_batteries",
-                  "expired_tablets"}},
-    4: {"name": "yellow",
-        "color": "khoi_vang",
-        "tag_id": 4,
-        "trash": {"toilet_paper", "peach_pit", "cigarette_butts",
-                  "disposable_chopsticks"}},
-}
-
-TAG_TO_CUBE = {spec["tag_id"]: cid for cid, spec in CUBES.items()}
-TRASH_TO_CUBE = {cls: cid for cid, spec in CUBES.items()
-                 for cls in spec["trash"]}
-COLOR_TO_CUBE = {spec["color"]: cid for cid, spec in CUBES.items()}
+HSV_RANGES = _registry.hsv_ranges("identify")
+CUBES = _registry.CUBES
+TAG_TO_CUBE = _registry.TAG_TO_CUBE
+TRASH_TO_CUBE = _registry.TRASH_TO_CUBE
+COLOR_TO_CUBE = _registry.COLOR_TO_ID
 
 OBSERVE_JOINTS = [90.0, 125.0, 0.0, 0.0, 90.0, 25.0]  # verified look pose
 FRAME_SIZE = (640, 480)
@@ -179,232 +155,17 @@ def fuse_cues(cues: FaceCues) -> CubeVerdict:
 # Detectors (thin wrappers; each degrades gracefully when unavailable)
 # --------------------------------------------------------------------------
 
-class TagDetector:
+class TagDetector(_SharedTagDetector):
+    """Tag tag36h11 hai lượt (ảnh xám + CLAHE), trả {id, center, corners, margin}."""
+
+    enhance = True
+
     def __init__(self):
-        self.detector = None
-        try:
-            from dt_apriltags import Detector
-            backend = "dt_apriltags"
-        except ImportError:
-            try:
-                from pupil_apriltags import Detector
-                backend = "pupil_apriltags"
-            except ImportError:
-                print("[WARN] no apriltag lib (dt_apriltags/pupil_apriltags); "
-                      "tag cue disabled")
-                return
-        self.detector = Detector(families="tag36h11", nthreads=4,
-                                 quad_decimate=1.0, refine_edges=1)
-        print(f"[OK] apriltag backend: {backend}")
+        super().__init__(enhance=True, nthreads=4, quiet=False)
 
     def detect(self, gray):
-        if self.detector is None:
-            return []
-        out = []
-        enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
-        for image in (gray, enhanced):
-            for tag in self.detector.detect(image):
-                candidate = {"id": int(tag.tag_id),
-                             "center": (float(tag.center[0]),
-                                        float(tag.center[1])),
-                             "corners": np.asarray(tag.corners, dtype=np.float32),
-                             "margin": float(tag.decision_margin)}
-                duplicate = next((i for i, old in enumerate(out)
-                                  if old["id"] == candidate["id"] and
-                                  np.linalg.norm(np.subtract(old["center"],
-                                                             candidate["center"])) < 8), None)
-                if duplicate is None:
-                    out.append(candidate)
-                elif candidate["margin"] > out[duplicate]["margin"]:
-                    out[duplicate] = candidate
-        return out
-
-
-class TrashDetector:
-    """DINOv2 embedding match against the trash vector database.
-
-    Same space as ai/datasets/trash-images/process_and_embed.py:
-    Rectified 224x224 face -> ImageNet normalize -> matching DINOv2 model.
-    Cosine similarity over 256 stored vectors (16 classes x 16).
-    """
-
-    DB_PATH_TMPL = __file__.split("projects")[0] + "ai/datasets/trash-images/processed/vector_database_{}.pt"
-    IMG_SIZE = 224
-    # Provisional until independent images from /dev/video2 are available.
-    DEFAULT_THRESH = 0.40
-    DEFAULT_MARGIN = 0.0
-    DIMS = {
-        "dinov2_vits14": 384,
-        "dinov2_vitb14": 768,
-        "dinov2_vitl14": 1024,
-        "dinov2_vitg14": 1536,
-    }
-
-    def __init__(self, thresh=DEFAULT_THRESH, device="auto",
-                 margin=DEFAULT_MARGIN, model_name="dinov2_vits14"):
-        self.model = None
-        self.labels: list[str] = []
-        self.matrix = None  # (256, dim) L2-normalized, torch cpu tensor
-        self.thresh = thresh
-        self.margin = margin
-        self.model_name = model_name
-        self.dim = self.DIMS.get(model_name, 384)
-        self.last_result = {}
-        self._torch = None
-        self.device = None
-        try:
-            import torch
-        except ImportError:
-            print("[WARN] torch missing; trash cue disabled")
-            return
-        self._torch = torch
-        db_path = repo_root() / self.DB_PATH_TMPL.format(model_name)
-        if not db_path.is_file():
-            # fallback to legacy db
-            fallback = repo_root() / "ai/datasets/trash-images/processed/vector_database.pt"
-            if fallback.is_file():
-                db_path = fallback
-            else:
-                print(f"[WARN] vector DB not found at {db_path}; "
-                      "trash cue disabled")
-                return
-        try:
-            db = torch.load(str(db_path), map_location="cpu",
-                            weights_only=False)
-        except Exception as exc:  # noqa: BLE001
-            print(f"[WARN] cannot load vector DB: {exc}; trash cue disabled")
-            return
-        embs, labels = [], []
-        for item in db:
-            emb = np.asarray(item["embedding"], dtype=np.float32)
-            if emb.shape != (self.dim,):
-                print(f"[WARN] wrong DINO embedding shape {emb.shape} (expected {self.dim}); trash cue disabled")
-                return
-            embs.append(emb)
-            labels.append(str(item["label"]).lower())
-        if not embs or set(labels) != set(TRASH_TO_CUBE):
-            print("[WARN] vector DB labels do not match cube registry; trash cue disabled")
-            return
-        mat = np.stack(embs)
-        mat /= np.linalg.norm(mat, axis=1, keepdims=True) + 1e-9
-        self.matrix = torch.from_numpy(mat)
-        self.labels = labels
-
-        try:
-            model = torch.hub.load("facebookresearch/dinov2",
-                                   model_name)
-        except Exception as exc:  # noqa: BLE001 - offline cache etc.
-            print(f"[WARN] cannot load {model_name}: {exc}; "
-                  "trash cue disabled")
-            self.matrix = None
-            return
-        if device == "auto":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.device = device
-        model = model.to(device)
-        model.eval()
-        self.model = model
-        print(f"[OK] DINO trash matcher: {len(set(labels))} classes x "
-              f"{len(labels) // max(1, len(set(labels)))} vectors "
-              f"on {device} (thresh={thresh}, margin={margin})")
-
-    # ImageNet stats, same as torchvision Normalize used at DB build time.
-    _MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-    _STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-
-    def _preprocess(self, face_bgr):
-        # The caller already supplies the whole rectified upper face.
-        face_bgr = cv2.resize(face_bgr, (self.IMG_SIZE, self.IMG_SIZE))
-        rgb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
-        normed = (rgb - self._MEAN) / self._STD
-        return self._torch.from_numpy(
-            normed.transpose(2, 0, 1)).unsqueeze(0)
-
-    def match(self, crop_bgr):
-        """Match one crop; compatibility wrapper around batched inference."""
-        label, score, self.last_result = self.match_many([crop_bgr])[0]
-        return label, score
-
-    def match_many(self, crops_bgr):
-        """Batch face crops so several visible faces share each DINO forward pass."""
-        unavailable = {"reason": "trash model unavailable", "score": 0.0,
-                       "margin": 0.0, "label": ""}
-        if self.model is None or self.matrix is None:
-            return [(None, 0.0, unavailable.copy()) for _ in crops_bgr]
-        torch = self._torch
-        results = []
-        for start in range(0, len(crops_bgr), 4):
-            batch = crops_bgr[start:start + 4]
-            turns = [np.ascontiguousarray(np.rot90(crop, k))
-                     for crop in batch for k in range(4)]
-            with torch.no_grad():
-                tensor = torch.cat([self._preprocess(turn) for turn in turns],
-                                   dim=0).to(self.device)
-                embeddings = self.model(tensor).cpu().numpy()
-            embeddings /= np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-9
-            coarse = embeddings.reshape(len(batch), 4, -1)
-            similarities = [self.matrix.numpy() @ four.T for four in coarse]
-            provisional = [self._rank_scores(sims, (0, 90, 180, 270))
-                           for sims in similarities]
-            uncertain = [i for i, (_, score, result) in enumerate(provisional)
-                         if score < 0.55 or result["margin"] < 0.08]
-            if uncertain:
-                fine_turns = []
-                for i in uncertain:
-                    crop = cv2.resize(batch[i], (self.IMG_SIZE, self.IMG_SIZE))
-                    center = (self.IMG_SIZE / 2, self.IMG_SIZE / 2)
-                    matrix = cv2.getRotationMatrix2D(center, 45, 1.0)
-                    angled = cv2.warpAffine(crop, matrix,
-                                             (self.IMG_SIZE, self.IMG_SIZE),
-                                             borderMode=cv2.BORDER_REFLECT_101)
-                    fine_turns.extend(np.ascontiguousarray(np.rot90(angled, k))
-                                      for k in range(4))
-                with torch.no_grad():
-                    tensor = torch.cat([self._preprocess(turn)
-                                        for turn in fine_turns], dim=0).to(self.device)
-                    fine_embeddings = self.model(tensor).cpu().numpy()
-                fine_embeddings /= np.linalg.norm(fine_embeddings, axis=1,
-                                                   keepdims=True) + 1e-9
-                for position, i in enumerate(uncertain):
-                    extra = self.matrix.numpy() @ fine_embeddings[
-                        position * 4:(position + 1) * 4].T
-                    similarities[i] = np.concatenate((similarities[i], extra), axis=1)
-            for sims in similarities:
-                angles = (0, 90, 180, 270, 45, 135, 225, 315)[:sims.shape[1]]
-                results.append(self._rank_scores(sims, angles))
-        return results
-
-    def _rank_scores(self, sims, angles=None):
-        class_scores = {lbl: [] for lbl in set(self.labels)}
-        for lbl, turn_scores in zip(self.labels, sims):
-            class_scores[lbl].append(float(np.max(turn_scores)))
-
-        best_per_class: dict[str, float] = {}
-        for lbl, scores in class_scores.items():
-            scores.sort(reverse=True)
-            # Average the three closest references for each class.
-            best_per_class[lbl] = sum(scores[:3]) / max(1, min(len(scores), 3))
-
-        ranked = sorted(best_per_class.items(), key=lambda item: item[1],
-                        reverse=True)
-        label, score = ranked[0]
-        gap = score - ranked[1][1]
-        result = {"label": label, "score": score, "margin": gap,
-                  "reason": "", "ranked": ranked[:2]}
-        if angles is not None:
-            winning_rows = [i for i, value in enumerate(self.labels)
-                            if value == label]
-            _, turn = np.unravel_index(np.argmax(sims[winning_rows]),
-                                       (len(winning_rows), sims.shape[1]))
-            result["rotation_deg"] = angles[int(turn)]
-            result["rotations_tested"] = len(angles)
-        if score < self.thresh:
-            result["reason"] = "trash cosine below threshold"
-            return None, score, result
-        if gap < self.margin:
-            result["reason"] = "trash top two classes too close"
-            return None, score, result
-        return label, score, result
+        return [{"id": t["id"], "center": t["center"], "corners": t["corners"],
+                 "margin": t["margin"]} for t in super().detect(gray)]
 
 
 def detect_color_regions(frame_bgr):
