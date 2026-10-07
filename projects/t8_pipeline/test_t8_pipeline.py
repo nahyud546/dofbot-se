@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 import json
+import time
 
 from t8_pipeline import (Pipeline, validate_intent, try_local_rotate,
                           try_local_hold_place, try_local_motion_sequence,
@@ -63,6 +64,24 @@ class FakeTavily:
 
 
 class TestPipeline(unittest.TestCase):
+    def setUp(self):
+        # Some tests start the assistant in ros3d mode, which turns on the "cube hình rác -> ID"
+        # label mapping for the whole process; the legacy 2D label tests must not inherit it.
+        import cube_identity
+        cube_identity.set_ros3d_face_labels(False)
+
+    def test_ros3d_motion_worker_requires_fresh_approval_at_hardware_boundary(self):
+        class Arm:
+            pass
+        with TemporaryDirectory() as directory, \
+             patch.object(motion_worker, "STATE_FILE", Path(directory) / "state.json"):
+            with self.assertRaisesRegex(RuntimeError, "approval"):
+                motion_worker.execute({"command": "pick_cube_3d"}, Arm(), kin=None)
+            stale = {"command": "pick_cube_3d", "approval_token": "a" * 32,
+                     "approved_at": time.time() - 20, "preflight_ok": True}
+            with self.assertRaisesRegex(RuntimeError, "approval"):
+                motion_worker.execute(stale, Arm(), kin=None)
+
     def test_four_step_sequence_keeps_final_start_pose(self):
         class Motion:
             def __init__(self):
@@ -123,11 +142,186 @@ class TestPipeline(unittest.TestCase):
                 return {"ok": True, "reply": command}
         motion = Motion()
         executor = Executor(vision=Vision(), motion=motion)
-        result = run_stack_sequence(labels, executor,
-                                    lambda: Image.new("RGB", (640, 480)))
+        _syn = Image.new("RGB", (640, 480))
+        with patch("t8_assistant.camera_image_pair", return_value=(_syn, _syn)):
+            result = run_stack_sequence(labels, executor,
+                                        lambda: Image.new("RGB", (640, 480)))
         self.assertTrue(result[-1]["ok"])
         self.assertEqual(motion.calls,
-                         ["prepare", "preflight_stack", "pick", "place_target"])
+                         ["prepare", "preflight_stack", "pick", "holding_observe", "place_target"])
+
+    def test_stack_prefers_ros3d_perception_over_legacy_frames(self):
+        # Terminal 1 commit ID + bbox: khong cham legacy khi ROS3D du ca 2 dau.
+        from PIL import Image
+        labels = {"source": "khoi_xanh_duong", "target": "cube_4"}
+        src = {"label": "khoi_xanh_duong", "box": [69, 339, 224, 480],
+               "center": [146.5, 409.5], "conf": 0.95, "source": "ros3d",
+               "geometry_verified": True, "object_id": 1}
+        tgt = {"label": "cube_4", "box": [148, 127, 291, 299],
+               "center": [219.5, 213.0], "conf": 0.93, "source": "ros3d",
+               "geometry_verified": True, "object_id": 4}
+        class Vision:
+            def get_cube_candidates(self, *_args, **_kwargs):
+                raise AssertionError("legacy phai duoc bo qua khi ROS3D du")
+        class Motion:
+            def __init__(self): self.calls = []
+            def execute(self, command, **params):
+                self.calls.append((command, params.get("source_box"),
+                                   params.get("target_box")))
+                return {"ok": True, "reply": command}
+        motion = Motion()
+        executor = Executor(vision=Vision(), motion=motion)
+        def fake_ros3d(wanted, label, exclude=None, timeout_s=5.0):
+            self.assertIn("object_id", src)
+            if 1 in set(wanted):
+                return dict(src)
+            if 4 in set(wanted):
+                return dict(tgt)
+            raise AssertionError(f"unexpected wanted {wanted}")
+        with patch("t8_assistant.ros3d_detect", side_effect=fake_ros3d), \
+                patch("t8_assistant.camera_image_pair",
+                      side_effect=AssertionError("khong chup legacy")):
+            result = run_stack_sequence(labels, executor,
+                                        lambda: Image.new("RGB", (640, 480)))
+        self.assertTrue(result[-1]["ok"])
+        self.assertEqual([c[0] for c in motion.calls],
+                         ["prepare", "preflight_stack", "pick",
+                          "holding_observe", "place_target"])
+        self.assertEqual(motion.calls[1][1:], (src["box"], tgt["box"]))
+
+    def test_stack_z_grows_one_cube_per_layer(self):
+        self.assertAlmostEqual(motion_worker.stack_z(1), motion_worker.STACK_Z)
+        self.assertAlmostEqual(motion_worker.stack_z(2),
+                               motion_worker.STACK_Z + 0.03)
+        self.assertAlmostEqual(motion_worker.stack_z(3),
+                               motion_worker.STACK_Z + 0.06)
+        self.assertAlmostEqual(motion_worker.stack_z(0), motion_worker.STACK_Z)
+        self.assertAlmostEqual(motion_worker.stack_z("x"), motion_worker.STACK_Z)
+
+    def test_place_target_reports_layer_height(self):
+        class Arm:
+            def __init__(self):
+                self.joints = [80, 120, 60, 10, 80, 140]
+            def Arm_serial_servo_read(self, joint):
+                return self.joints[joint - 1]
+            def Arm_serial_servo_write(self, joint, angle, _ms):
+                self.joints[joint - 1] = angle
+            def Arm_serial_servo_write6(self, *args):
+                self.joints = list(args[:6])
+            def Arm_serial_servo_write6_array(self, joints, _ms):
+                self.joints = list(joints)
+        class Kin:
+            def __init__(self): self.calls = []
+            def ik(self, x, y, z):
+                self.calls.append((x, y, z))
+                return [90, 55, 65, 10, 90]
+        with TemporaryDirectory() as directory, \
+             patch.object(motion_worker, "STATE_FILE", Path(directory) / "state.json"), \
+             patch("t8_motion_worker.time.sleep"):
+            motion_worker.save_state({"phase": "holding", "label": "cube",
+                                      "joint1": 80, "grasp_joints": [80, 50, 60, 10, 80],
+                                      "picked_xy": [-0.2, 0.0], "place_z": 0.045})
+            result = motion_worker.execute({"command": "place_target",
+                                            "target_box": [370, 150, 450, 230],
+                                            "image_size": [640, 480],
+                                            "stack_layers": 2},
+                                           Arm(), Kin())
+            self.assertTrue(result["ok"])
+            self.assertIn("tầng 3", result["reply"])
+            self.assertEqual(result["stack_layers"], 2)
+
+    def test_stack_memory_records_lookup_pops(self):
+        import t8_assistant
+        with TemporaryDirectory() as directory, \
+             patch.object(t8_assistant, "STACK_MEMORY_FILE",
+                          Path(directory) / "stacks.json"):
+            self.assertIsNone(t8_assistant._find_stack([100, 100, 200, 200]))
+            t8_assistant._record_stack([100, 100, 200, 200], "khoi_xanh_duong")
+            entry = t8_assistant._find_stack([110, 105, 210, 205])
+            self.assertEqual(entry["layers"], 2)
+            t8_assistant._record_stack([105, 102, 205, 202], "khoi_do")
+            self.assertEqual(
+                t8_assistant._find_stack([100, 100, 200, 200])["layers"], 3)
+            self.assertIsNone(t8_assistant._find_stack([400, 400, 500, 460]))
+            t8_assistant._pop_stack_top([102, 101, 202, 201])
+            self.assertEqual(
+                t8_assistant._find_stack([100, 100, 200, 200])["layers"], 2)
+            latest = t8_assistant._latest_stack()
+            self.assertEqual(latest["layers"], 2)
+
+    def test_stack_sequence_places_at_remembered_layer(self):
+        import t8_assistant
+        from PIL import Image
+        labels = {"source": "khoi_do", "target": "khoi_xanh_duong"}
+        tgt = [370, 150, 450, 230]
+        class Vision:
+            def get_cube_candidates(self, label, _frame, _confirm, exclude=None):
+                box = [170, 150, 250, 230] if label == "khoi_do" else list(tgt)
+                return [{"box": box, "center": [(box[0] + box[2]) / 2, 190],
+                         "source": "hsv", "conf": 1.0}]
+        class Motion:
+            def __init__(self): self.calls = []
+            def execute(self, command, **params):
+                self.calls.append((command, params.get("stack_layers")))
+                return {"ok": True, "reply": command}
+        motion = Motion()
+        executor = Executor(vision=Vision(), motion=motion)
+        _syn = Image.new("RGB", (640, 480))
+        with TemporaryDirectory() as directory, \
+             patch.object(t8_assistant, "STACK_MEMORY_FILE",
+                          Path(directory) / "stacks.json"), \
+             patch("t8_assistant.camera_image_pair", return_value=(_syn, _syn)), \
+             patch("t8_assistant.ros3d_detect", return_value=None):
+            t8_assistant._record_stack(tgt, "khoi_xanh")
+            result = run_stack_sequence(labels, executor,
+                                        lambda: Image.new("RGB", (640, 480)))
+            remembered_layers = t8_assistant._find_stack(tgt)["layers"]
+        self.assertTrue(result[-1]["ok"])
+        kinds = [c[0] for c in motion.calls]
+        self.assertEqual(kinds, ["prepare", "preflight_stack", "pick",
+                                 "holding_observe", "place_target"])
+        self.assertEqual(motion.calls[1][1], 2)
+        self.assertEqual(motion.calls[-1][1], 2)
+        self.assertEqual(remembered_layers, 3)
+
+    def test_stack_pronoun_uses_latest_stack_without_detect(self):
+        import t8_assistant
+        from PIL import Image
+        labels = {"source": "khoi_do", "target": "them"}
+        src = [170, 150, 250, 230]
+        class Vision:
+            def get_cube_candidates(self, label, *_args, **_kwargs):
+                if label == "khoi_do":
+                    return [{"box": list(src), "center": [210, 190],
+                             "source": "hsv", "conf": 1.0}]
+                raise AssertionError("pronoun khong duoc detect lai dich")
+        class Motion:
+            def __init__(self): self.calls = []
+            def execute(self, command, **params):
+                self.calls.append((command, params.get("stack_layers")))
+                return {"ok": True, "reply": command}
+        motion = Motion()
+        executor = Executor(vision=Vision(), motion=motion)
+        _syn = Image.new("RGB", (640, 480))
+        with TemporaryDirectory() as directory, \
+             patch.object(t8_assistant, "STACK_MEMORY_FILE",
+                          Path(directory) / "stacks.json"), \
+             patch("t8_assistant.camera_image_pair", return_value=(_syn, _syn)), \
+             patch("t8_assistant.ros3d_detect", return_value=None):
+            t8_assistant._record_stack([370, 150, 450, 230], "khoi_xanh_duong")
+            result = run_stack_sequence(labels, executor,
+                                        lambda: Image.new("RGB", (640, 480)))
+        self.assertTrue(result[-1]["ok"])
+        self.assertEqual([c[0] for c in motion.calls],
+                         ["prepare", "pick", "holding_observe", "place_target"])
+        self.assertEqual(motion.calls[-1][1], 2)
+        with TemporaryDirectory() as directory, \
+             patch.object(t8_assistant, "STACK_MEMORY_FILE",
+                          Path(directory) / "empty.json"):
+            result = run_stack_sequence(labels, executor,
+                                        lambda: Image.new("RGB", (640, 480)))
+        self.assertFalse(result[-1]["ok"])
+        self.assertIn("chưa nhớ", result[-1]["reply"])
 
     def test_fish_bone_toilet_paper_uses_two_yolo_classes(self):
         from PIL import Image
@@ -153,12 +347,17 @@ class TestPipeline(unittest.TestCase):
                 return {"ok": True, "reply": command}
         model, motion = Model(), Motion()
         executor = Executor(vision=VisionDetector(model=model), motion=motion)
-        result = run_stack_sequence(labels, executor,
-                                    lambda: Image.new("RGB", (640, 480)))
+        with patch("t8_assistant.camera_image_pair",
+                   side_effect=lambda: (Image.new("RGB", (640, 480)),
+                                        Image.new("RGB", (640, 480)))):
+            result = run_stack_sequence(labels, executor,
+                                        lambda: Image.new("RGB", (640, 480)))
         self.assertTrue(result[-1]["ok"])
-        self.assertEqual(model.calls, 1)
+        # Precompute doi 2 cap lien tiep dong thuan (pair1 src + pair2 src +
+        # verify tgt; tgt dung cache YOLO theo frame) thay vi chot ngay pair1.
+        self.assertEqual(model.calls, 3)
         self.assertEqual(motion.calls,
-                         ["prepare", "preflight_stack", "pick", "place_target"])
+                         ["prepare", "preflight_stack", "pick", "holding_observe", "place_target"])
 
     def test_contour_unique_stable_and_ambiguous(self):
         from PIL import Image, ImageDraw
@@ -179,8 +378,127 @@ class TestPipeline(unittest.TestCase):
             "cube", one, one)[0]["corners"]), 4)
         no_yolo = SimpleNamespace(predict=lambda **_kw: [SimpleNamespace(boxes=[])])
         fallback = VisionDetector(model=no_yolo)
-        self.assertEqual(fallback.get_cube_candidates("xuong_ca", one, one)[0]
-                         ["source"], "contour")
+        self.assertEqual(fallback.get_cube_candidates("xuong_ca", one, one), [])
+        self.assertEqual(fallback.get_cube_candidates("cube_1", one, one), [])
+
+    def test_blue_cube_found_on_blue_cast_table_touching_bottom_edge(self):
+        # Hoitai: nen ban am xanh (S~80) + cube xanh cham day frame.
+        from PIL import Image
+        import numpy as np
+        def hsv_block(h, s, v, w, hgt):
+            hp = (np.full((hgt, w), h, np.float32) / 179.0 * 6.0)
+            ss = np.full((hgt, w), s, np.float32) / 255.0
+            vv = np.full((hgt, w), v, np.float32) / 255.0
+            c = vv * ss
+            x = c * (1.0 - np.abs(hp % 2.0 - 1.0))
+            z = np.zeros_like(c)
+            cond = int(hp[0, 0] // 1) % 6
+            table = [(c, x, z), (x, c, z), (z, c, x),
+                     (z, x, c), (x, z, c), (c, z, x)][cond]
+            m = vv - c
+            rgb = np.stack([(ch + m) * 255.0 for ch in table], -1)
+            return np.clip(rgb, 0, 255).astype(np.uint8)
+        bg = hsv_block(108, 80, 226, 640, 480)
+        face = hsv_block(112, 250, 200, 155, 141)
+        img = bg.copy()
+        img[339:480, 69:224] = face
+        frame = Image.fromarray(img)
+        vision = VisionDetector()
+        found = vision.get_cube_candidates("khoi_xanh_duong", frame, frame)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["source"], "hsv")
+        bare = Image.fromarray(bg)
+        self.assertEqual(
+            vision.get_cube_candidates("khoi_xanh_duong", bare, bare), [])
+
+    def test_blue_quad_survives_single_stray_vertex(self):
+        # Mat xanh lech 1 dinh (bong/ghe): eps 0.04 thua -> 0.06 van nhan.
+        import cv2
+        from PIL import Image
+        import numpy as np
+        img = np.full((480, 640, 3), (235, 210, 200), np.uint8)
+        pts = [(200, 150), (260, 150), (260, 180), (290, 180),
+               (290, 150), (350, 150), (350, 290), (200, 290)]
+        cv2.fillPoly(img, [np.array(pts, np.int32)], (30, 60, 200))
+        frame = Image.fromarray(img)
+        vision = VisionDetector()
+        found = vision.get_cube_candidates("khoi_xanh_duong", frame, frame)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["source"], "hsv")
+
+    def test_patterned_cube_associates_white_top_with_colored_side(self):
+        # Cube hoa tiet (top trang + hong vang): direct mo -> hsv_side;
+        # mau khac khong nhan ke (do [] khi hong vang, vang [] khi hong xanh).
+        from PIL import Image
+        import numpy as np
+        def hsv_block(h, s, v, w, hgt):
+            hp = np.full((hgt, w), h, np.float32) / 179.0 * 6.0
+            ss = np.full((hgt, w), s, np.float32) / 255.0
+            vv = np.full((hgt, w), v, np.float32) / 255.0
+            c = vv * ss
+            x = c * (1.0 - np.abs(hp % 2.0 - 1.0))
+            z = np.zeros_like(c)
+            table = [(c, x, z), (x, c, z), (z, c, x),
+                     (z, x, c), (x, z, c), (c, z, x)][int(hp[0, 0] // 1) % 6]
+            m = vv - c
+            return np.clip(
+                np.stack([(ch + m) * 255.0 for ch in table], -1), 0, 255).astype(np.uint8)
+        bg = hsv_block(108, 80, 226, 640, 480)
+        def scene(band):
+            img = bg.copy()
+            img[130:295, 150:290] = (255, 255, 255)
+            img[230:300, 140:300] = hsv_block(*band, 160, 70)
+            return Image.fromarray(img)
+        yellow, green = scene((30, 200, 220)), scene((60, 200, 200))
+        vision = VisionDetector()
+        hit = vision.get_cube_candidates("khoi_vang", yellow, yellow)
+        self.assertEqual(len(hit), 1)
+        self.assertEqual(hit[0]["source"], "hsv_side")
+        self.assertEqual(
+            vision.get_cube_candidates("khoi_do", yellow, yellow), [])
+        self.assertEqual(
+            vision.get_cube_candidates("khoi_vang", green, green), [])
+        self.assertEqual(
+            len(vision.get_cube_candidates("khoi_xanh", green, green)), 1)
+        # Dai hong that thang cach biet (vang >> do lac): vang van nhan,
+        # do khong duoc keo theo.
+        img = np.asarray(yellow).copy()
+        img[300:330, 140:300] = hsv_block(5, 220, 200, 160, 30)
+        contested = Image.fromarray(img)
+        hit2 = vision.get_cube_candidates("khoi_vang", contested, contested)
+        self.assertEqual(len(hit2), 1)
+        self.assertEqual(hit2[0]["source"], "hsv_side")
+        self.assertEqual(
+            vision.get_cube_candidates("khoi_do", contested, contested), [])
+        # Hai mau sat nut nhau (margin < 0.10): mo ho -> [] chu khong dat nham.
+        img3 = bg.copy()
+        img3[130:295, 150:290] = (255, 255, 255)
+        img3[268:300, 140:300] = hsv_block(30, 200, 220, 160, 32)
+        img3[292:324, 140:300] = hsv_block(5, 220, 200, 160, 32)
+        close = Image.fromarray(img3)
+        self.assertEqual(
+            vision.get_cube_candidates("khoi_vang", close, close), [])
+        self.assertEqual(
+            vision.get_cube_candidates("khoi_do", close, close), [])
+
+    def test_legacy_cube_id_uses_stable_apriltag_across_two_frames(self):
+        from PIL import Image
+        import numpy as np
+
+        class Tags:
+            def detect(self, _gray):
+                return [SimpleNamespace(
+                    tag_id=1, decision_margin=70.0,
+                    corners=np.array([[200, 150], [240, 150],
+                                      [240, 190], [200, 190]], float))]
+
+        vision = VisionDetector()
+        vision._tag_detector = Tags()
+        frame = Image.new("RGB", (640, 480))
+        found = vision.get_cube_candidates("cube_1", frame, frame)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["source"], "apriltag")
+        self.assertEqual(found[0]["center"], [220.0, 170.0])
 
     def test_stack_preflight_checks_both_ik_targets(self):
         class Kin:
@@ -253,8 +571,9 @@ class TestPipeline(unittest.TestCase):
     def test_ctrl_c_at_prompt_runs_safe_exit(self):
         import t8_assistant
         with patch("sys.argv", ["t8_assistant.py", "--no-speak-info"]), \
-             patch("t8_assistant.make_pipeline", return_value=object()), \
+             patch("t8_assistant.make_pipeline", return_value=SimpleNamespace()), \
              patch("t8_assistant.make_executor", return_value=SimpleNamespace(_motion=None)), \
+             patch("t8_assistant.ensure_cube_perception", return_value={"ok": True, "reply": "test camera"}), \
              patch("builtins.input", side_effect=KeyboardInterrupt), \
              patch("t8_assistant.exit_safely") as safe_exit:
             t8_assistant.main()
@@ -399,9 +718,49 @@ class TestPipeline(unittest.TestCase):
             self.assertEqual(arm.joints[0], 110)
             placed = motion_worker.execute({"command": "place"}, arm, kin)
             self.assertFalse(placed["holding"])
-            self.assertEqual(len(kin.targets), 1)
+            # pick IK + place IK nâng PLACE_LIFT để không chạm sàn
+            self.assertEqual(len(kin.targets), 2)
+            self.assertAlmostEqual(kin.targets[1][2],
+                                   motion_worker.PICK_Z + motion_worker.PLACE_LIFT)
             self.assertIn(("all", [110, 50, 60, 10, 90, 140]), arm.writes)
             self.assertEqual(motion_worker.load_state()["phase"], "empty")
+            self.assertEqual(arm.joints, motion_worker.READY_POSE)
+
+    def test_holding_observe_returns_camera_pose_then_places_on_stack_height(self):
+        class Arm:
+            def __init__(self):
+                self.joints = [90, 120, 60, 10, 90, 140]
+            def Arm_serial_servo_read(self, joint):
+                return self.joints[joint - 1]
+            def Arm_serial_servo_write(self, joint, angle, _ms):
+                self.joints[joint - 1] = angle
+            def Arm_serial_servo_write6(self, *args):
+                self.joints = list(args[:6])
+            def Arm_serial_servo_write6_array(self, joints, _ms):
+                self.joints = list(joints)
+
+        class Kin:
+            def __init__(self): self.targets = []
+            def ik(self, x, y, z):
+                self.targets.append((x, y, z))
+                return [90, 50, 60, 10, 90]
+
+        with TemporaryDirectory() as directory, \
+             patch.object(motion_worker, "STATE_FILE", Path(directory) / "state.json"), \
+             patch("t8_motion_worker.time.sleep"):
+            arm, kin = Arm(), Kin()
+            motion_worker.save_state({"phase": "holding", "label": "khoi_do",
+                                      "joint1": 90, "picked_xy": [-0.2, 0.0],
+                                      "place_z": motion_worker.PICK_Z,
+                                      "grasp_joints": [90, 50, 60, 10, 90]})
+            observed = motion_worker.execute({"command": "holding_observe"}, arm)
+            self.assertTrue(observed["holding"])
+            self.assertEqual(arm.joints, motion_worker.HOLDING_OBSERVE_POSE)
+            placed = motion_worker.execute(
+                {"command": "place_target", "target_box": [300, 180, 360, 240],
+                 "image_size": [640, 480]}, arm, kin)
+            self.assertFalse(placed["holding"])
+            self.assertEqual(kin.targets[-1][2], motion_worker.STACK_Z)
             self.assertEqual(arm.joints, motion_worker.READY_POSE)
 
     def test_prepare_reconciles_manual_gripper_open(self):
@@ -503,7 +862,9 @@ class TestPipeline(unittest.TestCase):
             arm, kin = Arm(), Kin()
             placed = motion_worker.execute({"command": "place"}, arm, kin)
             self.assertTrue(placed["ok"])
-            self.assertEqual(kin.targets, [(-0.1584, 0.02463, 0.045)])
+            self.assertEqual(kin.targets, [(-0.1584, 0.02463, 0.045),
+                                           (-0.1584, 0.02463,
+                                            0.045 + motion_worker.PLACE_LIFT)])
             self.assertEqual(arm.moves[0], [62, 50, 60, 10, 82, 140])
             self.assertEqual(motion_worker.load_state()["phase"], "empty")
 
@@ -825,7 +1186,8 @@ class TestPipeline(unittest.TestCase):
         self.assertFalse(blocked["ok"])
         placed = ex.execute("place_held", {"bin": "ban"})
         self.assertTrue(placed["ok"])
-        self.assertFalse(ex.state.holding)
+        self.assertTrue(placed["dry_run"])
+        self.assertTrue(ex.state.holding)  # a preview does not release a real object
 
     def test_executor_rotate_dry_run(self):
         ex = Executor()

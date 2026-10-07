@@ -19,24 +19,27 @@ from pathlib import Path
 
 ACTIONS = {"none": None, "color": 61, "stack": 62, "face": 63,
            "trash": 64, "stop": 65}
-MODEL = "gemini-3.6-flash"
+MODEL = "gemini-3.5-flash"
 
 # Constrained intents (mirror task_ontology.yaml). Gemini may ONLY emit these.
 # Executor (t8_executor.py) re-validates before touching hardware.
 INTENTS = {"ask_info", "open_task", "stop_task", "rotate_relative", "stack_cubes",
-           "vision_pick_hold", "place_held", "release_hold", "gripper", "light_beep", "pose_start", "arm_pose"}
+           "vision_pick_hold", "sort_cube", "place_held", "release_hold", "gripper", "light_beep", "pose_start", "arm_pose",
+           "detection_mode", "search_object", "observe_scene", "robot_status", "capabilities"}
 # Which intents map to legacy manager actions (the rest => action none + executor skill)
 INTENT_TO_ACTION = {"ask_info": "none", "open_task": "open_task:*",
                     "stop_task": "stop", "rotate_relative": "none", "stack_cubes": "none",
-                    "vision_pick_hold": "none", "place_held": "none",
+                    "vision_pick_hold": "none", "sort_cube": "none", "place_held": "none",
                     "release_hold": "none", "gripper": "none", "light_beep": "none",
-                    "pose_start": "none", "arm_pose": "none"}
+                    "pose_start": "none", "arm_pose": "none",
+                    "detection_mode": "none", "search_object": "none",
+                    "observe_scene": "none", "robot_status": "none", "capabilities": "none"}
 
 SYSTEM = """Bạn là trợ lý tiếng Việt cho DOFBOT để bàn. AN TOÀN LÀ TRÊN HẾT.
 Bạn KHÔNG điều khiển servo trực tiếp. Bạn chỉ được trả JSON duy nhất với schema:
-{"reply": str ngắn gọn,
+ {"reply": str ngắn gọn,
  "actions": [
-   {"intent": một trong ask_info,open_task,stop_task,rotate_relative,stack_cubes,vision_pick_hold,place_held,release_hold,gripper,light_beep,pose_start,arm_pose,
+   {"intent": một trong ask_info,open_task,stop_task,rotate_relative,stack_cubes,vision_pick_hold,sort_cube,place_held,release_hold,gripper,light_beep,pose_start,arm_pose,detection_mode,search_object,observe_scene,robot_status,capabilities,
     "entities": object tham số (có thể rỗng {})}
  ],
  "need_vision": true/false (cần nhìn camera không),
@@ -44,22 +47,63 @@ Bạn KHÔNG điều khiển servo trực tiếp. Bạn chỉ được trả JSO
 
 LUẬT INTENT (bắt buộc):
 - ask_info: hỏi đáp thuần (thời tiết, tin tức, chào hỏi, mô tả ảnh). entities={}.
+- observe_scene: liệt kê cube đang được perception xác thực; entities={}, need_vision=true.
+- robot_status: đọc trạng thái robot/hiệu chuẩn từ dữ liệu thật; entities={}, need_vision=true.
+- capabilities: đọc danh sách chức năng hiện có và giới hạn; entities={}.
+- Khi có context mode=ros3d_dry_run: gắp/xếp chỉ là preview IK/FK, quét chỉ là đề xuất.
+  Không nói đã xoay/gắp/đặt thành công khi chưa có kết quả thực thi. ID1=xanh dương,
+  ID2=xanh lá, ID3=đỏ, ID4=vàng; ID phải do perception xác nhận.
+- Quy định ID-màu trong source (cube_identity): ID1=xanh dương, ID2=xanh lá,
+  ID3=đỏ, ID4=vàng. Màu trong câu lệnh chỉ là selector mong muốn; hành động
+  vật lý theo cube ID bắt buộc perception 3D xác nhận object_id và
+  geometry_model_id nhất quán. CẤM suy ID chỉ từ HSV/màu. Nếu tag/model/màu
+  mâu thuẫn thì dừng và hỏi người dùng. Mơ hồ (thiếu độ/màu/đích)
+  thì actions=[] và hỏi lại, không đoán. Màu tiếng Anh map thẳng, không hỏi lại:
+  blue=xanh dương (khoi_xanh_duong), green=xanh lá (khoi_xanh), red=đỏ (khoi_do),
+  yellow=vàng (khoi_vang). Chỉ hỏi lại khi đúng từ "xanh" trơn tiếng Việt
+  (không kèm duong/la/blue/green/duong_la).
+- Gọi cube bằng hình rác in trên mặt (nhãn rác -> cube ID, cố định): ID1 = báo, lon nước, sách, cặp
+  sách cũ; ID2 = xương cá, vỏ trứng, lõi táo, vỏ dưa hấu; ID3 = kim tiêm, mỹ phẩm hết hạn, pin đã
+  qua sử dụng (used batteries), thuốc hết hạn; ID4 = giấy vệ sinh, hạt đào, tàn thuốc lá, đũa dùng một
+  lần. Khi người dùng gọi "cube hình cục pin đã qua sử dụng" hay "cube có hình xương cá" thì dùng
+  label/source/target = cube_<ID> tương ứng (pin đã qua sử dụng => cube_3), KHÔNG hỏi lại màu.
+  "lên"/"lên trên" sau tên cube nguồn là ĐẶT LÊN cube đích (stack_cubes), không phải nâng tay lên.
 - open_task: MỞ bài toán lớn, entities={"task": một trong color,stack,face,trash}.
   Chỉ dùng khi người dùng nói rõ tên bài toán ("phân loại màu", "xếp chồng màu", "theo dõi khuôn mặt", "phân loại rác").
 - stop_task: "dừng bài toán/dừng robot". entities={}.
-- stack_cubes: đặt cube nguồn lên cube đích, entities={"source": nhãn nguồn, "target": nhãn đích}. Không thay bằng gắp rồi đặt xuống bàn.
+- stack_cubes: đặt cube nguồn lên cube đích, entities={"source": nhãn nguồn, "target": nhãn đích}. Không thay bằng gắp rồi đặt xuống bàn. Lệnh xếp NHIỀU tầng nối tiếp (xếp A lên B, sau đó xếp C lên A) thì trả NHIỀU stack_cubes nối tiếp theo đúng thứ tự, executor chạy lần lượt từng cái. CẤM từ chối lệnh hợp lệ với lý do "cần làm từng bước" — mảng actions sinh ra chính là để làm từng bước.
 - rotate_relative: xoay/di chuyển THÊM delta độ từ góc HIỆN TẠI (sang trái/phải). entities={"joint":1, "delta_deg": số -90..90}.
   "xoay phải thêm 30 độ" => {"joint":1,"delta_deg":30}. "sang trái" => delta âm.
   Nếu chỉ nói "xoay sang phải" mà thiếu số độ thì hỏi lại, không tự chọn 30 độ.
   Không bao giờ đoán góc tuyệt đối, không tự đặt joint khác 1 trừ khi người dùng nêu khớp.
 - vision_pick_hold: gắp LÊN VÀ GIỮ (không đặt xuống). entities={"label": mô tả vật, "hold":true}.
   "cầm cục cube xương cá lên" => {"label":"xuong_ca","hold":true}. Nếu không dặn hạ/đặt => hold=true.
+- sort_cube: gắp một cube ROS3D và thả vào zone theo ID của cube.
+  entities={"label": nhãn màu hoặc cube ID}. Ví dụ "phân loại cube đỏ" =>
+  {"label":"khoi_do"}. Không dùng open_task color khi người dùng yêu cầu một cube cụ thể.
+  TẤT CẢ cube ("phân loại hết các cube", "sorting color lần lượt các màu", "sort all"): MỘT sort_cube duy nhất
+  với {"label":"all"}; executor tự lập thứ tự (cube IK tới được làm trước), chạy tuần tự từng cube, khảo
+  sát zone một lần, hết cube hoặc gặp lỗi hệ thống thì báo tổng kết. KHÔNG tự tách thành nhiều sort_cube.
 - place_held: "đặt xuống/hạ xuống" => entities={"bin":"ban"} (mặc định).
 - release_hold: "thả ra/nhả kẹp" => entities={}.
 - gripper: "mở kẹp/kẹp lại" => entities={"state":"open"|"close"}.
 - light_beep: đèn/còi => entities={"device":"red|green|blue|yellow|beep","state":"on"|"off"}.
 - pose_start: "về tư thế chuẩn/chờ/bắt đầu/vị trí cũ/trạng thái start" => entities={}.
 - arm_pose: "tay lên/nâng tay/đứng dậy/đứng thẳng/đứng lên", "tay xuống/hạ tay" => entities={"pose":"up"|"down"}.
+- detection_mode: vào/thoát chế độ quan sát an toàn để quét camera. entities={"state":"on"|"off"}. "tự quan sát/quét tìm" => on.
+- search_object: tìm 1 vật trong ảnh hiện tại (không tự xoay ở intent này; việc quét xoay do executor vòng active-search đảm nhiệm). entities={"label": nhãn vật, vd khoi_do/cube_1}.
+  "tìm cube đỏ đang ở đâu" => {"label":"khoi_do"}. "cube id 1" => {"label":"cube_1"}.
+  Muốn xếp nguồn lên đích: dùng một stack_cubes để executor sở hữu cả tác vụ.
+- stack_cubes: đặt cube nguồn lên cube đích, entities={"source": nhãn nguồn, "target": nhãn đích}. Không thay bằng gắp rồi đặt xuống bàn.
+  Xếp TẤT CẢ cube thành một tháp (tối đa 4 tầng) ("xếp chồng hết các cube", "stack all cubes"): MỘT stack_cubes
+  {"source":"all","target":"all"} (executor tự chọn cube nền và thứ tự), hoặc {"source":"all","target":"cube_1"}
+  khi người dùng chỉ định cube nền. KHÔNG tự tách thành nhiều stack_cubes khi không nêu từng cube.
+  Chuỗi dài "tự tìm đỏ rồi đặt lên cube 1": dùng stack_cubes DUY NHẤT.
+  Executor sở hữu việc quan sát, xác thực hai vật và preflight. Không tách thành
+  search_object+vision_pick_hold+search_object+stack_cubes vì có thể gắp lặp nguồn.
+  Nhãn màu dùng khoi_do/khoi_xanh/khoi_xanh_duong/khoi_vang (blue=xanh dương...).
+  Cube có họa tiết lạ mà detector không có class riêng (syringe...) thì dùng nhãn
+  cube chung để tìm bằng contour; KHÔNG hỏi lại chỉ vì họa tiết lạ khi màu/vị trí đã rõ.
 - CẤM: tự bịa intent khác, CẤM tự đưa ra số độ/góc tuyệt đối (trừ pose_start), CẤM đặt hold=false khi không yêu cầu đặt.
 - Nếu phủ định ("đừng xoay"), giả định, hoặc lệnh thiếu góc/đích cần thiết: actions=[] và reply là câu hỏi làm rõ. Không tự đoán góc mặc định.
 - Nếu cần camera mà chưa có ảnh, chỉ đặt need_vision=true; khi có ảnh mới hãy lập lại toàn bộ kế hoạch.
@@ -72,11 +116,16 @@ LUẬT INTENT (bắt buộc):
   Chỉ điền khi CẦN thông tin mới Internet (thời tiết hôm nay, tin tức, giá 2025-2026).
 
 Ví dụ:
+Q "sorting color lần lượt các màu trên camera vào đúng ô, cube nào IK được thì làm trước" => actions=[{"intent":"sort_cube","entities":{"label":"all"}}] need_vision=true
+Q "xếp chồng tất cả các cube" => actions=[{"intent":"stack_cubes","entities":{"source":"all","target":"all"}}] need_vision=true
 Q "phân loại màu" => actions=[{"intent":"open_task", "entities":{"task":"color"}}]
 Q "cầm cục cube xương cá lên rồi xoay phải 30 độ" => actions=[{"intent":"vision_pick_hold", "entities":{"label":"xuong_ca","hold":true}}, {"intent":"rotate_relative", "entities":{"joint":1,"delta_deg":30}}]
 Q "xoay sang phải thêm 30 độ nữa" => actions=[{"intent":"rotate_relative", "entities":{"joint":1,"delta_deg":30}}]
 Q "thời tiết Hà Nội hôm nay" => actions=[{"intent":"ask_info", "entities":{}}] search_query="thời tiết Hà Nội hôm nay"
 Q "xếp khối đỏ lên khối xanh" => actions=[{"intent":"stack_cubes","entities":{"source":"khoi_do","target":"khoi_xanh"}}] need_vision=true
+Q "tự quan sát tìm cube đỏ ở đâu rồi gắp đặt lên cube id 1" => actions=[{"intent":"stack_cubes","entities":{"source":"khoi_do","target":"cube_1"}}] need_vision=true (executor quan sát/preflight theo khả năng thực tế của phiên)
+Q "gắp xanh dương đặt lên cube id 4, sau đó stack syringe lên xanh" => actions=[{"intent":"stack_cubes","entities":{"source":"khoi_xanh_duong","target":"cube_4"}}, {"intent":"stack_cubes","entities":{"source":"cube","target":"khoi_xanh_duong"}}] need_vision=true
+Q "tìm cube đỏ đang ở đâu" => actions=[{"intent":"search_object","entities":{"label":"khoi_do"}}] need_vision=true
 Nếu có ảnh: mô tả/OCR từ ảnh, không chắc thì nói không chắc.
 """
 
@@ -132,18 +181,47 @@ VISION_LABELS = [
     ("toilet paper", "giay_ve_sinh"),
     ("xanh duong", "khoi_xanh_duong"),
     ("cube xanh duong", "khoi_xanh_duong"),
+    ("blue", "khoi_xanh_duong"),
+    ("cube blue", "khoi_xanh_duong"),
     ("khoi do", "khoi_do"),
     ("khoi xanh", "khoi_xanh"),
     ("khoi vang", "khoi_vang"),
     ("cube do", "khoi_do"),
     ("cube xanh", "khoi_xanh"),
     ("cube vang", "khoi_vang"),
+    ("red", "khoi_do"),
+    ("cube red", "khoi_do"),
+    ("green", "khoi_xanh"),
+    ("cube green", "khoi_xanh"),
+    ("yellow", "khoi_vang"),
+    ("cube yellow", "khoi_vang"),
+    ("mau do", "khoi_do"),
+    ("mau xanh duong", "khoi_xanh_duong"),
+    ("mau xanh la", "khoi_xanh"),
+    ("mau xanh", "khoi_xanh"),
+    ("mau vang", "khoi_vang"),
+    ("mau blue", "khoi_xanh_duong"),
+    ("mau green", "khoi_xanh"),
+    ("mau red", "khoi_do"),
+    ("mau yellow", "khoi_vang"),
     ("rac tai che", "rac_tai_che"),
     ("pin", "pin"),
 ]
 
 
 def cube_label(phrase):
+    # Ưu tiên ID cụ thể (cube id 1..4) trước màu sắc.
+    try:
+        from t8_scene import normalize_cube_label
+    except ImportError:
+        try:
+            from .t8_scene import normalize_cube_label  # type: ignore
+        except ImportError:
+            normalize_cube_label = None
+    if normalize_cube_label is not None:
+        cube_id = normalize_cube_label(phrase)
+        if cube_id is not None:
+            return cube_id
     t = norm_nodau(phrase)
     for keyword, label in VISION_LABELS:
         if label in ("xuong_ca", "giay_ve_sinh", "khoi_do", "khoi_xanh",
@@ -154,6 +232,25 @@ def cube_label(phrase):
     return None
 
 
+def try_local_search(q):
+    """Parse 'tìm/quan sát/quét ... ở đâu' thành search_object (0 API).
+
+    Dùng cho câu quan sát đơn lẻ. Câu phức hợp (tìm rồi gắp rồi đặt)
+    để Gemini ra stack_cubes để executor quét 2 pha.
+    """
+    t = norm_nodau(q)
+    if not any(v in t for v in ("tim ", "tim cube", "o dau", "quan sat",
+                                "quet tim", "tim kiem", "nhin xem", "tu quan sat")):
+        return None
+    # Tránh nhận nhầm lệnh gắp/xếp phức hợp thành search đơn.
+    if any(v in t for v in ("gap ", "cam ", "nhat ", "dat ", "xep ")):
+        return None
+    label = cube_label(q)
+    if label is None:
+        return None
+    return "search_object", {"label": label}, f"Tìm {label} qua camera (detection mode, quét chậm)."
+
+
 def try_local_stack_sequence(q):
     """Parse one explicit source cube -> target cube command without an LLM."""
     t = norm_nodau(q).strip(" .,!")
@@ -161,6 +258,9 @@ def try_local_stack_sequence(q):
                      r"(?:dat|xep)\s+len\s+(.+)$", t)
     if match is None:
         match = re.match(r"^xep\s+(.+?)\s+len\s+(.+)$", t)
+    if match is None:
+        # "gắp A lên trên B": nguồn A, đích B (chỉ nhận khi có "lên trên" rõ ràng).
+        match = re.match(r"^(?:gap|cam|nhat)\s+(.+?)\s+len\s+tren\s+(.+)$", t)
     if match is None:
         return None
     source, target = cube_label(match.group(1)), cube_label(match.group(2))
@@ -202,6 +302,10 @@ def validate_single_intent(intent, ent):
         hold = ent.get("hold", True)
         hold = True if hold is not False else False
         return intent, {"label": label, "hold": hold}, "none"
+    if intent == "sort_cube":
+        label = str(ent.get("label", "") or "")[:60].strip()
+        return ((intent, {"label": label}, "none") if label
+                else ("ask_info", {}, "none"))
     if intent == "place_held":
         b = str(ent.get("bin", "ban") or "ban")[:40]
         return intent, {"bin": b}, "none"
@@ -219,6 +323,14 @@ def validate_single_intent(intent, ent):
         return intent, {"device": dev, "state": st}, "none"
     if intent == "pose_start" or intent == "arm_pose":
         return intent, ent, "none"
+    if intent == "detection_mode":
+        st = ent.get("state", "")
+        if st not in ("on", "off"):
+            return "ask_info", {}, "none"
+        return intent, {"state": st}, "none"
+    if intent == "search_object":
+        label = str(ent.get("label", "") or "")[:60].strip() or "vat_the"
+        return intent, {"label": label}, "none"
     return "ask_info", {}, "none"
 
 def validate_intent(data):
@@ -271,20 +383,49 @@ def validate_plan(data):
         intent, ent = item["intent"], item["entities"]
         if not isinstance(intent, str) or intent not in INTENTS or not isinstance(ent, dict):
             raise InvalidPlan(f"Bước {index}: intent/entities không hợp lệ")
-        if intent in {"ask_info", "stop_task", "release_hold", "pose_start"}:
+        if intent in {"ask_info", "stop_task", "release_hold", "pose_start",
+                      "observe_scene", "robot_status", "capabilities"}:
             valid = not ent
         elif intent == "open_task":
             valid = set(ent) == {"task"} and ent["task"] in {"color", "stack", "face", "trash"}
         elif intent == "rotate_relative":
             d, j = ent.get("delta_deg"), ent.get("joint")
-            valid = (set(ent) == {"joint", "delta_deg"} and type(j) is int and 1 <= j <= 6
+            valid = (set(ent) == {"joint", "delta_deg"} and type(j) is int and j == 1
                      and type(d) in (int, float) and 0 < abs(d) <= 90)
         elif intent == "stack_cubes":
             valid = (set(ent) == {"source", "target"} and
                      all(isinstance(ent[k], str) and ent[k].strip() for k in ("source", "target")))
+            if valid:
+                try:
+                    from cube_identity import canonical_label
+                except ImportError:
+                    canonical_label = None
+                if canonical_label is not None:
+                    ent = {"source": canonical_label(ent["source"]),
+                           "target": canonical_label(ent["target"])}
+                    item["entities"] = ent
         elif intent == "vision_pick_hold":
             valid = (set(ent) == {"label", "hold"} and isinstance(ent["label"], str)
                      and bool(ent["label"].strip()) and ent["hold"] is True)
+            if valid:
+                try:
+                    from cube_identity import canonical_label as _canon
+                except ImportError:
+                    _canon = None
+                if _canon is not None:
+                    ent = {"label": _canon(ent["label"]), "hold": True}
+                    item["entities"] = ent
+        elif intent == "sort_cube":
+            valid = (set(ent) == {"label"} and isinstance(ent["label"], str)
+                     and bool(ent["label"].strip()))
+            if valid:
+                try:
+                    from cube_identity import canonical_label as _canon_sort
+                except ImportError:
+                    _canon_sort = None
+                if _canon_sort is not None:
+                    ent = {"label": _canon_sort(ent["label"])}
+                    item["entities"] = ent
         elif intent == "place_held":
             valid = set(ent) == {"bin"} and ent["bin"] == "ban"
         elif intent == "gripper":
@@ -295,13 +436,33 @@ def validate_plan(data):
                      ent["state"] in {"on", "off"})
         elif intent == "arm_pose":
             valid = set(ent) == {"pose"} and ent["pose"] in {"up", "down"}
+        elif intent == "detection_mode":
+            valid = set(ent) == {"state"} and ent["state"] in {"on", "off"}
+        elif intent == "search_object":
+            valid = (set(ent) == {"label"} and isinstance(ent["label"], str)
+                     and bool(ent["label"].strip()))
+            if valid:
+                try:
+                    from cube_identity import canonical_label as _canon2
+                except ImportError:
+                    _canon2 = None
+                if _canon2 is not None:
+                    ent = {"label": _canon2(ent["label"])}
+                    item["entities"] = ent
         if not valid:
             raise InvalidPlan(f"Bước {index}: tham số không hợp lệ")
         steps.append((intent, ent, ent.get("task", "stop" if intent == "stop_task" else "none")))
     if len(steps) > 1 and any(s[0] in {"open_task", "stop_task", "ask_info"} for s in steps):
         raise InvalidPlan("Không ghép tác vụ chạy dài hoặc hỏi đáp vào chuỗi chuyển động")
-    if any(s[0] in {"vision_pick_hold", "stack_cubes"} for s in steps) and not data["need_vision"]:
-        raise InvalidPlan("Lệnh gắp/xếp cần camera")
+    if any(s[0] == "stack_cubes" for s in steps) and any(
+            s[0] in {"search_object", "vision_pick_hold"} for s in steps):
+        raise InvalidPlan("stack_cubes đã sở hữu cả tìm+gắp; không ghép thêm search/pick gây gắp lặp nguồn")
+    if len(steps) > 1 and any(s[0] == "stack_cubes" for s in steps) and any(
+            s[0] not in {"stack_cubes", "rotate_relative", "arm_pose", "pose_start",
+                         "detection_mode", "gripper"} for s in steps):
+        raise InvalidPlan("stack_cubes chỉ ghép nối tiếp với stack khác hoặc xoay/tay đơn giản")
+    if any(s[0] in {"vision_pick_hold", "sort_cube", "stack_cubes", "search_object", "observe_scene", "robot_status"} for s in steps) and not data["need_vision"]:
+        raise InvalidPlan("Lệnh gắp/xếp/tìm cần camera")
     if data["search_query"].strip() and steps and steps[0][0] != "ask_info":
         raise InvalidPlan("Không ghép tìm web vào lệnh robot")
     return steps
@@ -344,13 +505,18 @@ def try_local_rotate(q):
 def try_local_hold_place(q):
     """Parse giữ/đặt/thả/kẹp (0 API)."""
     t = norm_nodau(q)
-    # tay len / tay xuong / dung thang
-    if "tay len" in t or "nang tay" in t or any(k in t for k in ["dung thang", "dung day", "dung len"]):
+    # tay len / tay xuong / dung thang. Khớp theo từ ("su dung len tren" không phải "đứng lên")
+    # và không áp dụng cho câu gắp/xếp vật (có vật nguồn/đích đi kèm).
+    object_action = bool(re.search(r"\b(gap|cam|nhat|xep|chong|lay)\b", t)) and len(t.split()) > 4
+    if not object_action and re.search(
+            r"(?<!su )\b(?:tay len|nang tay|dung thang|dung day|dung len)\b", t):
         return "arm_pose", {"pose": "up"}, "Đứng thẳng / Nâng tay lên."
     if "tay xuong" in t or "ha tay" in t:
         return "arm_pose", {"pose": "down"}, "Hạ tay xuống."
     # pose start / chuẩn
-    if any(k in t for k in ["tu the chuan", "tu the cho", "pose start", "vi tri ban dau", "vi tri cu", "vi tri xuat phat", "trang thai start"]):
+    if any(k in t for k in ["tu the chuan", "tu the cho", "pose start", "start pose",
+                            "ve start pose", "ve pose start", "vi tri ban dau",
+                            "vi tri cu", "vi tri xuat phat", "trang thai start"]):
         return "pose_start", {}, "Về tư thế chuẩn."
     # release trước (tránh nhầm với "mở kẹp")
     if any(k in t for k in ["tha ra", "nha kep", "nha ra", "thach ra"]):
@@ -363,6 +529,10 @@ def try_local_hold_place(q):
             return "gripper", {"state": "open"}, "Mở kẹp."
     if any(k in t for k in ["kep lai", "kep chat", "dong kep"]):
         return "gripper", {"state": "close"}, "Kẹp lại."
+    # "gắp A lên trên B" / "đặt A lên B" là xếp chồng, không phải gắp-giữ: để planner/stack xử lý.
+    # ("lên trên" cuối mệnh đề = nâng lên, không có đích; chỉ khi có đích đi sau mới là xếp chồng)
+    if re.search(r"\blen tren\s+\S|\bdat len\b|\bxep len\b|\bchong len\b", t):
+        return None
     # vision_pick_hold: "cầm/gắp ... lên" + "giữ"
     if any(v in t for v in ["cam ", "cam cuc", "gap ", "gap khoi", "nhat "]) and \
             any(k in t for k in ["len", "giu", "xuong ca", "fishbone"]):
@@ -437,17 +607,40 @@ def try_local_light(q):
     return "light_beep", {"device": dev, "state": st}, f"{verb} {tgt}."
 
 
+def _looks_like_action(query):
+    """Câu lệnh hành động robot (gắp/xoay/đặt/thả...) -> RAG nhường Gemini.
+
+    RAG tri thức (vd rotate_relative) từng cướp lệnh ghép gắp-xoay-đặt rồi trả
+    lời chay thay vì chạy. Câu hỏi kiến thức ("...là gì/như thế nào") không có
+    động từ hành động nên vẫn qua RAG 0-call.
+    """
+    try:
+        t = norm_nodau(query)
+    except Exception:
+        return False
+    if _has_rot_verb(t) or _has_find_verb(t):
+        return True
+    try:
+        if (try_local_rotate(query) or try_local_hold_place(query)
+                or try_local_stack_sequence(query) or try_local_light(query)):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 # ----------------------------------------------------------------------------
 # General router: single source of truth local <-> Gemini (thay keyword lẻ)
 # ----------------------------------------------------------------------------
 # Thêm động từ/danh từ MỚI chỉ cần thêm 1 từ vào đúng nhóm dưới đây,
 # không sửa logic ở nơi khác.
 
-# Động từ cần TÌM vật qua camera (gắp/di chuyển). Đặt/thả (đồ đang giữ)
+# Động từ cần TÌM vật qua camera (gắp/di chuyển/tìm kiếm). Đặt/thả (đồ đang giữ)
 # không cần ảnh nên KHÔNG ở đây — executor check holding là đủ.
 FIND_VERBS = ("cam ", "cam cuc", "gap ", "gap khoi", "nhat ", "lay ",
               "vot ", "kep lay", "xep ", "xep chong", "don ", "don dep",
-              "dep ", "day ", "keo ", "di chuyen", "dua ", "dem ", "chuyen ")
+              "dep ", "day ", "keo ", "di chuyen", "dua ", "dem ", "chuyen ",
+              "tim ", "tim kiem", "quet tim", "quan sat", "tu quan sat")
 ROT_VERBS = ("xoay", "quay", "di chuyen sang", "sang phai", "sang trai", "qua trai", "qua phai")
 
 GENERIC_NOUNS = ("khoi", "cuc", "cube", "vat", "cai", "hop", "chai", "pin",
@@ -458,7 +651,8 @@ SHAPES = ("tron", "vuong", "dai", "ngan", "to", "nho", "lon")
 # Từ camera tường minh (kế thừa VISION_WORDS cũ, trừ nhóm động từ đã tách).
 CAMERA_WORDS = ("trong anh", "tren anh", "hinh anh", "qua camera",
                 "tren camera", "tu camera", "truoc camera", "nhin thay",
-                "doc chu", "doc van ban", "ocr", "vat truoc mat")
+                "doc chu", "doc van ban", "ocr", "vat truoc mat",
+                "o dau", "dang o dau", "tu quan sat", "quet")
 
 # Chỉ định không gian: cụm nhiều từ + "kia" đơn ("nay" đơn bị loại vì
 # "hôm nay" là thời gian, không phải không gian).
@@ -558,7 +752,9 @@ class Needs:
 CLARIFY_ROTATE = ("Xoay khớp mấy, thêm bao nhiêu độ? "
                   "Ví dụ: 'xoay phải thêm 30 độ' hoặc 'khớp 2 trái 15 độ'.")
 CLARIFY_OBJECT = ("Gắp vật nào? Nói màu/hình rõ hơn, ví dụ 'khối đỏ tròn'. "
-                  "Nếu vật đang trước camera, gõ '/see gắp ...' để tôi nhìn.")
+                   "Nếu vật đang trước camera, gõ '/see gắp ...' để tôi nhìn.")
+CLARIFY_GREEN_BLUE = ("Bạn nói 'xanh' là xanh lá hay xanh dương (ID1)? "
+                      "Ví dụ: 'gắp cube xanh lá đặt lên cube ID 1'.")
 
 
 def assess_needs(query, has_image=False):
@@ -577,6 +773,14 @@ def assess_needs(query, has_image=False):
     if action:
         return Needs("local")
 
+    # 1b. Lệnh ghép nhiều động từ (gắp+rồi+xoay+rồi+đặt): KHÔNG match parser đơn
+    # lẻ (tránh bắt nhầm mỗi đuôi "đặt xuống"); để Gemini lập sequence. Có vật
+    # rõ thì cần ảnh trước để còn pre-capture 1-call.
+    if is_multi_action_query(q):
+        if _has_find_verb(t) and _object_specific(t):
+            return Needs("llm_vision", True)
+        return Needs("llm_text")
+
     # 2. Local chắc chắn: xoay, đặt/thả/kẹp/đèn/giờ/toán/chitchat/pose_start
     if _has_rot_verb(t) and try_local_rotate(q):
         return Needs("local")
@@ -589,6 +793,13 @@ def assess_needs(query, has_image=False):
     # 3. Xoay nhưng thiếu thông tin (không có vật thể) -> hỏi lại góc xoay
     if _has_rot_verb(t) and not _object_specific(t) and not has_image:
         return Needs("clarify", False, CLARIFY_ROTATE)
+
+    # 3b. "xanh" trơn tiếng Việt (không rõ lá/dương) + có động từ -> hỏi lại.
+    # blue/green/red/yellow tiếng Anh map thẳng, không hỏi.
+    if _has_find_verb(t) and "xanh" in t and "xanh duong" not in t \
+            and "xanh la" not in t and "xanh_duong" not in t and "xanh_la" not in t \
+            and "blue" not in t and "green" not in t:
+        return Needs("clarify", False, CLARIFY_GREEN_BLUE)
 
     # 4. Cần nhìn camera?
     vneed = _has_find_verb(t) or _has_camera_word(t) or _has_deixis(t)
@@ -967,7 +1178,10 @@ class Pipeline:
                         return self._local_hit(c, "none", counts, "ask_info", {})
 
                 # ---- Layer 1.5: local RAG (0 API, nội bộ) ----
-                if image is None and getattr(self, "retriever", None) is not None:
+                # Bỏ qua RAG với câu lệnh hành động: nhường Gemini lập sequence
+                # thay vì trả lời chay (vd gắp-xoay-đặt từng bị cướp ở đây).
+                if image is None and getattr(self, "retriever", None) is not None \
+                        and not _looks_like_action(q):
                     try:
                         hits = self.retriever.query(q, top_k=1)
                         if hits and hits[0].get("score", 0) >= getattr(
@@ -1101,16 +1315,142 @@ class Pipeline:
             exc.t8_counts = counts
             raise
 
-    def run(self, query, image=None):
-        """Gemini-first planner. No local answer or action cache is consulted."""
+    def run(self, query, image=None, observation=None):
+        """Planner: local/clarify/cache 0-call trước, Gemini chỉ khi mơ hồ."""
         counts = Counts()
         q = (query or "").strip()
         if not q:
             return {"reply": "Bạn nhắc lại giúp nhé.", "action": "none",
                     "intent": "ask_info", "entities": {}, "sequence": [],
                     "need_vision": False, "counts": counts, "source": "empty"}
+        # Deterministic state/control commands do not benefit from an LLM and
+        # must remain available when the semantic planner is LLM-first.
+        if image is None and observation is None:
+            safe = try_local_hold_place(q)
+            if safe and safe[0] in {"pose_start", "arm_pose", "gripper",
+                                    "place_held", "release_hold"}:
+                intent, ent, reply = safe
+                counts.local += 1
+                self._last_reply = reply
+                self._push_history(q, reply)
+                return {"reply": reply, "action": "none", "intent": intent,
+                        "entities": ent, "sequence": [(intent, ent, "none")],
+                        "need_vision": False, "counts": counts,
+                        "source": "local-safe-control"}
+        # ---- 0-call gates: filler/dedup/clarify/local/cache (ép clarify) ----
+        if self.enable_local:
+            qn = norm_text(q)
+            if not qn or is_filler(q):
+                return {"reply": "Tôi nghe chưa rõ, bạn nhắc lại giúp nhé.",
+                        "action": "none", "intent": "ask_info", "entities": {},
+                        "sequence": [], "need_vision": False,
+                        "counts": counts, "source": "filtered"}
+            now = time.monotonic()
+            has_img = image is not None or observation is not None
+            if qn == self._last_norm and (now - self._last_time) < DEDUP_WINDOW \
+                    and not has_img:
+                counts.local += 1
+                return {"reply": self._last_reply or "Bạn vừa hỏi câu này rồi.",
+                        "action": "none", "intent": "ask_info", "entities": {},
+                        "sequence": [], "need_vision": False,
+                        "counts": counts, "source": "filtered"}
+            self._last_norm, self._last_time = qn, now
+            needs = assess_needs(q, has_image=has_img)
+            if needs.route == "clarify":
+                self._last_reply = needs.clarify_msg
+                self._push_history(q, needs.clarify_msg)
+                counts.local += 1
+                return {"reply": needs.clarify_msg, "action": "none",
+                        "intent": "ask_info", "entities": {}, "sequence": [],
+                        "need_vision": False, "counts": counts, "source": "clarify"}
+            if not is_multi_action_query(q):
+                action, reply = match_task(q)
+                if action and image is None and observation is None:
+                    self._last_reply = reply
+                    self._push_history(q, reply)
+                    counts.local += 1
+                    intent = "stop_task" if action == "stop" else "open_task"
+                    ent = {} if action == "stop" else {"task": action}
+                    seq = [(intent, ent, action)]
+                    return {"reply": reply, "action": action, "intent": intent,
+                            "entities": ent, "sequence": seq, "need_vision": False,
+                            "counts": counts, "source": "local"}
+                r = try_local_rotate(q)
+                if r and image is None and observation is None:
+                    intent, ent, reply = r
+                    self._last_reply = reply
+                    self._push_history(q, reply)
+                    counts.local += 1
+                    return {"reply": reply, "action": "none", "intent": intent,
+                            "entities": ent, "sequence": [(intent, ent, "none")],
+                            "need_vision": False, "counts": counts, "source": "local"}
+                h = try_local_hold_place(q)
+                if h and h[0] != "vision_pick_hold" and image is None and observation is None:
+                    intent, ent, reply = h
+                    self._last_reply = reply
+                    self._push_history(q, reply)
+                    counts.local += 1
+                    return {"reply": reply, "action": "none", "intent": intent,
+                            "entities": ent, "sequence": [(intent, ent, "none")],
+                            "need_vision": False, "counts": counts, "source": "local"}
+                li = try_local_light(q)
+                if li and image is None and observation is None:
+                    intent, ent, reply = li
+                    self._last_reply = reply
+                    self._push_history(q, reply)
+                    counts.local += 1
+                    return {"reply": reply, "action": "none", "intent": intent,
+                            "entities": ent, "sequence": [(intent, ent, "none")],
+                            "need_vision": False, "counts": counts, "source": "local"}
+                for fn in (try_local_time, try_local_math):
+                    ans = fn(q)
+                    if ans and image is None and observation is None:
+                        self._last_reply = ans
+                        self._push_history(q, ans)
+                        counts.local += 1
+                        return {"reply": ans, "action": "none", "intent": "ask_info",
+                                "entities": {}, "sequence": [], "need_vision": False,
+                                "counts": counts, "source": "local"}
+                c = match_chitchat(q)
+                if c and image is None and observation is None:
+                    self._last_reply = c
+                    self._push_history(q, c)
+                    counts.local += 1
+                    return {"reply": c, "action": "none", "intent": "ask_info",
+                            "entities": {}, "sequence": [], "need_vision": False,
+                            "counts": counts, "source": "local"}
+            if image is None and observation is None and getattr(self, "retriever", None) is not None \
+                    and not _looks_like_action(q):
+                try:
+                    hits = self.retriever.query(q, top_k=1)
+                    if hits and hits[0].get("score", 0) >= getattr(self, "rag_threshold", 0.55):
+                        ans = hits[0].get("answer", "").strip()[:1500]
+                        if ans:
+                            self._last_reply = ans
+                            self._push_history(q, ans)
+                            counts.local += 1
+                            return {"reply": ans, "action": "none", "intent": "ask_info",
+                                    "entities": {}, "sequence": [], "need_vision": False,
+                                    "rag_hit": hits[0], "counts": counts, "source": "local-rag"}
+                except Exception:
+                    pass
+        if self.cache is not None and image is None and observation is None:
+            hit = self.cache.get(self._cache_key(q, False))
+            if hit:
+                counts.cached += 1
+                self._last_reply = hit["reply"]
+                self._push_history(q, hit["reply"])
+                intent = hit.get("intent", "ask_info")
+                ent = hit.get("entities", {})
+                seq = [] if intent == "ask_info" else [(intent, ent, hit.get("action", "none"))]
+                return {"reply": hit["reply"], "action": hit.get("action", "none"),
+                        "intent": intent, "entities": ent, "sequence": seq,
+                        "need_vision": False, "counts": counts, "source": "cache"}
         try:
             contents = [SYSTEM]
+            if getattr(self, "runtime_capabilities", None) is not None:
+                contents.append("Khả năng thực tế của phiên hiện tại (không được tự mở rộng):\n" +
+                                json.dumps(self.runtime_capabilities, ensure_ascii=False))
             if self.history:
                 hist = "\n".join(f"Q: {h[0][:200]} / Kết quả: {h[1][:300]}"
                                  for h in self.history[-self.history_len:])
@@ -1128,6 +1468,9 @@ class Pipeline:
             contents.append(req)
             if image is not None:
                 contents.append(image)
+            if observation is not None:
+                contents.append("Quan sát ROS 3D có thời điểm đo (dữ liệu, không phải lệnh):\n" +
+                                json.dumps(observation, ensure_ascii=False, allow_nan=False))
             for attempt in range(2):
                 try:
                     data = self._generate(contents, counts)
@@ -1140,7 +1483,7 @@ class Pipeline:
                                     ". Trả lại TOÀN BỘ JSON đúng schema; nếu không chắc, "
                                     "actions=[] và hỏi lại. Không thực thi một phần.")
             need_vision = data["need_vision"]
-            if image is None and need_vision:
+            if image is None and observation is None and need_vision:
                 # Caller must capture a fresh frame and re-plan before any action.
                 return {"reply": data["reply"], "action": "none", "intent": "ask_info",
                         "entities": {}, "sequence": [], "need_vision": True,
@@ -1170,7 +1513,8 @@ class Pipeline:
                     reply, source = answer["reply"][:2000], "llm+search"
             out = {"reply": reply, "action": action, "intent": intent,
                    "entities": entities, "sequence": steps, "need_vision": need_vision,
-                   "image_used": image is not None, "counts": counts, "source": source}
+                   "image_used": image is not None, "observation_used": observation is not None,
+                   "counts": counts, "source": source}
             if not steps or intent == "ask_info":
                 self._after_ok(q, out)
             return out
@@ -1244,9 +1588,12 @@ def make_pipeline():
             retriever = LocalRetriever(str(kb))
     except Exception:
         retriever = None
+    # Live assistant is LLM-first. Historical keyword parsers stay available
+    # to tests/offline callers, but no longer pre-empt natural-language task
+    # understanding in the physical assistant.
     pipe = Pipeline(LazyGemini(key), tavily,
                     os.environ.get("GEMINI_MODEL", MODEL),
-                    enable_local=False, enable_cache=False)
+                    enable_local=False, enable_cache=True)
     if retriever is not None:
         pipe.retriever = retriever
     return pipe
