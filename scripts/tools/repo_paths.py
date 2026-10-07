@@ -75,6 +75,11 @@ def resolve_root() -> Path:
 ROBOT_ARM_ROOT: Path = resolve_root()
 
 
+# Workspace ROS của repo (cap_vision, cap_scene_interfaces, dofbot_moveit); $ROBOT_ARM_ROS_WS ghi đè.
+ROS_WS: Path = Path(os.environ.get("ROBOT_ARM_ROS_WS") or ROBOT_ARM_ROOT / "ros")
+ROS_SETUP: Path = ROS_WS / "install" / "setup.bash"
+
+
 def repo_path(*parts: str) -> Path:
     """Path under the new layout: repo_path('ai','models',...)."""
     return ROBOT_ARM_ROOT.joinpath(*parts)

@@ -15,6 +15,7 @@ for _p in \
   "$ROBOT_ARM_ROOT/scripts/tools" \
   "$ROBOT_ARM_ROOT/projects/vision_experiments" \
   "$ROBOT_ARM_ROOT/projects/t8_pipeline" \
+  "$ROBOT_ARM_ROOT/projects" \
   ; do
   case ":${PYTHONPATH:-}:" in
     *":$_p:"*) ;;
