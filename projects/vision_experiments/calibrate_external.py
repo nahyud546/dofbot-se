@@ -342,6 +342,18 @@ def cmd_status(_args):
     raise SystemExit(0 if cal.accepted and (drift is None or drift <= X.MAX_DRIFT_PX) else 2)
 
 
+def pad_anchors(cal, landmarks_now):
+    """{zone: (điểm base của tâm ô theo hiệu chuẩn cũ, pixel hiện tại)} cho các ô thấy ở cả hai thời điểm."""
+    table_z = cal.tag_top_z - X.CUBE_EDGE_M
+    out = {}
+    for zone, uv_now in (landmarks_now or {}).items():
+        uv_old = cal.landmarks.get(int(zone))
+        base = None if uv_old is None else cal.pixel_to_base(uv_old[0], uv_old[1], table_z)
+        if base is not None:
+            out[int(zone)] = (np.asarray(base, float), [float(uv_now[0]), float(uv_now[1])])
+    return out
+
+
 def cmd_relocalize(_args):
     cal = _require_calibration(require_accepted=False)
     scene = measure_scene()
@@ -349,8 +361,17 @@ def cmd_relocalize(_args):
     pixels = np.array([p for t in scene["tags"] for p in t["px"]], float)
     if len(points) < 12:
         raise SystemExit("Cần ≥ 3 tag được cả hai camera thấy để giải lại pose.")
+    # Ô màu nằm yên trên bàn: vị trí base của tâm ô (theo hiệu chuẩn trước khi dời) là mốc neo thêm ở rìa bàn,
+    # nơi vài tag nằm cùng một độ cao giữa bàn ràng buộc pose rất yếu.
+    anchors = pad_anchors(cal, scene["landmarks"])
+    if anchors:
+        points = np.vstack([points, [a[0] for a in anchors.values()]])
+        pixels = np.vstack([pixels, [a[1] for a in anchors.values()]])
     T, rms = X.relocalize(points, pixels, cal)
-    print(f"Pose mới: RMS chiếu lại {rms:.2f} px trên {len(points)} điểm.")
+    print(f"Pose mới: RMS chiếu lại {rms:.2f} px trên {len(points)} điểm ({len(anchors)} mốc ô màu).")
+    for zone, (base, uv) in anchors.items():
+        hit = X.pixel_to_plane(uv[0], uv[1], base[2], cal.K, cal.k1, T)
+        print(f"  ô {zone}: lệch {np.hypot(hit[0] - base[0], hit[1] - base[1]) * 1000:.1f} mm so với trước khi dời")
     if rms > X.MAX_FIT_RMS_PX:
         raise SystemExit("RMS quá lớn: không ghi (ống kính/độ phân giải đã đổi? hiệu chuẩn lại từ đầu).")
     cal.base_T_ext, cal.landmarks = T, scene["landmarks"]
