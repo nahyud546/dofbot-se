@@ -1,0 +1,51 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Fixed Frame: base_link
+    Frame Rate: 30
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 0.05
+      Plane Cell Count: 20
+    - Class: rviz_default_plugins/RobotModel
+      Name: Measured robot
+      Enabled: true
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+      Visual Enabled: true
+      Collision Enabled: false
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Camera objects and centers
+      Enabled: true
+      Marker Topic:
+        Value: /red_scene/markers
+    - Class: moveit_rviz_plugin/PlanningScene
+      Name: Collision scene
+      Enabled: true
+      Planning Scene Topic: /monitored_planning_scene
+    - Class: moveit_rviz_plugin/Trajectory
+      Name: Planned trajectory
+      Enabled: true
+      Robot Description: robot_description
+      Trajectory Topic: /display_planned_path
+    - Class: rviz_default_plugins/Image
+      Name: Camera segmentation
+      Enabled: true
+      Topic:
+        Value: /red_scene/annotated
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 0.8
+      Pitch: 0.65
+      Yaw: 0.8
+      Focal Point:
+        X: 0.1
+        Y: 0.0
+        Z: 0.1

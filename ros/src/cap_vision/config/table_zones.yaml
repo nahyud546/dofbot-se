@@ -1,0 +1,46 @@
+# B2: ban + cube + zone trong frame base_link (met).
+# table_z: trung binh 4 lan cham TCP xuong tham 2026-09-22:
+#   green (0.036,0.161,0.051), yellow (0.128,0.165,0.046),
+#   red (0.117,-0.173,0.046), blue (0.034,-0.156,0.038) -> mean z=0.0452.
+#   Do lech 13mm giua max-min (tay cham bang mat + TCP nghien theo goc),
+#   lay 0.045, pick cao hon 5mm an toan. Top-down nen loi XY do z khong dang ke.
+table_z: 0.045
+table_z_source: teach-TCP-4pts-2026-09-22-mean0.0452-spread13mm
+table_z_teach_raw:
+  green: [0.036, 0.161, 0.051]
+  yellow: [0.128, 0.165, 0.046]
+  red: [0.117, -0.173, 0.046]
+  blue: [0.034, -0.156, 0.038]
+  red_reteach_2026: [0.102, -0.161, 0.038]
+  red_drop_v2: [0.108, -0.171, 0.052]
+cube_size: 0.030
+cube_half: 0.015
+# Tam camera o pose quan sat (de fast-path pixel->base, tranh loi optical TF).
+# REV3: start_v2 joints [0.0175,-0.4538,1.4312,1.5708] -> FK cam (0.112,0.003,0.215),
+# cao 170mm tren ban -> FOV ~121x93 (scale tu fx/fy).
+obs_cam_x: 0.112
+obs_cam_y: 0.003
+obs_cam_z: 0.215
+obs_pose_status: FK-from-start_v2-2026
+# mm/px = 2*Z*(W/2/fx)/W ...
+mm_per_px_x: 0.0001884
+mm_per_px_y: 0.0001943
+# Yaw camera so voi base o pose quan sat: anh xoay 180deg (x nguoc, y giu).
+# Xb = cam_x - (u-cx)*sx ; Yb = cam_y - (v-cy)*sy  (validate bang thuoc truoc khi pick).
+obs_sign_x: -1.0
+obs_sign_y: -1.0
+# 4 o dich tren tham (base_link, m). Da teach bang TCP 2026-09-22.
+# green/yellow y~+0.16 (trai), red/blue y~-0.16 (phai) - khop anh tham Yahboom.
+# red: 3 lan (0.117,-0.173) / (0.102,-0.161) / drop (0.108,-0.171) -> mean
+# (0.109,-0.168), max lech 10mm. Drop test trung mean 3.2mm -> CHOT mean.
+zones:
+  yellow: [0.128, 0.165]
+  green: [0.036, 0.161]
+  blue: [0.034, -0.156]
+  red: [0.109, -0.168]
+zones_source: teach-TCP-3pts-mean-2026
+# Grasp.
+grasp_width: 0.037
+approach: 0.060
+lift: 0.060
+pick_z_offset: 0.005

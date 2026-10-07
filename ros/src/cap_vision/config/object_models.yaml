@@ -1,0 +1,22 @@
+# Cube edge was supplied by the owner.  The black AprilTag square was measured
+# from the 2026-09-30 camera frame by rectifying a 30 mm tag face: 18.4 mm
+# observed, rounded to the nominal 18 mm.  Keep the motion calibration gates
+# closed until the wireframe has been checked from several viewpoints.
+#
+# Object frame: origin at the cube centre; +Z exits the AprilTag face and -Z
+# exits the opposite colour face.  +X/+Y follow the detector's tag axes.
+# cube_T_tag maps tag-frame coordinates into the cube-centre frame.  The tag is
+# centred on the face, so its origin is at z=+15 mm in the cube frame.
+cubes:
+  1: &cube_model
+    size_m: 0.030
+    tag_family: tag36h11
+    tag_size_m: 0.020
+    measurement_status: provisional_wireframe_validation_required
+    cube_T_tag: [1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 0.0, 0.0, 1.0, 0.015,
+                 0.0, 0.0, 0.0, 1.0]
+  2: *cube_model
+  3: *cube_model
+  4: *cube_model
