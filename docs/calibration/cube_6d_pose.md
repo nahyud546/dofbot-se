@@ -1,6 +1,6 @@
 # Cube 6D with the joint-4 eye-in-hand camera
 
-`cube_4x6_face_geometry.yaml` defines four 30 mm cubes. Its `+Z` face is the
+`config/robot/cube_4x6_face_geometry.yaml` defines four 30 mm cubes. Its `+Z` face is the
 20 mm AprilTag; `-Z` is the colour face. The four trash labels form the side
 ring. The geometry loader checks this against `object_models.yaml` at startup.
 The YAML tag corners list the same physical square as the AprilTag estimator,
@@ -71,7 +71,7 @@ ros2 run cap_vision collect_tag_hand_eye -- \
 
 ros2 run cap_vision calibrate_tag_hand_eye -- \
   --dataset /home/jloy/Desktop/robot-arm/config/calibration/tag_hand_eye_v1/dataset.yaml \
-  --config /home/jloy/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof/src/cap_vision/config/red_scene.yaml \
+  --config /home/jloy/Desktop/robot-arm/ros/src/cap_vision/config/red_scene.yaml \
   --output /home/jloy/Desktop/robot-arm/config/calibration/red_scene_calibrated.yaml
 ```
 
@@ -90,7 +90,7 @@ available.
 
 Run `object_pipeline.launch.py` with the default geometry file to obtain the
 camera-frame 6D wireframe. The launch defaults `face_geometry` to
-`<repo_root>/cube_4x6_face_geometry.yaml` and enables the declared face map.
+`<repo_root>/config/robot/cube_4x6_face_geometry.yaml` and enables the declared face map.
 For a base-frame grasp pose, consumers should require `pose_valid` and inspect
 `pose_method`. The fixed-READY_POSE bridge can instead use
 `top_grasp_ready` with `rgb_single_face_cube`; two adjacent faces remain

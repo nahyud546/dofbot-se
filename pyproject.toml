@@ -1,0 +1,33 @@
+[project]
+name = "dofbot-se"
+version = "0.2.0"
+description = "DOFBOT 5-DOF: nhận diện cube, trợ lý T8 (sort/stack), hiệu chuẩn camera tay và camera ngoài"
+readme = "README.md"
+requires-python = ">=3.10"
+# Chạy trực tiếp từ source (không cần cài): xem CLAUDE.md. Danh sách dưới là phụ thuộc của projects/.
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "scipy",
+    "pyyaml",
+    "pupil-apriltags",
+]
+
+[project.optional-dependencies]
+ai = ["torch", "transformers", "ultralytics", "google-genai"]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+# Module trong projects/t8_pipeline và projects/vision_experiments import nhau bằng tên trần
+# (import cube_layer, import t8_motion_worker) nên các thư mục đó nằm trên đường dẫn.
+pythonpath = [
+    "projects",
+    "projects/t8_pipeline",
+    "projects/vision_experiments",
+    "vendor/yahboom",
+    "scripts/tools",
+    "ros/src/cap_vision",
+]
+testpaths = ["projects", "ros/src/cap_vision/test"]
+# Plugin pytest của ROS (launch_testing) không tương thích pytest mới và làm hỏng khâu khởi động.
+addopts = "-p no:launch_testing -p no:launch_ros -p no:cacheprovider -q"

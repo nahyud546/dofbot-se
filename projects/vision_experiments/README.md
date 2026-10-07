@@ -17,7 +17,7 @@ kiểm tra readback ở `READY_POSE` trước khi gắp.
 Terminal 1:
 
 ```bash
-cd ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof
+cd ~/Desktop/robot-arm/ros
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 launch cap_vision cube_6d_camera.launch.py device_index:=2 dino_enabled:=true viewer:=false
@@ -28,7 +28,7 @@ Terminal 2:
 ```bash
 cd ~/Desktop/robot-arm
 source /opt/ros/humble/setup.bash
-source ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof/install/setup.bash
+source ~/Desktop/robot-arm/ros/install/setup.bash
 /usr/bin/python3 projects/vision_experiments/cube_sort_3d.py --pick-x-offset-mm 15
 ```
 
@@ -86,8 +86,8 @@ Quy trình hiệu chuẩn, không có lệnh tự di chuyển robot:
      # ... at least 7 more fit samples and 3 validation samples
    ```
 
-4. Chạy `ros2 run cap_vision calibrate_eye_in_hand -- --dataset /path/dataset/dataset.yaml --config /home/jloy/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof/src/cap_vision/config/cube_6d_urdf.yaml --intrinsic /path/intrinsic.yaml --output /path/cube_6d_measured.yaml`.
-   Sau đó chạy `python3 workspaces/dofbot_robot_arm_6dof/src/cap_vision/cap_vision/validate_calibration.py --dataset /path/dataset/dataset.yaml --calibration /path/cube_6d_measured.yaml --intrinsic /path/intrinsic.yaml`.
+4. Chạy `ros2 run cap_vision calibrate_eye_in_hand -- --dataset /path/dataset/dataset.yaml --config /home/jloy/Desktop/robot-arm/ros/src/cap_vision/config/cube_6d_urdf.yaml --intrinsic /path/intrinsic.yaml --output /path/cube_6d_measured.yaml`.
+   Sau đó chạy `python3 ros/src/cap_vision/cap_vision/validate_calibration.py --dataset /path/dataset/dataset.yaml --calibration /path/cube_6d_measured.yaml --intrinsic /path/intrinsic.yaml`.
    Chỉ dùng file mới khi phép kiểm chứng độc lập đạt tối đa 5 mm.
 5. Khi phát triển lại chế độ gắp pose động, chạy perception với
    `config:=/path/cube_6d_measured.yaml` và kiểm tra nhiều pose bằng công cụ
