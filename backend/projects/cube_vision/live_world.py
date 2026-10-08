@@ -97,6 +97,7 @@ class LiveWorld:
         self._next_global = 0.0
         self.object_moves = {}           # {chỉ số vật trong world gốc: (stamp world gốc lúc dời, vật đã dời)}
         self.face_cubes = {}             # {cube_id: (nghiệm khớp mặt, nhãn, thời điểm)} cube thấy bằng mặt màu
+        self.live_cubes = []             # tâm các cube mà camera này tự đo ở khung gần nhất (cube đã dời / mới)
 
     def update(self, seen: dict) -> dict:
         """seen {id: (4,2)} từ một khung (đã xoay đúng hướng). Trả dict: ok, reasons, pose, world (WorldMap sống),
@@ -131,6 +132,7 @@ class LiveWorld:
         live.region = copy.deepcopy(self.world.region)
         live.zones = copy.deepcopy(self.world.zones)
         live.cameras = copy.deepcopy(self.world.cameras)
+        cubes_now = []
         for tag_id, corners in seen.items():
             if tag_id in res["anchors"]:
                 continue
@@ -142,6 +144,7 @@ class LiveWorld:
                 continue
             live.forget(tag_id)
             live.update_tag(tag_id, fused, LIVE_SOURCE, sure=False)
+            cubes_now.append(np.asarray(fused["centre"], float))
             info["moved" if known else "new"].append(tag_id)
         w, h = self.model.image_size
         for tag_id, tag in self.world.tags.items():
@@ -151,6 +154,7 @@ class LiveWorld:
             if (np.isfinite(uv).all() and MISSING_MARGIN_PX <= uv[0] <= w - MISSING_MARGIN_PX
                     and MISSING_MARGIN_PX <= uv[1] <= h - MISSING_MARGIN_PX):
                 info["missing"].append(tag_id)
+        self.live_cubes = cubes_now
         live.set_camera(self.name, self.pose, self.model)
         info.update(ok=True, pose=self.pose, world=live, anchors=list(res["anchors"]), rms_px=res["rms_px"])
         return info
@@ -165,7 +169,11 @@ class LiveWorld:
         for index, item in enumerate(self.world.objects):
             moved = self.object_moves.get(index)
             current.append(moved[1] if moved and moved[0] == item["stamp"] else item)
-        updated, moved, matched = OT.relocate(current, observations, LIVE_SOURCE)
+        if not hasattr(self, "follower"):
+            self.follower = OT.Follower()
+        cubes = [e["centre"] for e in list(self.world.tags.values()) + list(self.world.faces.values())]
+        cubes += [fit["centre"] for fit, _, _ in list(self.face_cubes.values())] + list(self.live_cubes)
+        updated, moved, matched = OT.relocate(current, observations, LIVE_SOURCE, follower=self.follower, cubes=cubes)
         for index in matched:                                   # dời, hoặc đứng yên nhưng vừa được xác nhận còn ở đó
             self.object_moves[index] = (self.world.objects[index]["stamp"], updated[index])
         return moved

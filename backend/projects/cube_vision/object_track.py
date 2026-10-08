@@ -20,7 +20,11 @@ from .frames import CameraModel, invert
 NEAR_BAND_M = 0.03            # dải sát mép gần dùng để đo bề ngang
 MAX_RANGE_M = 1.5             # tia chạm bàn xa hơn mức này (gần ngang) thì bỏ
 MATCH_GATE_M = 0.40           # vật chỉ được coi là "dời tới đây" trong tầm này
-MOVED_M = 0.02                # lệch dưới mức này coi như đứng yên (không giật hình vì nhiễu)
+MOVED_M = 0.03                # lệch dưới mức này coi như đứng yên (đo thật: iPhone báo tâm cốc đứng yên dao động 2–3 cm)
+CUBE_GATE_M = 0.05            # quan sát có tâm cách một cube dưới mức này là CHÍNH cube đó, không phải vật khác
+CONFIRM_SIGHTINGS = 3         # phải thấy vật ở chỗ mới chừng này lần...
+CONFIRM_WINDOW_S = 2.5        # ...trong chừng này giây...
+CONFIRM_SPREAD_M = 0.03       # ...và các lần đó thống nhất trong mức này, mới dời vật
 SIZE_RATIO = (0.5, 2.0)       # bề ngang quan sát / bề ngang đã đo phải trong khoảng này mới là cùng một vật
 MIN_STEREO_ANGLE_DEG = 20.0   # hai đường ngắm lệch nhau ít hơn mức này thì giao điểm không ổn: lấy trung bình
 ROUND_LABELS = ("cup", "mug", "bottle", "can")
@@ -139,6 +143,45 @@ def _compatible(item: dict, obs: dict) -> bool:
     return True
 
 
+def not_cubes(observations, cubes) -> list:
+    """Bỏ các quan sát thật ra là cube: bộ tách vật hay gọi cube là "box" (đo thật 2026-10-08: cube lục bị nhận là
+    box 0,29 và kéo hộp bịch khăn giấy từ cách đó 16 cm về nằm chồng lên cube). cubes: tâm (x, y) các cube đã biết."""
+    cubes = [np.asarray(c, float)[:2] for c in cubes]
+    return [o for o in observations
+            if all(np.linalg.norm(np.asarray(o["centre"], float) - c) > CUBE_GATE_M for c in cubes)]
+
+
+class Follower:
+    """Chỉ cho vật dời khi chỗ mới được thấy LẶP LẠI và thống nhất; tâm mới là trung vị của các lần thấy đó.
+
+    Một mặt nạ sai của một khung (nhận nhầm vật khác, mặt nạ dính hai vật) không còn kéo vật đi, và vật đứng yên
+    không còn nhảy theo nhiễu của từng khung."""
+
+    def __init__(self):
+        self.sightings = {}       # {chỉ số vật: [(thời điểm, tâm)]} các lần thấy vật ở CHỖ KHÁC chỗ đang ghi
+
+    def confirmed(self, index: int, centre, current, now: float | None = None):
+        """Ghi một lần thấy vật `index` ở `centre`; trả tâm mới (trung vị) khi đã đủ xác nhận để dời, không thì None."""
+        now = time.time() if now is None else float(now)
+        centre = np.asarray(centre, float)[:2]
+        if np.linalg.norm(centre - np.asarray(current, float)[:2]) <= MOVED_M:
+            self.sightings.pop(index, None)                         # vẫn ở chỗ cũ: xóa mọi nghi ngờ đã tích
+            return None
+        seen = [(t, c) for t, c in self.sightings.get(index, []) if now - t <= CONFIRM_WINDOW_S]
+        if seen and seen[-1][0] == now:
+            return None                                             # cùng một quan sát được đọc lại: không tính hai lần
+        seen.append((now, centre))
+        self.sightings[index] = seen
+        if len(seen) < CONFIRM_SIGHTINGS:
+            return None
+        recent = np.array([c for _, c in seen[-CONFIRM_SIGHTINGS:]])
+        median = np.median(recent, axis=0)
+        if np.max(np.linalg.norm(recent - median, axis=1)) > CONFIRM_SPREAD_M:
+            return None                                             # các lần thấy chưa thống nhất: chờ thêm
+        self.sightings.pop(index, None)
+        return median
+
+
 def match(objects, observations) -> dict:
     """Ghép quan sát với vật đã biết: {chỉ số vật: quan sát}. Mỗi vật lấy quan sát hợp nhãn + cỡ GẦN chỗ cũ nhất, mỗi
     quan sát chỉ dùng một lần (cặp gần nhau ghép trước)."""
@@ -171,15 +214,24 @@ def moved_copy(item: dict, centre, source: str, stamp: float | None = None) -> d
     return out
 
 
-def relocate(objects, observations, source: str, stamp: float | None = None):
-    """Áp các quan sát của MỘT camera lên danh sách vật. Trả (danh sách vật mới, [chỉ số vật đã dời], {chỉ số: quan sát})."""
-    matched = match(objects, observations)
+def relocate(objects, observations, source: str, stamp: float | None = None, follower: Follower | None = None,
+             cubes=()):
+    """Áp các quan sát của MỘT camera lên danh sách vật. Trả (danh sách vật mới, [chỉ số vật đã dời], {chỉ số: quan sát}).
+
+    follower: có thì vật chỉ dời sau khi chỗ mới được xác nhận nhiều lần (nên dùng với luồng camera sống).
+    cubes: tâm các cube đã biết; quan sát trùng chỗ cube bị bỏ."""
+    matched = match(objects, not_cubes(observations, cubes))
     out, moved = list(objects), []
+    now = time.time() if stamp is None else float(stamp)
     for index, obs in matched.items():
-        gap = float(np.linalg.norm(np.asarray(obs["centre"], float) - np.asarray(objects[index]["centre"], float)[:2]))
-        if gap > MOVED_M:
-            out[index] = moved_copy(objects[index], obs["centre"], source, stamp)
-            moved.append(index)
+        current = np.asarray(objects[index]["centre"], float)[:2]
+        if follower is not None:
+            target = follower.confirmed(index, obs["centre"], current, now)
         else:
-            out[index] = dict(objects[index], seen_stamp=time.time() if stamp is None else float(stamp))
+            target = obs["centre"] if np.linalg.norm(np.asarray(obs["centre"], float) - current) > MOVED_M else None
+        if target is not None:
+            out[index] = moved_copy(objects[index], target, source, stamp)
+            moved.append(index)
+        elif np.linalg.norm(np.asarray(obs["centre"], float) - current) <= MOVED_M:
+            out[index] = dict(objects[index], seen_stamp=now)       # thấy vật ở đúng chỗ đang ghi: xác nhận còn đó
     return out, moved, matched

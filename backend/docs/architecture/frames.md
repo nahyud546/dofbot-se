@@ -287,4 +287,12 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
   Rủi ro đã biết: trên hai ảnh chụp màn hình cửa sổ iPhone, YOLOE nhận cốc ở một ảnh với độ tin chỉ 0,13–0,24 và
   hụt ở ảnh kia; ngưỡng cho vật đã biết hạ xuống 0,10 vì thế. Ngưỡng HSV mặt màu đo trên camera tay, chưa đo trên
   iPhone.
+- **Lần chạy thật đầu tiên với iPhone (2026-10-08 16:42)**: cốc đi theo đúng (hình trụ ôm cốc ở chỗ mới), nhưng
+  (1) bộ tách vật gọi cube lục là `box` (0,29) và hộp bịch khăn giấy bị kéo 16 cm về nằm chồng lên cube đó, vì luật
+  ghép chỉ xét nhãn + cỡ + trong 40 cm; (2) tâm cốc đứng yên vẫn nhảy 2–3 cm mỗi vài giây theo nhiễu từng khung.
+  Sửa: quan sát có tâm cách một cube đã biết < 5 cm bị bỏ (`not_cubes`); vật chỉ dời khi chỗ mới được thấy 3 lần
+  trong 2,5 s và các lần đó thống nhất trong 3 cm, tâm mới là trung vị (`Follower`); ngưỡng "đã dời" 2 → 3 cm.
+  Còn lại: bịch khăn giấy thật không được bộ tách vật nhận ra trên khung iPhone (không có quan sát nào ở chỗ nó),
+  nên nó không tự đi theo; và chưa so MÀU của mặt nạ với màu vật đã quét, nên một vật lạ cùng cỡ vẫn có thể bị nhận
+  nhầm. Vị trí vật khi đi theo là NỘI SUY từ mép gần + bề ngang của mặt nạ, không phải đo lại hình dạng.
 

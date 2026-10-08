@@ -288,7 +288,10 @@ SEEN_FRESH_S = 3.0              # quan sát vật cũ hơn mức này thì khôn
 STEREO_LINE_GAP_M = 0.08        # đường ngắm của camera tay phải đi qua cách tâm iPhone báo dưới mức này mới là cùng vật
 
 
-def merge_seen(world, wrist_seen, camera: str = "phone") -> list:
+_FOLLOWER = []                  # bộ xác nhận "vật đã dời" của tiến trình --watch (giữ trạng thái giữa các lần gộp)
+
+
+def merge_seen(world, wrist_seen, camera: str = "phone", follower=None, now=None) -> list:
     """Gộp quan sát vật khác cube của iPhone (file phụ do `world_overlay` ghi) và của camera tay vào world: vật bị dời
     thì dời theo, giữ nguyên hình dạng đã quét. Hai camera cùng thấy thì giao hai đường ngắm (stereo đường đáy rộng).
     Trả các dòng mô tả những vật vừa dời (rỗng khi không có gì đổi)."""
@@ -296,7 +299,7 @@ def merge_seen(world, wrist_seen, camera: str = "phone") -> list:
     from cube_vision.world_overlay import seen_path
     if not world.objects:
         return []
-    now, phone_seen = time.time(), []
+    now, phone_seen = (time.time() if now is None else float(now)), []
     try:
         data = json.loads(seen_path(camera).read_text())
         if now - float(data.get("stamp", 0.0)) <= SEEN_FRESH_S:
@@ -305,6 +308,12 @@ def merge_seen(world, wrist_seen, camera: str = "phone") -> list:
         pass
     wrist_seen = [o for o in wrist_seen if now - float(o.get("stamp", 0.0)) <= SEEN_FRESH_S]
     lines = []
+    if follower is None:
+        if not _FOLLOWER:
+            _FOLLOWER.append(OT.Follower())
+        follower = _FOLLOWER[0]
+    cubes = [world.entry(i)["centre"] for i in world.cube_ids()]
+    phone_seen, wrist_seen = OT.not_cubes(phone_seen, cubes), OT.not_cubes(wrist_seen, cubes)
     matched = OT.match(world.objects, phone_seen)
     for index, seen in matched.items():
         item, centre, how = world.objects[index], np.asarray(seen["centre"], float), camera
@@ -317,8 +326,10 @@ def merge_seen(world, wrist_seen, camera: str = "phone") -> list:
                 elif kind == "opposed":
                     centre, how = fused, f"{camera} + camera tay (hai phía đối diện)"
                 break
-        item["seen_stamp"] = now                                # camera vừa xác nhận vật còn đó (dù có dời hay không)
-        if np.linalg.norm(centre - item["centre"][:2]) > OT.MOVED_M and world.inside(centre):
+        if np.linalg.norm(centre - item["centre"][:2]) <= OT.MOVED_M:
+            item["seen_stamp"] = now                            # camera vừa xác nhận vật còn ở chỗ đang ghi
+        centre = follower.confirmed(index, centre, item["centre"], seen.get("stamp", now))
+        if centre is not None and world.inside(centre):
             x0, y0 = item["centre"][:2] * 1000
             world.objects[index] = OT.moved_copy(item, centre, how)
             lines.append(f"vật '{item['label']}' dời từ ({x0:+.0f}, {y0:+.0f}) tới ({centre[0] * 1000:+.0f}, "
@@ -326,7 +337,9 @@ def merge_seen(world, wrist_seen, camera: str = "phone") -> list:
     whole = [o for o in wrist_seen if o.get("near_ok") and o.get("side_ok")]
     free = [i for i in range(len(world.objects)) if i not in matched]
     if whole and free:
-        updated, moved, _ = OT.relocate([world.objects[i] for i in free], whole, "camera tay")
+        stamp = max(float(o.get("stamp", now)) for o in whole)
+        updated, moved, _ = OT.relocate([world.objects[i] for i in free], whole, "camera tay", stamp=stamp,
+                                        follower=follower)
         for k in moved:
             if world.inside(updated[k]["centre"]):
                 item = world.objects[free[k]]

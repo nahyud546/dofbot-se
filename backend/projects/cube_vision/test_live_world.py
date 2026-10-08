@@ -283,11 +283,15 @@ class LiveCarriesEverything(unittest.TestCase):
         world.set_objects([cup_item([-0.20, -0.10])], "wrist-scan", stamp=5.0)
         live = LiveWorld(world, PHONE)
         self.assertTrue(live.update(see(TAGS, TRUE_POSE))["ok"])
-        seen = {"label": "cup", "centre": np.array([-0.26, 0.04]), "width_m": 0.07, "near_ok": True, "side_ok": True,
+        seen = {"label": "cup", "centre": np.array([-0.30, -0.12]), "width_m": 0.07, "near_ok": True, "side_ok": True,
                 "eye": np.zeros(2), "bearing": np.array([1.0, 0.0])}
+        self.assertEqual(live.see_objects([seen]), [])                                # một lần thấy chưa đủ để dời
+        time.sleep(0.01)
+        live.see_objects([seen])
+        time.sleep(0.01)
         self.assertEqual(live.see_objects([seen]), [0])
         info = live.update(see(TAGS, TRUE_POSE, seed=1))
-        np.testing.assert_allclose(info["world"].objects[0]["centre"], [-0.26, 0.04])
+        np.testing.assert_allclose(info["world"].objects[0]["centre"], [-0.30, -0.12])
         np.testing.assert_allclose(world.objects[0]["centre"], [-0.20, -0.10])        # world gốc không bị sửa
         world.set_objects([cup_item([-0.30, 0.0])], "wrist-scan", stamp=9.0)          # camera tay vừa quét lại
         info = live.update(see(TAGS, TRUE_POSE, seed=2))

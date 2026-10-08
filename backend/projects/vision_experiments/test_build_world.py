@@ -64,66 +64,87 @@ class MergeSeen(unittest.TestCase):
         from cube_vision import test_object_track as T
         from cube_vision import world_overlay as O
         from cube_vision.world_map import WorldMap
-        self.OT, self.T, self.json, self.time = OT, T, json, time
+        self.OT, self.T, self.json = OT, T, json
         self.tmp = tempfile.TemporaryDirectory()
         self.path = Path(self.tmp.name) / "seen_phone.json"
         self._seen_path = O.seen_path
         O.seen_path = lambda camera, world_path=None: self.path
         self.world = WorldMap()
         self.world.set_objects([T.cup_item([-0.20, -0.10])], "wrist-scan")
+        self.follower, self.clock = OT.Follower(), time.time()
 
     def tearDown(self):
         from cube_vision import world_overlay as O
         O.seen_path = self._seen_path
         self.tmp.cleanup()
 
-    def phone_reports(self, centre, age=0.0, eye=None):
+    def phone(self, centre, eye=None, range_error=0.0, label="cup"):
         obs = self.T.see(eye or self.T.PHONE, centre, target=[-0.22, 0.0, 0.03])
-        self.path.write_text(self.json.dumps({"stamp": self.time.time() - age, "camera": "phone",
-                                              "objects": [self.OT.to_json(obs)]}))
-        return obs
+        return dict(obs, centre=obs["centre"] + obs["bearing"] * range_error, label=label)
+
+    def wrist(self, centre, whole=True):
+        obs = self.T.see(self.T.WRIST, centre)
+        return obs if whole else dict(obs, near_ok=False, side_ok=False)
+
+    def looks(self, phone=None, wrist=None, times=3, age=0.0):
+        """`times` lần gộp liên tiếp, mỗi lần một quan sát MỚI (dấu thời gian khác nhau) của mỗi camera."""
+        lines = []
+        for _ in range(times):
+            self.clock += 0.4
+            stamp = self.clock - age
+            if phone is not None:
+                self.path.write_text(self.json.dumps({"stamp": stamp, "camera": "phone",
+                                                      "objects": [self.OT.to_json(dict(phone, stamp=stamp))]}))
+            lines += B.merge_seen(self.world, [] if wrist is None else [dict(wrist, stamp=stamp)],
+                                  follower=self.follower, now=self.clock)
+        return lines
 
     def test_the_cup_follows_what_the_phone_sees_and_keeps_its_shape(self):
-        self.phone_reports([-0.27, 0.05])
-        lines = B.merge_seen(self.world, [])
+        self.assertEqual(self.looks(self.phone([-0.27, 0.05]), times=2), [])       # hai lần thấy chưa đủ để dời
+        lines = self.looks(self.phone([-0.27, 0.05]), times=1)
         self.assertEqual(len(lines), 1)
         cup = self.world.objects[0]
         self.assertLess(np.linalg.norm(cup["centre"] - [-0.27, 0.05]), 0.012)
         self.assertAlmostEqual(cup["width_m"], 0.074)
-        self.assertEqual(B.merge_seen(self.world, []), [])                # đã tới nơi: không dời nữa
+        self.assertEqual(self.looks(self.phone([-0.27, 0.05])), [])                # đã tới nơi: không dời nữa
+
+    def test_one_wrong_sighting_or_the_same_report_read_twice_moves_nothing(self):
+        self.assertEqual(self.looks(self.phone([-0.30, 0.10]), times=1), [])
+        self.assertEqual(self.looks(self.phone([-0.20, -0.10])), [])               # lại thấy ở chỗ cũ: xóa nghi ngờ
+        self.looks(self.phone([-0.30, 0.10]), times=1)
+        for _ in range(5):                                                         # đọc lại đúng file đó nhiều lần
+            self.assertEqual(B.merge_seen(self.world, [], follower=self.follower, now=self.clock), [])
+        np.testing.assert_allclose(self.world.objects[0]["centre"], [-0.20, -0.10])
+
+    def test_a_cube_called_a_box_never_drags_an_object_onto_itself(self):
+        from cube_vision.test_live_world import corners_of
+        from cube_vision.test_multiview import tag_pose
+        self.world.set_objects([dict(self.T.cup_item([-0.31, -0.07]), label="box", shape="box")], "wrist-scan")
+        cube = tag_pose([-0.163, -0.043, 0.0578])
+        self.world.update_tag(2, {"corners": corners_of(cube), "centre": cube[:3, 3], "normal": cube[:3, 2],
+                                  "pos_std_m": [0.001] * 3, "n_views": 2, "rms_px": 0.5}, "wrist")
+        seen = self.phone([-0.150, -0.046], label="box")                           # bộ tách vật gọi cube lục là "box"
+        self.assertEqual(self.looks(seen, times=5), [])
+        np.testing.assert_allclose(self.world.objects[0]["centre"], [-0.31, -0.07])
 
     def test_stale_phone_reports_and_a_missing_file_change_nothing(self):
-        self.phone_reports([-0.27, 0.05], age=10.0)
-        self.assertEqual(B.merge_seen(self.world, []), [])
+        self.assertEqual(self.looks(self.phone([-0.27, 0.05]), age=10.0), [])
         self.path.unlink()
-        self.assertEqual(B.merge_seen(self.world, []), [])
+        self.assertEqual(self.looks(), [])
         np.testing.assert_allclose(self.world.objects[0]["centre"], [-0.20, -0.10])
 
     def test_phone_and_wrist_together_intersect_their_sight_lines(self):
-        truth = [-0.25, -0.02]
-        phone = self.phone_reports(truth, eye=[-0.30, 0.40, 0.35])            # iPhone đứng chếch một bên
-        off = dict(phone, centre=phone["centre"] + phone["bearing"] * 0.04)   # iPhone đoán khoảng cách sai 4 cm
-        self.path.write_text(self.json.dumps({"stamp": self.time.time(), "camera": "phone",
-                                              "objects": [self.OT.to_json(off)]}))
-        wrist = dict(self.T.see(self.T.WRIST, truth), near_ok=False, side_ok=False, stamp=self.time.time())  # chân bị cắt
-        lines = B.merge_seen(self.world, [wrist])
+        truth = [-0.25, -0.02]                                                     # iPhone chếch một bên, đoán xa sai 4 cm
+        lines = self.looks(self.phone(truth, eye=[-0.30, 0.40, 0.35], range_error=0.04), self.wrist(truth, whole=False))
         self.assertIn("giao hai đường ngắm", lines[0])
         self.assertLess(np.linalg.norm(self.world.objects[0]["centre"] - truth), 0.01)
 
-    def test_the_wrist_alone_moves_an_object_only_when_it_sees_it_whole(self):
-        whole = dict(self.T.see(self.T.WRIST, [-0.24, -0.02]), stamp=self.time.time())
-        cut = dict(whole, near_ok=False, side_ok=False)
-        self.assertEqual(B.merge_seen(self.world, [cut]), [])
-        self.assertEqual(len(B.merge_seen(self.world, [whole])), 1)
-
     def test_phone_facing_the_arm_and_wrist_take_the_middle_of_the_two_near_edges(self):
         truth = [-0.25, -0.02]
-        phone = self.phone_reports(truth)                                     # iPhone đối diện tay máy
-        off = dict(phone, centre=phone["centre"] + phone["bearing"] * 0.04)
-        self.path.write_text(self.json.dumps({"stamp": self.time.time(), "camera": "phone",
-                                              "objects": [self.OT.to_json(off)]}))
-        wrist = dict(self.T.see(self.T.WRIST, truth), stamp=self.time.time())
-        lines = B.merge_seen(self.world, [wrist])
+        lines = self.looks(self.phone(truth, range_error=0.04), self.wrist(truth))
         self.assertIn("hai phía đối diện", lines[0])
         self.assertLess(np.linalg.norm(self.world.objects[0]["centre"] - truth), 0.01)
 
+    def test_the_wrist_alone_moves_an_object_only_when_it_sees_it_whole(self):
+        self.assertEqual(self.looks(wrist=self.wrist([-0.24, -0.02], whole=False)), [])
+        self.assertEqual(len(self.looks(wrist=self.wrist([-0.24, -0.02]))), 1)
