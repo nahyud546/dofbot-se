@@ -39,6 +39,8 @@ from cube_vision.world_map import WorldMap, default_path, snap_to_layer  # noqa:
 DRIFT_MOVED_PX = 8.0
 WATCH_MIN_SHARPNESS = 25.0      # ảnh camera tay nhòe/tối hơn mức này thì "không thấy cube" không có nghĩa là cube mất
 WATCH_MIN_BRIGHTNESS = 25
+FACE_COLOUR_PERIOD_S = 0.5      # tìm mặt màu + khớp hình học: 2 lần/giây là đủ cho cảnh tĩnh
+FACE_DINO_PERIOD_S = 4.0        # bộ nhận hình in (DINO) nặng: thưa hơn
 WATCH_FACE_BRIGHTNESS = 90      # đo thật: ở 63 bộ nhận mặt không thấy cube lật mặt, ở 154 thấy đủ.0
 
 
@@ -214,6 +216,7 @@ def object_masks_round() -> tuple:
 def scan_faces(cal, world, shots, log=print) -> None:
     """Cube không ngửa tag trong các khung quét: nhận bằng mặt, ghi vào world (hai khung phải thống nhất)."""
     import world_watch as W
+    from cube_vision import color, registry
     try:
         from cube_vision.identify import FULL, Identifier
         identifier = Identifier(FULL)
@@ -225,6 +228,7 @@ def scan_faces(cal, world, shots, log=print) -> None:
     for real, frames, seen in shots:
         for frame in frames:
             found, tag_ids = W.faces_from_detections(identifier.detect(frame))
+            found += color.colour_faces(frame, registry.COLOR_TO_ID)       # mặt màu ngửa lên hoặc quay ngang
             stamp += 1.0
             events = watcher.observe_faces(real, found, tag_ids | set(seen) | set(world.tags), stamp=stamp,
                                            clear_view=False)
@@ -278,39 +282,99 @@ def cmd_scan(args):
 
 
 class FaceJob:
-    """Bộ nhận mặt (màu / hình in, có DINO) chạy ở luồng riêng trên khung mới nhất: chậm hơn dò tag nhiều lần
-    (0,7 s có GPU, ~4 s chỉ CPU) nên không được chặn vòng hiển thị."""
+    """Tìm cube không ngửa tag ở luồng riêng, trên khung đứng yên mới nhất, để không chặn vòng hiển thị.
 
-    def __init__(self):
+    Mỗi vòng cho hai kết quả: (1) MẶT MÀU bằng ngưỡng HSV, vài mili giây, đủ cho cube ngửa hoặc quay ngang mặt màu;
+    (2) bộ nhận mặt đầy đủ (hình in, có DINO: ~0,9 s có GPU, ~4 s chỉ CPU), bỏ khi dino=False. Khớp hình học mặt
+    30 mm (0,1–0,3 s mỗi mặt) cũng làm ở đây. `servo_at(t)` trả góc khớp lúc chụp, False khi tay đang động, None khi
+    chưa có lần đọc khớp sau khung đó.
+    """
+
+    def __init__(self, cal, servo_at, dino: bool = True):
         import queue
         import threading
-        self._latest, self._lock = None, threading.Lock()
-        self._out, self._stop = queue.Queue(), threading.Event()
-        self._thread = threading.Thread(target=self._loop, daemon=True)
-        self._thread.start()
+        self.cal, self.servo_at = cal, servo_at
+        self._lock, self._out, self._stop = threading.Lock(), queue.Queue(), threading.Event()
+        self._latest = {"colour": None, "dino": None}           # mỗi luồng một ô "khung mới nhất" riêng
+        self._fits = {}                                         # {(nguồn, cube): (quad, khớp, nghiệm)} lần khớp gần nhất
+        self._threads = [threading.Thread(target=self._colour_loop, daemon=True)]
+        if dino:                                                # luồng riêng: nạp DINO mất vài giây, không chặn mặt màu
+            self._threads.append(threading.Thread(target=self._dino_loop, daemon=True))
+        for thread in self._threads:
+            thread.start()
 
-    def offer(self, stamp, frame, clear):
+    def offer(self, stamp, frame, clear, tag_ids):
+        job = (stamp, frame.copy(), clear, set(tag_ids))
         with self._lock:
-            self._latest = (stamp, frame.copy(), clear)
+            self._latest = {key: job for key in self._latest}
 
-    def _loop(self):
+    def _next(self, key, period, last):
+        """Khung mới nhất cho luồng `key` kèm góc khớp lúc chụp, hoặc None (chưa tới nhịp / chưa có khung / tay động)."""
+        if time.time() - last < period:                         # nhịp có chủ ý: dùng chung GIL với vòng hiển thị
+            time.sleep(0.02)
+            return None
+        with self._lock:
+            job, self._latest[key] = self._latest[key], None
+        if job is None:
+            time.sleep(0.02)
+            return None
+        servo = None
+        for _ in range(60):                                     # chờ lần đọc khớp sau khung (tối đa ~3 s)
+            servo = self.servo_at(job[0])
+            if servo is not None or self._stop.is_set():
+                break
+            time.sleep(0.05)
+        return (job, servo) if isinstance(servo, list) else None
+
+    def _emit(self, stamp, servo, faces, tag_ids, clear, source=""):
+        import world_watch as W
+        for face in faces:
+            # Cảnh tĩnh: mặt vẫn ở đúng pixel cũ và tay chưa nhúc nhích thì nghiệm khớp cũ vẫn đúng. Khớp lại mỗi lần
+            # tốn 0,1–0,3 s/mặt và giành GIL của vòng hiển thị (đo: 16 khung/giây tụt còn 9).
+            key, quad = (source, face["cube_id"]), np.asarray(face["quad"], float).reshape(4, 2)
+            old = self._fits.get(key)
+            if (old is not None and np.max(np.abs(np.sort(old[0], axis=0) - np.sort(quad, axis=0))) < 2.0
+                    and max(abs(a - b) for a, b in zip(old[1], servo)) < 0.5):
+                face["fit"] = None if old[2] is None else dict(old[2])
+                continue
+            face["fit"] = W.fit_face(quad, servo, self.cal)
+            self._fits[key] = (quad, list(servo), face["fit"])
+        self._out.put((stamp, servo, faces, tag_ids, clear))
+
+    def _colour_loop(self):
+        from cube_vision import color, registry
+        last = 0.0
+        while not self._stop.is_set():
+            got = self._next("colour", FACE_COLOUR_PERIOD_S, last)
+            if got is None:
+                continue
+            (stamp, frame, clear, tag_ids), servo = got
+            try:
+                self._emit(stamp, servo, color.colour_faces(frame, registry.COLOR_TO_ID), tag_ids, clear, "colour")
+            except Exception as exc:  # noqa: BLE001
+                print(f"  Bộ tìm mặt màu lỗi ở một khung ({exc}).")
+            last = time.time()
+
+    def _dino_loop(self):
+        import world_watch as W
         try:
             from cube_vision.identify import FULL, Identifier
             identifier = Identifier(FULL)
-        except Exception as exc:  # noqa: BLE001 - thiếu mô hình: vẫn theo dõi được bằng tag
-            print(f"  Không nạp được bộ nhận mặt ({exc}): chỉ theo dõi bằng tag.")
+        except Exception as exc:  # noqa: BLE001 - thiếu mô hình: vẫn có tag và mặt màu
+            print(f"  Không nạp được bộ nhận hình in ({exc}): chỉ dùng tag và mặt màu.")
             return
+        last = 0.0
         while not self._stop.is_set():
-            with self._lock:
-                job, self._latest = self._latest, None
-            if job is None:
-                time.sleep(0.02)
+            got = self._next("dino", FACE_DINO_PERIOD_S, last)
+            if got is None:
                 continue
-            stamp, frame, clear = job
+            (stamp, frame, clear, tag_ids), servo = got
             try:
-                self._out.put((stamp, identifier.detect(frame), clear))
+                faces, seen = W.faces_from_detections(identifier.detect(frame))
+                self._emit(stamp, servo, faces, tag_ids | seen, clear, "dino")
             except Exception as exc:  # noqa: BLE001
-                print(f"  Bộ nhận mặt lỗi ở một khung ({exc}).")
+                print(f"  Bộ nhận hình in lỗi ở một khung ({exc}).")
+            last = time.time()
 
     def results(self):
         import queue
@@ -323,7 +387,8 @@ class FaceJob:
 
     def stop(self):
         self._stop.set()
-        self._thread.join(timeout=10.0)
+        for thread in self._threads:
+            thread.join(timeout=10.0)
 
 
 def cmd_watch(args):
@@ -359,7 +424,7 @@ def cmd_watch(args):
         recent, pending = collections.deque(maxlen=3), collections.deque(maxlen=90)
         started, frames, looks = time.time(), 0, 0
         session.start_polling()
-        face_job = None if args.no_faces else FaceJob()
+        face_job = None if args.no_faces else FaceJob(session.cal, session.joints_at, dino=args.dino)
         last_dim = 0.0
         try:
             while True:
@@ -378,12 +443,8 @@ def cmd_watch(args):
                     if gray.mean() < WATCH_FACE_BRIGHTNESS and time.time() - last_dim > 30.0:
                         print(f"  Ảnh tối (độ sáng {gray.mean():.0f}/255): mặt không có tag sẽ khó nhận, hãy bật thêm đèn.")
                         last_dim = time.time()
-                    face_job.offer(stamp, frame, clear)
-                    for at, detections, was_clear in face_job.results():
-                        servo = session.joints_at(at)
-                        if not isinstance(servo, list):
-                            continue                              # tay đang động quanh khung đó: bỏ
-                        faces, tag_ids = W.faces_from_detections(detections)
+                    face_job.offer(stamp, frame, clear, steady)
+                    for at, servo, faces, tag_ids, was_clear in face_job.results():
                         events = watcher.observe_faces(servo, faces, tag_ids, stamp=at, clear_view=was_clear)
                         text = W.describe(events)
                         if text and text != last_face_text:
@@ -504,7 +565,9 @@ def cmd_show(_args):
               f"{now - tag['stamp']:.0f} s trước")
     for cube_id, face in sorted(world.faces.items()):
         x, y, z = face["centre"] * 1000
-        print(f"  cube {cube_id} (mặt {face['label']} ngửa lên, không đọc tag): ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, "
+        how = (f"mặt màu {face['label'].replace(' o mat ben', '')} quay ngang" if "mat ben" in face["label"]
+               else f"mặt {face['label']} ngửa lên")
+        print(f"  cube {cube_id} ({how}, không đọc tag): ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, "
               f"tầng {face['layer']}, khớp {face['rms_px']:.1f} px, {face['n_views']} lần nhìn, "
               f"{now - face['stamp']:.0f} s trước")
     for item in world.objects:
@@ -541,6 +604,9 @@ def main():
                     help="với --scan: không dựng vật khác cube (cốc, hộp...) từ đám mây điểm")
     ap.add_argument("--no-object-looks", action="store_true",
                     help="với --scan: không chụp thêm khung quanh từng vật (nhanh hơn, hình vật kém hơn)")
+    ap.add_argument("--dino", action="store_true",
+                    help="với --watch: chạy thêm bộ nhận hình in (DINO). Mặc định tắt: đo thật nó kéo cửa sổ từ 9 xuống "
+                         "4 khung/giây và 4 góc mặt hình in nó trả về thường lệch; mặc định chỉ dùng tag + mặt màu")
     ap.add_argument("--no-faces", action="store_true",
                     help="chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()

@@ -243,3 +243,35 @@ class Track(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ColourFaces(unittest.TestCase):
+    def test_solid_colour_patches_become_quads_whatever_their_aspect_and_edge_patches_are_dropped(self):
+        import cv2
+        from cube_vision import color, registry
+        image = np.full((480, 640, 3), 235, np.uint8)
+        blue_side = np.array([[430, 372], [565, 368], [578, 420], [432, 424]], np.int32)       # mặt bên nhìn chéo: dẹt
+        green_top = np.array([[100, 290], [215, 260], [270, 350], [150, 395]], np.int32)
+        cut_yellow = np.array([[0, 100], [60, 100], [60, 160], [0, 160]], np.int32)            # chạm mép ảnh
+        hsv = np.full((480, 640, 3), (0, 0, 235), np.uint8)
+        for quad, colour in ((blue_side, (116, 146, 121)), (green_top, (43, 122, 48)), (cut_yellow, (22, 255, 226))):
+            cv2.fillConvexPoly(hsv, quad, colour)
+        image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+        found = {f["cube_id"]: f for f in color.colour_faces(image, registry.COLOR_TO_ID)}
+        self.assertEqual(sorted(found), sorted([registry.COLOR_TO_ID["khoi_xanh"], registry.COLOR_TO_ID["khoi_xanh_duong"]]))
+        got = found[registry.COLOR_TO_ID["khoi_xanh_duong"]]["quad"]
+        for corner in blue_side:
+            self.assertLess(np.min(np.linalg.norm(got - corner, axis=1)), 4.0)
+
+
+class LiveCarriesEverything(unittest.TestCase):
+    def test_live_world_keeps_objects_and_region_for_the_phone_overlay(self):
+        world, seen = build_world(), see(TAGS, TRUE_POSE)
+        world.region = [[-0.4, -0.3], [0.0, -0.3], [0.0, 0.3], [-0.4, 0.3]]
+        world.set_objects([{"label": "cup", "polygon": np.array([[-0.2, 0.0], [-0.15, 0.0], [-0.15, 0.05], [-0.2, 0.05]]),
+                            "centre": np.array([-0.175, 0.025]), "area_m2": 0.0025, "n_views": 5, "height_m": 0.1,
+                            "width_m": 0.05, "shape": "cylinder"}], "test")
+        info = LiveWorld(world, PHONE).update(seen)
+        self.assertTrue(info["ok"])
+        self.assertEqual(len(info["world"].objects), 1)
+        self.assertEqual(info["world"].region, world.region)

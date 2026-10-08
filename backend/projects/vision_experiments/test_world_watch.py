@@ -318,3 +318,57 @@ class Faces(unittest.TestCase):
         self.assertFalse(again.inside([-0.4, 0.0]))
         drawn = again.project_into(A.wrist_camera(CAL), A.base_T_optical(self.POSE, CAL))
         self.assertIn(2, drawn["cubes"])
+
+
+def side_quad(cube_xy, pose, layer=0, phi=None, order=(2, 1, 0, 3), noise=0.4, seed=0):
+    """4 góc pixel của MẶT BÊN quay về phía camera của một cube ở `cube_xy` (thứ tự xáo như dò viền)."""
+    T = A.base_T_optical(pose, CAL)
+    if phi is None:
+        toward = T[:2, 3] - np.asarray(cube_xy, float)
+        phi = float(np.arctan2(toward[1], toward[0])) + 0.25
+    n, t, h = np.array([np.cos(phi), np.sin(phi)]), np.array([-np.sin(phi), np.cos(phi)]), 0.015
+    top_z = CAL["tag_top_z"] + 0.03 * layer
+    mid = np.asarray(cube_xy, float) + h * n
+    face = np.array([[*(mid - h * t), top_z], [*(mid + h * t), top_z], [*(mid + h * t), top_z - 0.03],
+                     [*(mid - h * t), top_z - 0.03]])
+    inv = np.linalg.inv(T)
+    uv = A.wrist_camera(CAL).project(face @ inv[:3, :3].T + inv[:3, 3])
+    return uv[list(order)] + np.random.default_rng(seed).normal(0.0, noise, (4, 2))
+
+
+class SideFaces(unittest.TestCase):
+    """Cube ngửa mặt hình in (khó thấy) nhưng mặt màu quay ngang về phía camera."""
+    POSE = POSES[0]
+
+    def test_a_colour_face_on_the_side_locates_the_cube(self):
+        centre = visible_spot(self.POSE)[:3, 3]
+        watcher = W.Watcher(CAL)
+        for t in (0.0, 1.0):
+            quad = side_quad(centre[:2], self.POSE, seed=int(t))
+            fit = W.fit_face(quad, self.POSE, CAL)
+            self.assertEqual(fit["kind"], "side")
+            events = watcher.observe_faces(self.POSE, [{"cube_id": 1, "quad": quad, "label": "khoi_xanh_duong",
+                                                        "confidence": 0.9}], stamp=t)
+        self.assertEqual(events["new"], [1], events)
+        entry = watcher.world.faces[1]
+        self.assertLess(np.linalg.norm(entry["centre"][:2] - centre[:2]), 0.004)
+        self.assertEqual(entry["layer"], 0)
+        self.assertIn("mat ben", entry["label"])
+        self.assertLess(np.linalg.norm(watcher.world.cube(1)["centre"] - [centre[0], centre[1], CAL["tag_top_z"] - 0.015]), 0.004)
+
+    def test_top_and_side_faces_are_told_apart_by_the_fit(self):
+        centre = visible_spot(self.POSE)[:3, 3].copy()
+        centre[2] = CAL["tag_top_z"]
+        self.assertEqual(W.fit_face(face_quad(centre, self.POSE), self.POSE, CAL)["kind"], "top")
+        self.assertEqual(W.fit_face(side_quad(centre[:2], self.POSE), self.POSE, CAL)["kind"], "side")
+
+    def test_the_best_fitting_face_of_a_cube_is_used_when_several_are_reported(self):
+        centre = visible_spot(self.POSE)[:3, 3].copy()
+        centre[2] = CAL["tag_top_z"]
+        junk = {"cube_id": 4, "quad": np.array([[300, 200], [380, 205], [370, 230], [305, 260.0]]), "label": "x",
+                "confidence": 0.9}
+        watcher = W.Watcher(CAL)
+        for t in (0.0, 1.0):
+            events = watcher.observe_faces(self.POSE, [junk, face(4, centre, self.POSE, seed=int(t))], stamp=t)
+        self.assertEqual(events["new"], [4])
+        self.assertEqual(events["rejected"], {})

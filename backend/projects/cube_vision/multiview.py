@@ -241,15 +241,24 @@ def flat_face(view: View, layer_zs, size_m: float = FACE_SIZE_M):
     hoặc None khi không tầng nào giải được.
     """
     quad = np.asarray(view.corners_px, float).reshape(4, 2)
+    T = np.asarray(view.a_T_optical, float)
+    orders = [np.roll(o, k, axis=0) for o in (quad, quad[::-1]) for k in range(4)]
     per_layer = []
     for layer, z in enumerate(layer_zs):
-        best = None
-        for order in (quad, quad[::-1]):
-            for shift in range(4):
-                fit = flat_tag(View(view.a_T_optical, view.camera, np.roll(order, shift, axis=0), view.label),
-                               float(z), size_m)
-                if fit is not None and (best is None or fit["rms_px"] < best["rms_px"]):
-                    best = fit
+        # Mặt vuông: 4 phép quay góc cho cùng một hình, chỉ CHIỀU đi (thuận / ngược) là khác thật. Chiếu 4 góc xuống
+        # mặt phẳng z rồi lấy chiều cho diện tích có dấu dương (ngược chiều kim đồng hồ nhìn từ trên, như tag_points).
+        hits = []
+        for u, v in quad:
+            ray = T[:3, :3] @ view.camera.ray(u, v)
+            if abs(ray[2]) < 1e-9 or (z - T[2, 3]) / ray[2] <= 0:
+                break
+            hits.append((T[:3, 3] + ray * ((z - T[2, 3]) / ray[2]))[:2])
+        if len(hits) < 4:
+            continue
+        hits = np.array(hits)
+        signed = float(np.sum(hits[:, 0] * np.roll(hits[:, 1], -1) - np.roll(hits[:, 0], -1) * hits[:, 1]))
+        order = orders[0] if signed > 0 else orders[4]
+        best = flat_tag(View(view.a_T_optical, view.camera, order, view.label), float(z), size_m)
         if best is not None:
             best["layer"] = layer
             per_layer.append(best)
@@ -258,4 +267,80 @@ def flat_face(view: View, layer_zs, size_m: float = FACE_SIZE_M):
     per_layer.sort(key=lambda fit: fit["rms_px"])
     best = per_layer[0]
     best["runner_up_px"] = per_layer[1]["rms_px"] if len(per_layer) > 1 else float("inf")
+    return best
+
+
+def side_face(view: View, layer_zs, size_m: float = FACE_SIZE_M):
+    """Một MẶT BÊN của cube (vuông `size_m`, dựng đứng, cạnh dưới nằm trên mặt tầng) thấy bằng 4 góc không có thứ tự.
+
+    Dùng khi cube ngửa một mặt khó thấy (mặt trắng in hình trên bàn trắng) nhưng mặt màu của nó quay ngang về phía
+    camera. Ẩn: tâm cube (x, y) và hướng pháp tuyến ngang của mặt; thử từng tầng. `layer_zs` là độ cao MẶT TRÊN của
+    cube ở từng tầng (như `flat_face`). Trả dict cùng khóa với `flat_face` — "corners"/"centre" là của MẶT TRÊN cube
+    (để lưu world giống mọi cube khác) — kèm "kind": "side", hoặc None.
+    """
+    from scipy.optimize import least_squares
+    T = np.asarray(view.a_T_optical, float)
+    opt_T_a = invert(T)
+    quad = np.asarray(view.corners_px, float).reshape(4, 2)
+    h = float(size_m) / 2.0
+    orders = [np.roll(o, k, axis=0) for o in (quad, quad[::-1]) for k in range(4)]
+
+    def model(params, top_z):
+        x, y, phi = params
+        n, t = np.array([np.cos(phi), np.sin(phi)]), np.array([-np.sin(phi), np.cos(phi)])
+        mid = np.array([x, y]) + h * n                              # tâm mặt bên, nhìn từ trên xuống
+        return np.array([[*(mid - h * t), top_z], [*(mid + h * t), top_z],
+                         [*(mid + h * t), top_z - size_m], [*(mid - h * t), top_z - size_m]])
+
+    def project(params, top_z):
+        world = model(params, top_z)
+        return np.nan_to_num(view.camera.project(world @ opt_T_a[:3, :3].T + opt_T_a[:3, 3]), nan=1e3)
+
+    per_layer = []
+    for layer, top_z in enumerate(layer_zs):
+        centre_px = quad.mean(axis=0)
+        ray = T[:3, :3] @ view.camera.ray(*centre_px)
+        z_mid = float(top_z) - h
+        if abs(ray[2]) < 1e-9 or (z_mid - T[2, 3]) / ray[2] <= 0:
+            continue
+        hit = T[:3, 3] + ray * ((z_mid - T[2, 3]) / ray[2])
+        toward = T[:2, 3] - hit[:2]
+        phi0 = float(np.arctan2(toward[1], toward[0]))             # mặt thấy được thì quay về phía camera
+        best = None
+        for dphi in (0.0, 0.6, -0.6):
+            start = np.array([hit[0] - h * np.cos(phi0 + dphi), hit[1] - h * np.sin(phi0 + dphi), phi0 + dphi])
+            first = project(start, float(top_z))
+            order = min(orders, key=lambda o: float(np.sum((first - o) ** 2)))   # thứ tự góc khớp nhất với mô hình
+            sol = least_squares(lambda p: (project(p, float(top_z)) - order).ravel(), start, loss="huber", f_scale=3.0)
+            rms = float(np.sqrt(np.mean((project(sol.x, float(top_z)) - order) ** 2)))
+            if best is None or rms < best[0]:
+                best = (rms, sol.x)
+        rms, (x, y, phi) = best
+        c, s = np.cos(phi), np.sin(phi)
+        top = tag_points(size_m) @ np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]]).T + [x, y, float(top_z)]
+        per_layer.append({"corners": top, "centre": np.array([x, y, float(top_z)]), "normal": np.array([0.0, 0.0, 1.0]),
+                          "rms_px": rms, "z": float(top_z), "layer": layer, "kind": "side",
+                          "face_normal": np.array([c, s, 0.0])})
+    if not per_layer:
+        return None
+    per_layer.sort(key=lambda fit: fit["rms_px"])
+    best = per_layer[0]
+    best["runner_up_px"] = per_layer[1]["rms_px"] if len(per_layer) > 1 else float("inf")
+    return best
+
+
+def cube_face(view: View, layer_zs, size_m: float = FACE_SIZE_M):
+    """Một mặt 30 mm của cube, chưa biết là mặt TRÊN hay mặt BÊN: khớp cả hai mô hình, trả mô hình khớp tốt hơn.
+
+    "runner_up_px" là sai số của giả thuyết tốt nhì trong MỌI giả thuyết (mô hình kia, tầng khác): bên gọi dùng nó để
+    từ chối khi mơ hồ.
+    """
+    fits = [fit for fit in (flat_face(view, layer_zs, size_m), side_face(view, layer_zs, size_m)) if fit is not None]
+    if not fits:
+        return None
+    fits.sort(key=lambda fit: fit["rms_px"])
+    best = fits[0]
+    best.setdefault("kind", "top")
+    if len(fits) > 1:
+        best["runner_up_px"] = min(best["runner_up_px"], fits[1]["rms_px"])
     return best

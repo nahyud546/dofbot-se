@@ -248,3 +248,20 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
   bằng python hệ thống (không có YOLOE) vật không có tên và hình trụ hẹp hơn thật.
   Đã thử và bỏ: giao bóng mặt nạ trên mặt bàn (hộp lệch vài cm: không có hai khung cùng thấy đáy vật) và so ảnh nắn
   về mặt bàn (tự phơi sáng làm ô màu phẳng bị báo nhầm).
+
+## Mặt màu quay ngang, tốc độ `--watch` (2026-10-08, đo tay thật)
+
+- **Bộ nhận mặt cũ kém với cube ngửa hình in**: với cube 1 ngửa hình tờ báo, nó trả 4 góc của khung hình in bên
+  trong (không phải mặt 30 mm; khớp lệch 35 px) và đọc nhầm thành `expired_cosmetics`. Mặt trắng trên bàn trắng không
+  có viền để dò.
+- **Thay bằng mặt màu + hình học** cho `--watch` và `--scan`: `cube_vision/color.colour_faces` tìm mảng màu đặc theo
+  ngưỡng HSV riêng (`FACE_RANGES`, không chồng nhau; ~5 ms/khung), `multiview.cube_face` khớp tứ giác đó với mặt
+  TRÊN hoặc mặt BÊN 30 mm ở tầng 0–3 và lấy giả thuyết khớp tốt hơn. Cube 1 (ngửa hình báo, mặt xanh dương quay
+  ngang) ra (-178, +32) mm, khớp 3,0–3,6 px, tầng nhì 14 px; `--scan` độc lập ra (-179, +33).
+  Cube ngửa hình in mà cả mặt màu lẫn tag đều khuất khỏi camera thì vẫn chưa nhận được.
+- **Tốc độ `--watch`** (khung/giây hiển thị, cảnh 4 cube): chỉ tag 16; tag + mặt màu 10 (mặc định); thêm DINO 4–5.
+  Vì vậy DINO tắt mặc định (`--dino` để bật). Từ world rỗng, cả 4 cube vào world sau ~4 s.
+- **`--scan` trọn vẹn** (15 pose + nhìn quanh 2 vật): 138 s. Cốc dời chỗ rồi quét lại: trụ Ø 77 mm, cao 104 mm.
+- **iPhone không vẽ vật khác cube**: `LiveWorld` dựng world sống mà không chép `objects` và `region`; đã sửa.
+  Vật khác cube chỉ cập nhật khi `--scan`: dời cốc mà không quét lại thì world giữ chỗ cũ.
+

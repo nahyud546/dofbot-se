@@ -34,6 +34,7 @@ MISSING_MARGIN_PX = 14.0      # cả 4 góc tag phải nằm trong ảnh cách m
 FACE_SOURCE = "wrist-face"
 FACE_MIN_CONFIDENCE = 0.5     # độ tin của bộ nhận mặt (màu / hình in) thấp hơn mức này thì không ghi
 FACE_MAX_RMS_PX = 7.0         # đo thật khi đủ sáng: đúng tầng 1,8–4,6 px, sai tầng 13–21 px
+FACE_MAX_RMS_SHARE = 0.07     # ...hoặc 7 % cạnh mặt trong ảnh nếu lớn hơn (đo: mặt lục cạnh ~130 px khớp 5,5–7,6 px)
 FACE_LAYER_RATIO = 2.0        # tầng tốt nhất phải khớp tốt hơn tầng nhì chừng này lần, không thì mơ hồ tầng
 FACE_AGREE_M = 0.010          # chỗ mới (cube mới / đã dời) phải được hai lần nhìn liền nhau xác nhận trong mức này
 FACE_TAG_RECENT_S = 2.0       # tag của cube vừa được đọc trong chừng này giây thì không dùng mặt
@@ -180,14 +181,23 @@ class Watcher:
         now = _time.time() if stamp is None else float(stamp)
         camera = A.wrist_camera(self.cal)
         w, h = camera.image_size
-        layer_zs = [self.tag_top_z + MV.FACE_SIZE_M * k for k in range(FACE_MAX_LAYER + 1)]
         detected = set(int(t) for t in tag_ids)
+        # Khớp hình học trước (mặt trên hay mặt bên, tầng nào), rồi xét mặt khớp tốt nhất trước: một cube có thể được
+        # báo bằng nhiều mặt trong cùng khung (mặt màu + mặt hình in), chỉ mặt đầu tiên dùng được mới ghi.
+        ready = []
         for face in faces or []:
-            cube_id = face.get("cube_id")
-            if cube_id is None or face.get("quad") is None:
+            if face.get("cube_id") is None or face.get("quad") is None:
                 continue
-            cube_id = int(cube_id)
+            fit = face.get("fit")
+            if fit is None and "fit" not in face:
+                fit = fit_face(face["quad"], servo, self.cal)
+            ready.append((float("inf") if fit is None else fit["rms_px"], dict(face, fit=fit)))
+        done = set()
+        for _, face in sorted(ready, key=lambda item: item[0]):
+            cube_id = int(face["cube_id"])
             detected.add(cube_id)
+            if cube_id in done:
+                continue
             tag = self.world.tags.get(cube_id)
             if cube_id in tag_ids or (tag is not None and now - tag["stamp"] < FACE_TAG_RECENT_S):
                 continue                                          # tag đọc được: tag thắng
@@ -199,10 +209,13 @@ class Watcher:
             if quad.min() < 4 or quad[:, 0].max() > w - 4 or quad[:, 1].max() > h - 4:
                 events["rejected"][key] = "mặt bị cắt ở mép ảnh"
                 continue
-            fit = MV.flat_face(A.make_view(quad, servo, self.cal, "face"), layer_zs)
-            if fit is None or fit["rms_px"] > FACE_MAX_RMS_PX:
-                events["rejected"][key] = ("không khớp mô hình mặt 30 mm nằm phẳng"
-                                           + ("" if fit is None else f" (lệch {fit['rms_px']:.1f} px)"))
+            fit = face["fit"]
+            # Mặt ở gần camera to tới ~190 px mỗi cạnh: sai số viền tính theo pixel lớn theo, nên ngưỡng theo cỡ mặt.
+            edges = np.linalg.norm(quad - np.roll(quad, -1, axis=0), axis=1)
+            allowed = max(FACE_MAX_RMS_PX, FACE_MAX_RMS_SHARE * float(edges.mean()))
+            if fit is None or fit["rms_px"] > allowed:
+                events["rejected"].setdefault(key, "không khớp mô hình mặt 30 mm (trên hay bên)"
+                                              + ("" if fit is None else f" (lệch {fit['rms_px']:.1f} px)"))
                 continue
             if fit["runner_up_px"] < FACE_LAYER_RATIO * max(fit["rms_px"], 1.0):
                 events["rejected"][key] = (f"mơ hồ tầng (tầng {fit['layer']} lệch {fit['rms_px']:.1f} px, "
@@ -228,8 +241,11 @@ class Watcher:
             del fits[:-FACE_KEEP]
             centre = np.median([f["centre"] for f in fits], axis=0)
             merged = dict(fit, centre=centre, corners=np.asarray(fit["corners"], float) + (centre - fit["centre"]))
-            self.world.update_face(cube_id, merged, str(face.get("label", "")), float(face.get("confidence", 0.0)),
+            label = str(face.get("label", "")) + (" o mat ben" if fit.get("kind") == "side" else "")
+            self.world.update_face(cube_id, merged, label, float(face.get("confidence", 0.0)),
                                    FACE_SOURCE, sure=True, n_views=len(fits), stamp=now)
+            done.add(cube_id)
+            events["rejected"].pop(key, None)
             self.unseen.pop(cube_id, None)
             self.unseen_since.pop(cube_id, None)
             events["used"].append(cube_id)
@@ -258,6 +274,12 @@ class Watcher:
                 self.unseen_since.pop(cube_id, None)
                 events["removed"].append(cube_id)
         return events
+
+
+def fit_face(quad, servo, cal):
+    """Khớp một tứ giác pixel với mặt 30 mm của cube (mặt trên hoặc mặt bên, tầng 0..3); xem `multiview.cube_face`."""
+    layer_zs = [float(cal["tag_top_z"]) + MV.FACE_SIZE_M * k for k in range(FACE_MAX_LAYER + 1)]
+    return MV.cube_face(A.make_view(np.asarray(quad, float).reshape(4, 2), servo, cal, "face"), layer_zs)
 
 
 def faces_from_detections(detections) -> tuple:
