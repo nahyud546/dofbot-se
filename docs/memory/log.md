@@ -7,7 +7,7 @@ Mới nhất ở trên. Mỗi phiên 3–6 dòng: làm gì, kết quả, để l
   `.claude/skills/` ở lại gốc. `CLAUDE.md` tách đôi: gốc (bố cục, plugin, bộ nhớ) và `backend/CLAUDE.md` (kỹ thuật).
 - Thứ gãy vì đường dẫn tuyệt đối và đã sửa: 48 file trong `.venv/bin` (sed), `ros/` và `workspaces/dofbot_ws`
   (xóa `build install log`, build lại: 4 + 13 package xong), `repo_paths.py` (lấy gốc từ git → sai), `cube_sort_3d.py`.
-- Chưa làm: build lại `workspaces/dofbot_robot_arm_6dof`; chưa chạy tay thật. Chưa commit.
+- Chưa làm: build lại `workspaces/dofbot_robot_arm_6dof`; chưa chạy tay thật. Commit `bd07b3a`.
 
 ## 2026-10-08 · Plugin và bộ nhớ dự án
 - Cài ở phạm vi user: ponytail 5.0.0, agent-skills 0.6.12, ui-ux-pro-max 2.13.0. agent-skills clone qua SSH nên phải

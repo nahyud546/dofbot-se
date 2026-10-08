@@ -6,23 +6,18 @@ Cập nhật: 2026-10-08 · nhánh `world-frames` (chưa gộp vào `main`)
 
 Toàn bộ mã điều khiển tay máy nằm trong `backend/`; `frontend/` trống, chờ người dùng ra lệnh. Ở gốc chỉ còn
 `CLAUDE.md` (ngắn), `README.md`, `.claude/skills/`, `docs/memory/`, `routine.md`. Hướng dẫn backend: `backend/CLAUDE.md`.
-**Việc dời chưa commit**: đổi tên đã `git mv` (staged), file mới ở gốc còn untracked. Người dùng tự commit.
+Đã commit: `bd07b3a` (directory partitioning).
 
 ## Đang làm
 
 World chung cho nhiều camera (`cube_vision/world_map.py`, `vision_experiments/build_world.py`). Commit gần nhất
-`9cb95da`: vật khác cube dựng từ đám mây điểm (`cube_vision/pointcloud.py`) thay cho `carve.py`.
+`7919f4b`: tay nhìn quanh từng vật, gom cụm đám mây điểm dày hơn trong 3D (`cube_vision/pointcloud.py`).
 
-## Chưa commit (2026-10-08, nguồn: `git status`)
+## Lỗi đang có (2026-10-08, nguồn: pytest đủ bộ sau khi dời: 617 passed, 1 failed có sẵn, 1 lỗi nạp)
 
-- Việc dời sang `backend/` + sửa đường dẫn: `scripts/tools/repo_paths.py` (bỏ bước lấy gốc từ git),
-  `vision_experiments/cube_sort_3d.py` (bỏ đường dẫn tuyệt đối), 4 skill, `README.md`, `.gitignore` gốc.
-- Đang sửa dở ở phiên khác trong lúc dời (không phải của phiên dời thư mục): `vision_experiments/active_view.py`,
-  `build_world.py`, `test_active_view.py`, `ros/src/cap_vision/cap_vision/world_publisher.py`.
-- Không rõ mục đích, đừng tự commit: `vendor/yahboom/dofbot_voice/scripts/speak_text.py` (dòng 1 bị dán nhầm một lệnh
-  shell → `SyntaxError`, làm `test_t8_pipeline.py` không nạp được), `docs/calibration/check_camera.md`,
-  `docs/ros2_moveit/sync_commands.md`, `docs/hand_teleop_webcam_rviz.md` (trùng tên với bản trong `docs/teleop/`),
-  `routine.md`.
+- `vendor/yahboom/dofbot_voice/scripts/speak_text.py` dòng 1 bị dán nhầm một lệnh shell trước `#!/usr/bin/env python3`
+  → `SyntaxError`, `projects/t8_pipeline/test_t8_pipeline.py` không nạp được, và T8 import file này cũng sẽ lỗi.
+  Đã vào git. Chưa sửa vì không rõ ý người dùng.
 
 ## Bước kế (suy từ code và ghi chú, người dùng chưa xác nhận)
 
