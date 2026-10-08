@@ -7,6 +7,8 @@ Intrinsic phải có trước (`cube_vision.intrinsics`), ở đây chỉ còn 6
 """
 from __future__ import annotations
 
+import itertools
+
 import cv2
 import numpy as np
 
@@ -19,6 +21,8 @@ MIN_SPREAD_M = 0.04            # các tag phải tách nhau ít nhất chừng n
 MAX_RMS_PX = 6.0
 MAX_LEAVE_ONE_OUT_PX = 12.0
 MIN_TAGS_FOR_LEAVE_ONE_OUT = 4
+REFINE_ACCEPT_PX = 8.0         # khởi tạo từ pose trước: nếu sau tinh chỉnh còn lệch hơn mức này thì tìm lại từ đầu
+MOVED_PX = 10.0                # tag lệch hơn mức này so với pose của các tag còn lại => tag đó đã bị dời
 
 
 def _to_T(rvec, tvec) -> np.ndarray:
@@ -47,26 +51,40 @@ def _starts(points):
     return out
 
 
-def _pnp(points, pixels, camera: CameraModel, min_height=None):
+def _refine(pts, px, camera: CameraModel, optical_T_world, min_height=None):
+    """Tinh chỉnh LM từ một pose cho trước (nhanh, vài ms); None khi nghiệm vô lý hoặc camera dưới `min_height`."""
+    T0 = np.asarray(optical_T_world, float)
+    try:
+        rvec, tvec = cv2.solvePnPRefineLM(pts, px, camera.matrix(), camera.dist(),
+                                          cv2.Rodrigues(T0[:3, :3])[0], T0[:3, 3].reshape(3, 1))
+    except cv2.error:
+        return None
+    T = _to_T(rvec, tvec)
+    if not np.isfinite(T).all() or (pts @ T[:3, :3].T + T[:3, 3])[:, 2].min() <= 0.02:
+        return None
+    if min_height is not None and float(invert(T)[2, 3]) < min_height:
+        return None
+    return T
+
+
+def _pnp(points, pixels, camera: CameraModel, min_height=None, init_T=None):
     """optical_T_world từ điểm world ↔ pixel (≥ 4 điểm), hoặc None.
 
     Các tag trên bàn gần như đồng phẳng: PnP khi đó có HAI nghiệm (nghiệm thật và nghiệm lật qua mặt phẳng), nhìn
     càng xiên càng khó phân biệt. Vì vậy tối ưu từ nhiều pose khởi tạo, bỏ nghiệm đặt camera dưới `min_height`
-    (dưới mặt bàn), rồi lấy nghiệm chiếu lại khớp nhất.
+    (dưới mặt bàn), rồi lấy nghiệm chiếu lại khớp nhất. Có `init_T` (pose khung trước) thì thử nó trước: camera
+    cầm tay giữa hai khung chỉ dời một chút nên đi thẳng tới nghiệm đúng, không cần tìm toàn cục (~1 ms thay vì ~1 s).
     """
     pts, px = np.asarray(points, np.float64), np.asarray(pixels, np.float64)
+    if init_T is not None:
+        T = _refine(pts, px, camera, init_T, min_height)
+        if T is not None and float(np.sqrt(np.mean(_errors(pts, px, camera, T) ** 2))) <= REFINE_ACCEPT_PX:
+            return T
     K, dist = camera.matrix(), camera.dist()
     best = None
     for rvec0, tvec0 in _starts(pts):
-        try:
-            rvec, tvec = cv2.solvePnPRefineLM(pts, px, K, dist, rvec0.copy(), tvec0.copy())
-        except cv2.error:
-            continue
-        T = _to_T(rvec, tvec)
-        if not np.isfinite(T).all() or (pts @ T[:3, :3].T + T[:3, 3])[:, 2].min() <= 0.02:
-            continue
-        height = float(invert(T)[2, 3])
-        if min_height is not None and height < min_height:
+        T = _refine(pts, px, camera, _to_T(rvec0, tvec0), min_height)
+        if T is None:
             continue
         err = float(np.sqrt(np.mean(_errors(pts, px, camera, T) ** 2)))
         if np.isfinite(err) and (best is None or err < best[0]):
@@ -80,7 +98,7 @@ def _errors(points, pixels, camera, optical_T_world) -> np.ndarray:
 
 
 def pose_from_tags(world_corners: dict, detections: dict, camera: CameraModel,
-                   min_tags: int = MIN_TAGS, above_table: bool = True) -> dict:
+                   min_tags: int = MIN_TAGS, above_table: bool = True, init=None) -> dict:
     """world_corners {id: (4,3)} đã biết trong world; detections {id: (4,2)} pixel (ảnh đã xoay đúng hướng).
 
     Trả dict: ok, reasons, world_T_optical (khi giải được), rms_px, tags (id đã dùng), leave_one_out_px {id: px},
@@ -100,7 +118,8 @@ def pose_from_tags(world_corners: dict, detections: dict, camera: CameraModel,
     if len(ids) > 1 and out["spread_m"] < MIN_SPREAD_M:
         out["reasons"].append(f"các tag quá gần nhau ({out['spread_m'] * 1000:.0f} mm)")
     floor = float(min(p[:, 2].min() for p in pts.values())) - 0.03 if above_table else None
-    T = _pnp(np.vstack([pts[i] for i in ids]), np.vstack([px[i] for i in ids]), camera, floor)
+    T = _pnp(np.vstack([pts[i] for i in ids]), np.vstack([px[i] for i in ids]), camera, floor,
+             None if init is None else invert(init))
     if T is None:
         out["reasons"].append("PnP không giải được")
         return out
@@ -112,7 +131,7 @@ def pose_from_tags(world_corners: dict, detections: dict, camera: CameraModel,
     if len(ids) >= 3:
         for held in ids:
             rest = [i for i in ids if i != held]
-            T_rest = _pnp(np.vstack([pts[i] for i in rest]), np.vstack([px[i] for i in rest]), camera, floor)
+            T_rest = _pnp(np.vstack([pts[i] for i in rest]), np.vstack([px[i] for i in rest]), camera, floor, T)
             if T_rest is not None:
                 out["leave_one_out_px"][held] = float(np.mean(_errors(pts[held], px[held], camera, T_rest)))
         worst = max(out["leave_one_out_px"].values(), default=0.0)
@@ -132,3 +151,51 @@ def drift_px(world_corners: dict, detections: dict, camera: CameraModel, world_T
     err = np.concatenate([_errors(np.asarray(world_corners[i], float).reshape(4, 3),
                                   np.asarray(detections[i], float).reshape(4, 2), camera, T) for i in ids])
     return float(np.median(err))
+
+
+def track(world_corners: dict, detections: dict, camera: CameraModel, prev=None,
+          moved_px: float = MOVED_PX, max_rms_px: float = MAX_RMS_PX, above_table: bool = True) -> dict:
+    """Định vị camera cầm tay trong khi một số tag có thể đã bị dời: chỉ các tag còn đứng yên làm mốc.
+
+    Camera dời thì MỌI tag cùng lệch theo một phép dời cứng; một tag bị dời riêng thì lệch khỏi phép dời đó. Nên
+    tìm tập tag lớn nhất (≥ MIN_TAGS) cùng giải được với RMS thấp, tag ngoài tập mà vẫn lệch quá `moved_px` là tag
+    đã bị dời. `prev` (pose khung trước, world_T_optical) làm khởi tạo nhanh.
+
+    Trả dict: ok, reasons, world_T_optical, anchors [id], moved [id], rms_px, tags (id thấy được cả hai phía).
+    Hai tag mà không khớp nhau thì không biết tag nào dời: ok False, không đoán.
+    """
+    ids = sorted(set(world_corners) & set(detections))
+    out = {"ok": False, "reasons": [], "world_T_optical": None, "anchors": [], "moved": [], "rms_px": None,
+           "tags": ids}
+    if len(ids) < MIN_TAGS:
+        out["reasons"].append(f"chỉ thấy {len(ids)} tag đã biết trong world (cần ≥ {MIN_TAGS})")
+        return out
+    pts = {i: np.asarray(world_corners[i], float).reshape(4, 3) for i in ids}
+    px = {i: np.asarray(detections[i], float).reshape(4, 2) for i in ids}
+    full = pose_from_tags(world_corners, detections, camera, above_table=above_table, init=prev)
+    if full["world_T_optical"] is None:
+        out["reasons"] += full["reasons"]
+        return out
+    base = invert(full["world_T_optical"])
+    floor = float(min(p[:, 2].min() for p in pts.values())) - 0.03 if above_table else None
+    chosen = None
+    for size in range(len(ids), max(MIN_TAGS, len(ids) - 3) - 1, -1):
+        found = []
+        for subset in itertools.combinations(ids, size):
+            P, Q = np.vstack([pts[i] for i in subset]), np.vstack([px[i] for i in subset])
+            T = _refine(P, Q, camera, base, floor)
+            if T is not None:
+                rms = float(np.sqrt(np.mean(_errors(P, Q, camera, T) ** 2)))
+                if rms <= max_rms_px:
+                    found.append((rms, subset, T))
+        if found:
+            chosen = min(found, key=lambda item: item[0])
+            break
+    if chosen is None:
+        out["reasons"].append("các tag không khớp nhau và không tách được tag nào bị dời "
+                              f"(RMS {full['rms_px']:.1f} px): ít nhất 3 tag đứng yên mới phân biệt được")
+        return out
+    rms, subset, T = chosen
+    out.update(ok=True, world_T_optical=invert(T), anchors=list(subset), rms_px=rms)
+    out["moved"] = [i for i in ids if i not in subset and float(np.mean(_errors(pts[i], px[i], camera, T))) > moved_px]
+    return out

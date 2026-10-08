@@ -63,6 +63,6 @@ Cách mới, tách intrinsic khỏi vị trí. Bảng lệnh đầy đủ ở `d
 2. Dựng world bằng camera tay: `python projects/vision_experiments/build_world.py --scan`. Tag nào báo "CHƯA CHẮC"
    thì không được dùng để định vị camera khác.
 3. Đặt camera vào world: `build_world.py --locate phone --save` (cần ≥ 2 tag chung, tách nhau ≥ 40 mm; cảnh đứng
-   yên từ bước 2). Kiểm bằng mắt: `python -m cube_vision.world_overlay --camera phone`.
+   yên từ bước 2). Kiểm bằng mắt: `python -m cube_vision.world_overlay --camera phone` (chạy từ `projects/`; mặc định theo dõi camera dời và cube dời).
 4. Trước khi dùng lại: `build_world.py --check phone`. DroidCam chỉ cho một kết nối; URL đổi thì đặt
    `PHONE_CAMERA_URL`.

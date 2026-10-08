@@ -79,7 +79,7 @@ def main(args=None):
             super().__init__("world_publisher")
             self.declare_parameter("world_file", default_world_file())
             self.declare_parameter("static_joints", True)
-            self.path = str(self.get_parameter("world_file").value)
+            self.path = str(self.get_parameter("world_file").value) or default_world_file()
             self.static_joints = bool(self.get_parameter("static_joints").value)
             self.tf = TransformBroadcaster(self)
             self.markers = self.create_publisher(MarkerArray, "/world/markers", 2)

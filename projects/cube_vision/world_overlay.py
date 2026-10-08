@@ -4,8 +4,9 @@ Nếu pose + intrinsic của camera đúng, khung dây cube, viền tag và lư�
 phải nằm trùng lên vật thật trong ảnh của camera KHÁC. Số in ở góc ảnh là độ lệch (px) giữa tag chiếu từ world và
 tag camera này đang thấy.
 
-    python -m cube_vision.world_overlay --camera phone                # camera cố định, pose đã lưu trong world
-    python -m cube_vision.world_overlay --camera phone --handheld     # cầm tay: định vị lại mỗi khung bằng tag
+    python -m cube_vision.world_overlay --camera phone                # theo dõi: camera dời và cube dời đều theo kịp
+    python -m cube_vision.world_overlay --camera phone --fixed        # dùng pose đã lưu (kiểm camera có bị dời không)
+    python -m cube_vision.world_overlay --camera phone --write-live data/world/live.json   # cho RViz theo dõi
     python -m cube_vision.world_overlay --camera ext --snapshot /tmp/ext_world.png
 """
 from __future__ import annotations
@@ -33,7 +34,7 @@ def _line(img, a, b, colour, width=1):
         cv2.line(img, a, b, colour, width, cv2.LINE_AA)
 
 
-def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note=""):
+def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="", missing=()):
     """Ảnh mới có world vẽ đè. detections {id: (4,2)}: tag camera này đang thấy (vẽ xanh, so với world vàng).
 
     Trả (ảnh, {id: lệch px trung bình}) cho các tag có ở cả world và trong ảnh.
@@ -46,15 +47,21 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
         _line(out, a, b, AXIS_COLOURS[k], 3)
     errors = {}
     for tag_id, edges in drawn["cubes"].items():
-        sure = world.tags[tag_id]["sure"]
+        tag = world.tags[tag_id]
+        if tag_id in missing:
+            colour, suffix = (150, 150, 150), " (khong thay)"
+        elif str(tag.get("source", "")).startswith("phone-live"):
+            colour, suffix = (0, 140, 255), " (do live)"
+        else:
+            colour, suffix = ((0, 220, 255) if tag["sure"] else (0, 120, 255)), ""
         for a, b in edges:
-            _line(out, a, b, (0, 220, 255) if sure else (0, 120, 255), 2)
+            _line(out, a, b, colour, 2)
         quad = drawn["tags"][tag_id]
         centre = _pt(quad.mean(axis=0))
         if centre:
-            x, y, z = world.tags[tag_id]["centre"] * 1000
-            cv2.putText(out, f"{tag_id}: {x:+.0f},{y:+.0f},{z:+.0f}", (centre[0] + 8, centre[1] - 8),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 220, 255), 2, cv2.LINE_AA)
+            x, y, z = tag["centre"] * 1000
+            cv2.putText(out, f"{tag_id}: {x:+.0f},{y:+.0f},{z:+.0f}{suffix}", (centre[0] + 8, centre[1] - 8),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2, cv2.LINE_AA)
         if detections and tag_id in detections and np.isfinite(quad).all():
             errors[tag_id] = float(np.mean(np.linalg.norm(quad - np.asarray(detections[tag_id], float), axis=1)))
     for tag_id, quad in (detections or {}).items():
@@ -88,7 +95,10 @@ def main():
     ap.add_argument("--camera", required=True, help="tên camera có trong world (phone, ext)")
     ap.add_argument("--source", default="auto")
     ap.add_argument("--world", help="file world (mặc định data/world/latest.json)")
-    ap.add_argument("--handheld", action="store_true", help="định vị lại camera ở mỗi khung bằng tag trong world")
+    ap.add_argument("--fixed", action="store_true",
+                    help="dùng pose camera đã lưu trong world, không theo dõi (kiểm camera cố định có bị dời không)")
+    ap.add_argument("--handheld", action="store_true", help=argparse.SUPPRESS)       # tên cũ; giờ là mặc định
+    ap.add_argument("--write-live", metavar="FILE", help="ghi world sống (camera + cube dời) ra file này ~2 lần/giây")
     ap.add_argument("--snapshot", help="ghi một ảnh rồi thoát (không mở cửa sổ)")
     args = ap.parse_args()
     world = WorldMap.load(args.world)
@@ -96,13 +106,16 @@ def main():
     if model is None or not world.tags:
         raise SystemExit(f"World chưa có camera '{args.camera}' hoặc chưa có tag nào. Chạy: "
                          "python projects/vision_experiments/build_world.py --scan  rồi  --locate " + args.camera)
+    from .live_world import LiveWorld
     from .tag import TagDetector
     detector = TagDetector(enhance=True, quiet=True)
     spec = cameras.STREAMS.get(args.camera, {"size": None, "fourcc": None})
     cap = cameras.open_stream(cameras.stream_source(args.camera, args.source), spec["size"], spec["fourcc"])
     if cap is None:
-        raise SystemExit(f"Không mở được camera '{args.camera}'.")
+        raise SystemExit(f"Không mở được camera '{args.camera}'. (DroidCam chỉ cho một kết nối: tắt cửa sổ khác.)")
+    live = None if args.fixed else LiveWorld(world, model, args.camera)
     pose = world.cameras[args.camera]["world_T_optical"]
+    last_write = 0.0
     try:
         grab(cap, model.rotate, warm=25)
         while True:
@@ -111,21 +124,29 @@ def main():
                 time.sleep(0.05)
                 continue
             seen = detect_tags(frame, detector)
-            note = "co dinh"
-            if args.handheld:
-                found = P.pose_from_tags(world.tag_corners(), seen, model)
-                if not found["ok"]:
-                    view = frame.copy()
-                    cv2.putText(view, "CHUA DINH VI: " + "; ".join(found["reasons"])[:80], (10, 24),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-                    errors = {}
+            errors = {}
+            if live is None:
+                view, errors = draw(frame, world, model, pose, seen, "co dinh")
+            else:
+                info = live.update(seen)
+                if info["ok"]:
+                    note = f"theo doi: {len(info['anchors'])} tag neo"
+                    if info["moved"] or info["new"]:
+                        note += f", cube doi {sorted(info['moved'])} moi {sorted(info['new'])}"
+                    view, errors = draw(frame, info["world"], model, info["pose"], seen, note, info["missing"])
+                    if args.write_live and time.time() - last_write > 0.5:
+                        info["world"].save(args.write_live)
+                        last_write = time.time()
                 else:
-                    pose, note = found["world_T_optical"], f"cam tay, {len(found['tags'])} tag"
-                    view, errors = draw(frame, world, model, pose, seen, note)
-            if not args.handheld:
-                view, errors = draw(frame, world, model, pose, seen, note)
+                    view = frame.copy()
+                    cv2.putText(view, "CHUA DINH VI: " + "; ".join(info["reasons"])[:90], (10, 24),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             if args.snapshot:
                 cv2.imwrite(args.snapshot, view)
+                if live is not None:
+                    print("neo: %s | cube dời: %s | mới: %s | không thấy: %s | RMS %s px" % (
+                        info["anchors"], info["moved"], info["new"], info["missing"],
+                        "-" if info["rms_px"] is None else f"{info['rms_px']:.1f}"), "|", "; ".join(info["reasons"]))
                 print(f"Đã ghi {args.snapshot}. Lệch tag (px): " +
                       (", ".join(f"{i}: {e:.1f}" for i, e in sorted(errors.items())) or "không có tag chung"))
                 return

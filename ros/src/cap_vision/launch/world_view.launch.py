@@ -2,6 +2,7 @@
 
     ros2 launch cap_vision world_view.launch.py                       # tay vẽ ở pose READY (không cần cắm tay máy)
     ros2 launch cap_vision world_view.launch.py live_joints:=true     # khớp thật từ /real_joint_states
+    ros2 launch cap_vision world_view.launch.py world_file:=/đường/dẫn/live.json   # world sống từ world_overlay --write-live
 """
 from pathlib import Path
 
@@ -23,10 +24,11 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("live_joints", default_value="false"),
         DeclareLaunchArgument("rviz", default_value="true"),
+        DeclareLaunchArgument("world_file", default_value=""),
         Node(package="cap_vision", executable="world_publisher", name="world_publisher", output="screen",
-             parameters=[{"static_joints": True}], condition=UnlessCondition(live)),
+             parameters=[{"static_joints": True, "world_file": LaunchConfiguration("world_file")}], condition=UnlessCondition(live)),
         Node(package="cap_vision", executable="world_publisher", name="world_publisher", output="screen",
-             parameters=[{"static_joints": False}], condition=IfCondition(live)),
+             parameters=[{"static_joints": False, "world_file": LaunchConfiguration("world_file")}], condition=IfCondition(live)),
         Node(package="robot_state_publisher", executable="robot_state_publisher", name="world_robot_state",
              output="screen", parameters=[robot_description], condition=UnlessCondition(live)),
         Node(package="robot_state_publisher", executable="robot_state_publisher", name="world_robot_state",

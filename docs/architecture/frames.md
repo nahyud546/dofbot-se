@@ -124,7 +124,7 @@ camera tay quét + tự nhìn quanh ──▶ pose 6D từng tag trong world ─
 | Tay quét, tự nhìn thêm khi chưa chắc | `python projects/vision_experiments/build_world.py --scan` | `active_view.py`, `cube_vision/view_quality.py`, `cube_vision/multiview.py` |
 | Đặt camera khác vào world | `python projects/vision_experiments/build_world.py --locate phone --save` | `cube_vision/camera_pose.py` |
 | Camera cố định còn nguyên chỗ không | `python projects/vision_experiments/build_world.py --check phone` | `camera_pose.drift_px` |
-| Vẽ world đè lên ảnh camera | `python -m cube_vision.world_overlay --camera phone` (thêm `--handheld` khi cầm tay) | `cube_vision/world_overlay.py` |
+| Vẽ world đè lên ảnh camera, theo kịp camera dời và cube dời | `cd projects && python -m cube_vision.world_overlay --camera phone` (`--fixed`: dùng pose đã lưu; `--write-live FILE`: ghi world sống cho RViz) | `cube_vision/world_overlay.py`, `cube_vision/live_world.py` |
 | Xem 3D | `ros2 launch cap_vision world_view.launch.py` | `ros/src/cap_vision/cap_vision/world_publisher.py` |
 
 Số đo thật ngày 2026-10-08 (4 cube trên bàn, iPhone đặt sát mặt bàn cách đế ~43 cm):
@@ -147,6 +147,13 @@ xiên quá 65°, hướng mặt tag còn mơ hồ, J1 ngoài vùng hand-eye; và
 cách nhau dưới 20 mm, các góc nhìn lệch nhau quá 4 mm theo phương ngang hoặc 8 mm theo độ cao. Mỗi luật kèm gợi ý
 (lại gần, vào giữa ảnh, nhìn thẳng hơn, đổi chỗ) để bộ chọn pose biết đổi gì; tối đa 4 lần nhìn thêm cho mỗi tag,
 hết thì báo "CHƯA CHẮC" chứ không ép ra số.
+
+Chế độ theo dõi (mặc định của `world_overlay`): mỗi khung, các tag mà world cho là đứng yên làm mốc để định vị lại
+camera (khung sau khởi tạo từ pose khung trước nên chỉ mất vài ms). Tag lệch khỏi phép dời cứng của camera là cube
+đã bị dời: nó được đo lại ngay từ khung đó (PnP một góc nhìn + độ cao tầng) và vẽ màu cam "(doi live)"; cube mới
+cũng vậy; cube lẽ ra thấy mà không thấy thì vẽ xám "(khong thay)". Số đo live kém chính xác hơn số đo quét bằng
+camera tay (một góc nhìn, camera ở xa), và file world gốc không bị đổi: muốn cập nhật chính thức thì `--scan` lại.
+Cần ít nhất 3 tag đứng yên để biết tag nào đã dời; chỉ có 2 tag mà không khớp nhau thì báo "chưa định vị".
 
 Camera cầm tay: không có GPS/IMU, nên mỗi khung phải thấy ít nhất 2 tag mà world đã biết chắc, tách nhau từ 40 mm;
 không đủ thì báo "chưa định vị". World là ảnh chụp của một cảnh tĩnh: sau khi tay gắp/thả phải quét lại.
