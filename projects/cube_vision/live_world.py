@@ -26,24 +26,58 @@ LIVE_SOURCE = "phone-live"
 GLOBAL_RETRY_S = 1.5            # mất dấu thì tìm lại toàn cục (~1 s) tối đa chừng này giây một lần, tránh giật hình
 MISSING_MARGIN_PX = 40.0
 LIVE_MAX_DZ_M = 0.015           # một góc nhìn đo sâu kém hơn camera tay: cho phép lệch tầng nhiều hơn khi bám tầng
+FLAT_ACCEPT_PX = 3.0            # mô hình "nằm phẳng ở một tầng" khớp 4 góc tới mức này thì tin cube nằm phẳng
+FLAT_TIE_PX = 0.6               # hai tầng khớp ngang nhau trong mức này: chọn tầng gần độ cao đo tự do
+
+
+def _flat_candidates(view, tag_top_z, max_layer=3):
+    out = []
+    for layer in range(max_layer + 1):
+        fit = MV.flat_tag(view, tag_top_z + CUBE_EDGE_M * layer)
+        if fit is not None:
+            fit["layer"] = layer
+            out.append(fit)
+    return out
 
 
 def locate_tag(corners_px, model: CameraModel, world_T_optical, tag_top_z: float):
-    """Pose một tag từ MỘT khung (camera đã biết pose): dict kiểu `multiview.solve_tag`, hoặc None."""
+    """Pose một tag từ MỘT khung (camera đã biết pose): dict kiểu `multiview.solve_tag`, hoặc None.
+
+    Cube lẽ ra nằm phẳng trên bàn hoặc trên cube khác, nên thử trước mô hình "nằm phẳng ở tầng n" (3 ẩn, không có
+    nghiệm lật): nếu một tầng khớp 4 góc trong FLAT_ACCEPT_PX thì dùng nó. Chỉ khi không tầng nào khớp (cube đang
+    cầm, nghiêng, dựng đứng) mới dùng pose tự do 6 ẩn, và pose đó có thể kém chắc (xem `flat` trong kết quả).
+    """
     view = MV.View(np.asarray(world_T_optical, float), model, np.asarray(corners_px, float).reshape(4, 2))
-    candidates = MV.pnp_candidates(view)
-    if not candidates:
+    cam_pos = view.a_T_optical[:3, 3]
+
+    def faces_camera(opt_T_tag):                     # mặt tag chỉ thấy được khi nó quay về phía camera
+        a_T = view.a_T_optical @ opt_T_tag
+        return float(a_T[:3, 2] @ (cam_pos - a_T[:3, 3])) > 0.0
+
+    candidates = [c for c in MV.pnp_candidates(view) if faces_camera(c[1])]
+    free = None
+    if candidates:
+        best = candidates[0][0]
+        # Hai nghiệm PnP của một tag phẳng gần như ngang nhau khi nhìn xiên: chọn nghiệm có mặt tag hướng lên nếu
+        # sai số chiếu lại không tệ hơn nhiều; không thì giữ nghiệm khớp nhất.
+        pick = max((c for c in candidates if c[0] <= 2.0 * best + 0.5),
+                   key=lambda c: float((view.a_T_optical @ c[1])[2, 2]))
+        a_T_tag = view.a_T_optical @ pick[1]
+        free = {"corners": MV.tag_points() @ a_T_tag[:3, :3].T + a_T_tag[:3, 3], "centre": a_T_tag[:3, 3].copy(),
+                "normal": a_T_tag[:3, 2].copy(), "pos_std_m": [0.005] * 3, "n_views": 1, "rms_px": float(pick[0]),
+                "flat": False, "layer": None}
+    flats = _flat_candidates(view, tag_top_z)
+    if flats:
+        floor = min(f["rms_px"] for f in flats)
+        if floor <= FLAT_ACCEPT_PX:
+            close = [f for f in flats if f["rms_px"] <= floor + FLAT_TIE_PX]
+            chosen = min(close, key=lambda f: floor if free is None else abs(f["centre"][2] - free["centre"][2]))
+            return {"corners": chosen["corners"], "centre": chosen["centre"], "normal": chosen["normal"],
+                    "pos_std_m": [0.003, 0.003, 0.001], "n_views": 1, "rms_px": chosen["rms_px"],
+                    "flat": True, "layer": chosen["layer"], "a_T_tag": chosen["a_T_tag"]}
+    if free is None:
         return None
-    best = candidates[0][0]
-    # Hai nghiệm PnP của một tag phẳng gần như ngang nhau khi nhìn xiên: chọn nghiệm có mặt tag hướng lên nếu
-    # sai số chiếu lại không tệ hơn nhiều (cube nằm trên bàn); không thì giữ nghiệm khớp nhất.
-    pick = max((c for c in candidates if c[0] <= 2.0 * best + 0.5),
-               key=lambda c: float((view.a_T_optical @ c[1])[2, 2]))
-    a_T_tag = view.a_T_optical @ pick[1]
-    corners = MV.tag_points() @ a_T_tag[:3, :3].T + a_T_tag[:3, 3]
-    fused = {"corners": corners, "centre": a_T_tag[:3, 3].copy(), "normal": a_T_tag[:3, 2].copy(),
-             "pos_std_m": [0.005] * 3, "n_views": 1, "rms_px": float(pick[0])}
-    fused, layer = snap_to_layer(fused, tag_top_z, max_dz=LIVE_MAX_DZ_M)
+    fused, layer = snap_to_layer(free, tag_top_z, max_dz=LIVE_MAX_DZ_M)
     fused["layer"] = layer
     return fused
 

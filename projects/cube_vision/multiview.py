@@ -185,3 +185,44 @@ def robust_tag(views, size_m: float = TAG_SIZE_M, outlier_m: float = 0.006):
             "spread_m": [float(v) for v in spread], "n_views": int(keep.sum()), "baseline_m": baseline_m(kept_views),
             "flip_margin": float(min(ratios)), "estimates": inl,
             "dropped": [cands[i][0].label for i in range(len(cands)) if not keep[i]], "views": kept_views}
+
+
+def flat_tag(view: View, z: float, size_m: float = TAG_SIZE_M):
+    """Tag nằm ngửa (mặt tag hướng lên, ngang) ở độ cao z đã biết: giải 3 ẩn x, y, yaw từ 4 góc của MỘT khung.
+
+    Chắc hơn giải tự do 6 ẩn rất nhiều khi cube nằm trên bàn: không còn nghiệm lật, không còn nghiêng giả, và độ sâu
+    đến từ độ cao đã biết thay vì từ kích thước tag. Trả dict {a_T_tag, corners, centre, normal, rms_px} hoặc None
+    khi tia không tới mặt phẳng z. rms_px lớn nghĩa là mô hình "nằm phẳng ở z" không hợp (nghiêng, dựng đứng, sai tầng).
+    """
+    from scipy.optimize import least_squares
+    T = np.asarray(view.a_T_optical, float)
+    corners = np.asarray(view.corners_px, float).reshape(4, 2)
+    hits = []
+    for u, v in corners:
+        ray = T[:3, :3] @ view.camera.ray(u, v)
+        if abs(ray[2]) < 1e-9 or (z - T[2, 3]) / ray[2] <= 0:
+            return None
+        hits.append(T[:3, 3] + ray * ((z - T[2, 3]) / ray[2]))
+    hits = np.array(hits)
+    edge = hits[1] - hits[0]
+    x0 = np.array([hits[:, 0].mean(), hits[:, 1].mean(), np.arctan2(edge[1], edge[0])])
+    pts = tag_points(size_m)
+    opt_T_a = invert(T)
+
+    def pose(params):
+        c, s = np.cos(params[2]), np.sin(params[2])
+        a_T_tag = np.eye(4)
+        a_T_tag[:3, :3] = np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+        a_T_tag[:3, 3] = [params[0], params[1], z]
+        return a_T_tag
+
+    def residual(params):
+        world = pts @ pose(params)[:3, :3].T + pose(params)[:3, 3]
+        proj = view.camera.project(world @ opt_T_a[:3, :3].T + opt_T_a[:3, 3])
+        return np.nan_to_num(proj - corners, nan=1e3).ravel()
+
+    sol = least_squares(residual, x0, loss="huber", f_scale=3.0)
+    a_T_tag = pose(sol.x)
+    res = residual(sol.x)
+    return {"a_T_tag": a_T_tag, "corners": pts @ a_T_tag[:3, :3].T + a_T_tag[:3, 3], "centre": a_T_tag[:3, 3].copy(),
+            "normal": np.array([0.0, 0.0, 1.0]), "rms_px": float(np.sqrt(np.mean(res ** 2))), "z": float(z)}

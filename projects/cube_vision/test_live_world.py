@@ -142,6 +142,62 @@ class Live(unittest.TestCase):
         self.assertLess(np.linalg.norm(fused["centre"][:2] - truth[:2, 3]), 0.008)
 
 
+class SingleFrame(unittest.TestCase):
+    """Cube dời đo từ MỘT khung của iPhone: nằm phẳng thì không được lật/nghiêng dù góc tag nhiễu."""
+
+    def locate(self, truth, noise, seed):
+        return locate_tag(see({1: truth}, TRUE_POSE, noise=noise, seed=seed)[1], PHONE, TRUE_POSE, 0.0578)
+
+    def test_flat_cube_stays_flat_and_accurate_under_blur_like_noise(self):
+        for seed in range(25):
+            rng = np.random.default_rng(seed)
+            truth = tag_pose([rng.uniform(-0.25, -0.13), rng.uniform(-0.09, 0.09), 0.058], (0, 0, rng.uniform(0, 6.2)))
+            fused = self.locate(truth, noise=2.0, seed=seed)
+            self.assertTrue(fused["flat"], seed)
+            np.testing.assert_allclose(fused["normal"], [0, 0, 1])
+            self.assertLess(np.linalg.norm(fused["centre"] - truth[:3, 3]), 0.006, seed)
+
+    def test_the_layer_of_a_stacked_cube_is_recovered(self):
+        for layer in (1, 2):
+            truth = tag_pose([-0.17, 0.01, 0.0578 + 0.03 * layer], (0, 0, 0.8))
+            fused = self.locate(truth, noise=0.6, seed=layer)
+            self.assertEqual(fused["layer"], layer)
+            self.assertLess(np.linalg.norm(fused["centre"] - truth[:3, 3]), 0.004)
+
+    def test_a_cube_really_tilted_in_the_hand_keeps_its_tilt(self):
+        truth = tag_pose([-0.17, 0.0, 0.08], (0.0, 0.5, 0.3))             # nghiêng ~29° và đang nâng lên
+        fused = self.locate(truth, noise=0.4, seed=1)
+        self.assertFalse(fused["flat"])
+        tilt = np.degrees(np.arccos(fused["normal"][2]))
+        self.assertAlmostEqual(tilt, np.degrees(np.arccos(truth[2, 2])), delta=6.0)
+
+    def test_an_upright_tag_facing_the_camera_is_not_forced_flat(self):
+        z_dir = np.array([-0.96, -0.2, 0.0])                                # mặt tag hướng về phía iPhone
+        z_dir = z_dir / np.linalg.norm(z_dir)
+        x_dir = np.cross([0.0, 0.0, 1.0], z_dir)
+        x_dir = x_dir / np.linalg.norm(x_dir)
+        upright = np.eye(4)
+        upright[:3, :3] = np.stack([x_dir, np.cross(z_dir, x_dir), z_dir], axis=1)
+        upright[:3, 3] = [-0.20, 0.0, 0.05]
+        fused = self.locate(upright, noise=0.4, seed=2)
+        self.assertFalse(fused["flat"])
+        # Nhìn gần chính diện thì một khung không phân biệt được độ nghiêng chính xác (đây là giới hạn của PnP một
+        # góc nhìn): chỉ đòi hỏi nó KHÔNG bị ép phẳng và vẫn xa phương ngang vài chục độ.
+        self.assertLess(abs(fused["normal"][2]), 0.7)
+        self.assertLess(np.linalg.norm(fused["centre"] - upright[:3, 3]), 0.012)
+
+    def test_a_tag_facing_away_from_the_camera_is_not_measured(self):
+        away = tag_pose([-0.20, 0.0, 0.05], (0.0, 0.0, 0.0))
+        away[:3, :3] = away[:3, :3] @ np.diag([1.0, -1.0, -1.0])            # lật mặt xuống: camera không thể thấy
+        self.assertIsNone(self.locate(away, noise=0.3, seed=1)) if see({1: away}, TRUE_POSE) else None
+
+    def test_flat_model_rejects_a_tag_that_is_not_on_any_layer(self):
+        from cube_vision import multiview as MV
+        view = MV.View(TRUE_POSE, PHONE, see({1: tag_pose([-0.17, 0.0, 0.10])}, TRUE_POSE, noise=0.2)[1])
+        fits = [MV.flat_tag(view, 0.0578 + 0.03 * n) for n in range(4)]
+        self.assertGreater(min(f["rms_px"] for f in fits), 0.5)           # 100 mm: lơ lửng giữa hai tầng
+
+
 class Track(unittest.TestCase):
     def test_warm_start_is_much_faster_than_a_global_search(self):
         world = {i: corners_of(T) for i, T in TAGS.items()}

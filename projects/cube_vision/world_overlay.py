@@ -8,6 +8,9 @@ tag camera này đang thấy.
     python -m cube_vision.world_overlay --camera phone --fixed        # dùng pose đã lưu (kiểm camera có bị dời không)
     python -m cube_vision.world_overlay --camera phone --write-live data/world/live.json   # cho RViz theo dõi
     python -m cube_vision.world_overlay --camera ext --snapshot /tmp/ext_world.png
+
+Phím: q/Esc thoát; s lưu khung hiện tại (ảnh thô, ảnh vẽ, góc tag, kết quả theo dõi) vào data/world/debug/ để phát
+lại khi thấy vẽ sai.
 """
 from __future__ import annotations
 
@@ -60,6 +63,9 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
         centre = _pt(quad.mean(axis=0))
         if centre:
             x, y, z = tag["centre"] * 1000
+            tilt = float(np.degrees(np.arccos(np.clip(tag["normal"][2], -1.0, 1.0))))
+            if suffix == " (do live)":
+                suffix = f" (do live, nghieng {tilt:.0f})"
             cv2.putText(out, f"{tag_id}: {x:+.0f},{y:+.0f},{z:+.0f}{suffix}", (centre[0] + 8, centre[1] - 8),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2, cv2.LINE_AA)
         if detections and tag_id in detections and np.isfinite(quad).all():
@@ -88,6 +94,27 @@ def grab(cap, rotate, warm=4):
 
 def detect_tags(frame, detector) -> dict:
     return {int(t["id"]): np.asarray(t["corners"], float).reshape(4, 2) for t in detector.detect(frame)}
+
+
+def save_debug(frame, view, seen, info, folder=None):
+    """Lưu khung thô, ảnh vẽ, góc tag và kết quả theo dõi để phát lại offline (phím `s`). Trả đường dẫn thư mục."""
+    import json
+    from pathlib import Path
+    from .world_map import default_path
+    folder = Path(folder or default_path().parent / "debug" / time.strftime("%Y%m%d-%H%M%S"))
+    folder.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(folder / "frame.png"), frame)
+    cv2.imwrite(str(folder / "overlay.jpg"), view)
+    data = {"tags": {str(i): np.asarray(c).tolist() for i, c in seen.items()}}
+    if info is not None:
+        data.update(ok=info["ok"], anchors=info["anchors"], moved=info["moved"], new=info["new"],
+                    missing=info["missing"], rms_px=info["rms_px"], reasons=info["reasons"],
+                    pose=None if info["pose"] is None else np.asarray(info["pose"]).tolist())
+        data["live_tags"] = {str(i): {"centre": np.asarray(t["centre"]).tolist(), "normal": np.asarray(t["normal"]).tolist(),
+                                      "layer": t.get("layer"), "source": t.get("source")}
+                             for i, t in info["world"].tags.items() if t.get("source") == "phone-live"}
+    (folder / "info.json").write_text(json.dumps(data, indent=1))
+    return str(folder)
 
 
 def main():
@@ -130,7 +157,7 @@ def main():
             else:
                 info = live.update(seen)
                 if info["ok"]:
-                    note = f"theo doi: {len(info['anchors'])} tag neo"
+                    note = f"theo doi: {len(info['anchors'])} tag neo, rms {info['rms_px']:.1f}px"
                     if info["moved"] or info["new"]:
                         note += f", cube doi {sorted(info['moved'])} moi {sorted(info['new'])}"
                     view, errors = draw(frame, info["world"], model, info["pose"], seen, note, info["missing"])
@@ -151,7 +178,10 @@ def main():
                       (", ".join(f"{i}: {e:.1f}" for i, e in sorted(errors.items())) or "không có tag chung"))
                 return
             cv2.imshow(f"world -> {args.camera}", view)
-            if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("s"):
+                print("Đã lưu khung để chẩn đoán:", save_debug(frame, view, seen, info if live is not None else None))
+            if key in (ord("q"), 27):
                 return
     finally:
         cap.release()
