@@ -13,6 +13,7 @@ Thuần toán; không ROS/T8.
 from __future__ import annotations
 
 import copy
+import time
 
 import numpy as np
 
@@ -22,6 +23,7 @@ from .frames import CameraModel
 from .world_map import CUBE_EDGE_M, WorldMap, snap_to_layer
 
 LIVE_SOURCE = "phone-live"
+GLOBAL_RETRY_S = 1.5            # mất dấu thì tìm lại toàn cục (~1 s) tối đa chừng này giây một lần, tránh giật hình
 MISSING_MARGIN_PX = 40.0
 LIVE_MAX_DZ_M = 0.015           # một góc nhìn đo sâu kém hơn camera tay: cho phép lệch tầng nhiều hơn khi bám tầng
 
@@ -54,16 +56,21 @@ class LiveWorld:
         self.tag_top_z = float(tag_top_z)
         cam = world.cameras.get(name)
         self.pose = None if cam is None else np.asarray(cam["world_T_optical"], float)   # khởi tạo cho khung đầu
+        self._next_global = 0.0
 
     def update(self, seen: dict) -> dict:
         """seen {id: (4,2)} từ một khung (đã xoay đúng hướng). Trả dict: ok, reasons, pose, world (WorldMap sống),
         anchors, moved, new, missing."""
         info = {"ok": False, "reasons": [], "pose": None, "world": self.world, "anchors": [], "moved": [],
                 "new": [], "missing": [], "rms_px": None}
-        res = P.track(self.world.tag_corners(only_sure=True), seen, self.model, prev=self.pose)
+        now = time.monotonic()
+        allow_global = self.pose is None or now >= self._next_global
+        res = P.track(self.world.tag_corners(only_sure=True), seen, self.model, prev=self.pose,
+                      allow_global=allow_global)
         info["reasons"] = res["reasons"]
         if not res["ok"]:
-            self.pose = None                                    # mất dấu: khung sau tìm lại từ đầu
+            if allow_global and len(res["tags"]) >= P.MIN_TAGS:
+                self._next_global = now + GLOBAL_RETRY_S        # giữ pose cuối làm khởi tạo; chưa tìm lại ngay
             return info
         self.pose = res["world_T_optical"]
         live = WorldMap(table_z=self.world.table_z, frame=self.world.frame, created=self.world.created)

@@ -79,6 +79,29 @@ class Live(unittest.TestCase):
         np.testing.assert_allclose(world.tags[1]["centre"], TAGS[1][:3, 3])      # world gốc không bị đổi
         self.assertLess(np.linalg.norm(info["pose"][:3, 3] - TRUE_POSE[:3, 3]), 0.012)
 
+    def test_a_cube_moved_far_does_not_drag_the_camera_estimate_off(self):
+        # Cube dời xa (như thật: nhấc sang chỗ khác cách ~10 cm): nghiệm trên TẤT CẢ tag sai nặng, vẫn phải tách được.
+        for new_xy in ((-0.10, 0.10), (-0.26, -0.10), (-0.12, -0.08)):
+            live = LiveWorld(build_world(), PHONE)
+            live.update(see(TAGS, TRUE_POSE))
+            moved_to = dict(TAGS)
+            moved_to[4] = tag_pose([new_xy[0], new_xy[1], 0.058], (0, 0, -0.5))
+            started = time.time()
+            info = live.update(see(moved_to, TRUE_POSE, seed=8))
+            self.assertTrue(info["ok"], (new_xy, info["reasons"]))
+            self.assertEqual(info["moved"], [4], new_xy)
+            self.assertEqual(sorted(info["anchors"]), [1, 2, 3])
+            self.assertLess(np.linalg.norm(info["pose"][:3, 3] - TRUE_POSE[:3, 3]), 0.012)
+            self.assertLess(time.time() - started, 0.4)               # không rơi vào tìm toàn cục
+
+    def test_phone_jumping_far_between_frames_is_found_again(self):
+        live = LiveWorld(build_world(), PHONE)
+        live.update(see(TAGS, TRUE_POSE))
+        far = look_at([-0.30, -0.36, 0.30], [-0.19, 0.0, 0.05])
+        info = live.update(see(TAGS, far, seed=2))
+        self.assertTrue(info["ok"], info["reasons"])
+        self.assertLess(np.linalg.norm(info["pose"][:3, 3] - far[:3, 3]), 0.012)
+
     def test_phone_and_a_cube_moving_together_still_work_with_enough_still_cubes(self):
         live = LiveWorld(build_world(), PHONE)
         live.update(see(TAGS, TRUE_POSE))
@@ -109,7 +132,7 @@ class Live(unittest.TestCase):
         two = {1: TAGS[1], 2: tag_pose([-0.10, 0.12, 0.058])}                     # hai tag, một cái đã dời: không biết cái nào
         info = live.update(see(two, TRUE_POSE, seed=1))
         self.assertFalse(info["ok"])
-        self.assertIsNone(live.pose)
+        self.assertIsNone(info["pose"])
 
     def test_locating_a_flat_tag_from_one_frame_snaps_to_the_layer(self):
         truth = tag_pose([-0.15, 0.05, 0.058], (0, 0, 0.4))

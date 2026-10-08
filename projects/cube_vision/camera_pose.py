@@ -154,12 +154,20 @@ def drift_px(world_corners: dict, detections: dict, camera: CameraModel, world_T
 
 
 def track(world_corners: dict, detections: dict, camera: CameraModel, prev=None,
-          moved_px: float = MOVED_PX, max_rms_px: float = MAX_RMS_PX, above_table: bool = True) -> dict:
+          moved_px: float = MOVED_PX, max_rms_px: float = MAX_RMS_PX, above_table: bool = True,
+          allow_global: bool = True) -> dict:
     """Định vị camera cầm tay trong khi một số tag có thể đã bị dời: chỉ các tag còn đứng yên làm mốc.
 
     Camera dời thì MỌI tag cùng lệch theo một phép dời cứng; một tag bị dời riêng thì lệch khỏi phép dời đó. Nên
-    tìm tập tag lớn nhất (≥ MIN_TAGS) cùng giải được với RMS thấp, tag ngoài tập mà vẫn lệch quá `moved_px` là tag
-    đã bị dời. `prev` (pose khung trước, world_T_optical) làm khởi tạo nhanh.
+    tìm tập tag lớn nhất (≥ MIN_TAGS) cùng giải được với RMS thấp; tag ngoài tập mà vẫn lệch quá `moved_px` là tag
+    đã bị dời.
+
+    Thứ tự thử (rẻ trước):
+      1. từ `prev` (pose khung trước, world_T_optical): camera chỉ dời chút giữa hai khung nên mỗi tập tag giải trong
+         ~1 ms; đây là đường chạy bình thường, kể cả khi có cube bị dời;
+      2. nếu không được (camera nhảy xa, mất dấu, khung đầu) và `allow_global`: tìm toàn cục (~1 s) rồi thử lại.
+         Nghiệm toàn cục trên TẤT CẢ tag bị tag dời kéo lệch, có thể nằm sai miền hội tụ, nên với ≥ 4 tag còn giải
+         toàn cục riêng từng tập thiếu một tag.
 
     Trả dict: ok, reasons, world_T_optical, anchors [id], moved [id], rms_px, tags (id thấy được cả hai phía).
     Hai tag mà không khớp nhau thì không biết tag nào dời: ok False, không đoán.
@@ -172,28 +180,51 @@ def track(world_corners: dict, detections: dict, camera: CameraModel, prev=None,
         return out
     pts = {i: np.asarray(world_corners[i], float).reshape(4, 3) for i in ids}
     px = {i: np.asarray(detections[i], float).reshape(4, 2) for i in ids}
-    full = pose_from_tags(world_corners, detections, camera, above_table=above_table, init=prev)
-    if full["world_T_optical"] is None:
-        out["reasons"] += full["reasons"]
-        return out
-    base = invert(full["world_T_optical"])
     floor = float(min(p[:, 2].min() for p in pts.values())) - 0.03 if above_table else None
-    chosen = None
-    for size in range(len(ids), max(MIN_TAGS, len(ids) - 3) - 1, -1):
-        found = []
-        for subset in itertools.combinations(ids, size):
-            P, Q = np.vstack([pts[i] for i in subset]), np.vstack([px[i] for i in subset])
-            T = _refine(P, Q, camera, base, floor)
-            if T is not None:
-                rms = float(np.sqrt(np.mean(_errors(P, Q, camera, T) ** 2)))
-                if rms <= max_rms_px:
-                    found.append((rms, subset, T))
-        if found:
-            chosen = min(found, key=lambda item: item[0])
-            break
+
+    def stack(subset):
+        return np.vstack([pts[i] for i in subset]), np.vstack([px[i] for i in subset])
+
+    def fit(subset, T):
+        P, Q = stack(subset)
+        return float(np.sqrt(np.mean(_errors(P, Q, camera, T) ** 2)))
+
+    def attempt(starts):
+        for size in range(len(ids), max(MIN_TAGS, len(ids) - 3) - 1, -1):
+            found = []
+            for subset in itertools.combinations(ids, size):
+                P, Q = stack(subset)
+                for T0 in starts:
+                    T = _refine(P, Q, camera, T0, floor)
+                    if T is not None and fit(subset, T) <= max_rms_px:
+                        found.append((fit(subset, T), subset, T))
+                        break
+            if found:
+                return min(found, key=lambda item: item[0])
+        return None
+
+    chosen, full_rms = None, None
+    if prev is not None:
+        chosen = attempt([invert(prev)])
+    if chosen is None and allow_global:
+        full = pose_from_tags(world_corners, detections, camera, above_table=above_table)
+        full_rms = full["rms_px"]
+        if full["world_T_optical"] is not None:
+            chosen = attempt([invert(full["world_T_optical"])])
+        if chosen is None and len(ids) >= 4:
+            found = []
+            for held in ids:
+                subset = tuple(i for i in ids if i != held)
+                P, Q = stack(subset)
+                T = _pnp(P, Q, camera, floor)
+                if T is not None and fit(subset, T) <= max_rms_px:
+                    found.append((fit(subset, T), subset, T))
+            chosen = min(found, key=lambda item: item[0]) if found else None
     if chosen is None:
-        out["reasons"].append("các tag không khớp nhau và không tách được tag nào bị dời "
-                              f"(RMS {full['rms_px']:.1f} px): ít nhất 3 tag đứng yên mới phân biệt được")
+        why = "" if full_rms is None else f" (RMS {full_rms:.1f} px)"
+        out["reasons"].append("các tag không khớp nhau và không tách được tag nào bị dời" + why +
+                              ("" if allow_global else "; chưa tìm lại toàn cục") +
+                              ": cần ít nhất 3 tag đứng yên mới phân biệt được")
         return out
     rms, subset, T = chosen
     out.update(ok=True, world_T_optical=invert(T), anchors=list(subset), rms_px=rms)
