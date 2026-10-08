@@ -51,7 +51,7 @@ def camera_model(name):
 
 
 def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=True, keep_dir=None,
-         objects=False) -> WorldMap:
+         objects=True) -> WorldMap:
     """Đo mọi tag bằng camera tay rồi trả world mới (chưa lưu).
 
     use_plane: tag nằm ngửa đúng tầng thì lấy độ cao đã biết của tầng thay cho độ cao đo (xem snap_to_layer).
@@ -107,57 +107,62 @@ def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=
     return world
 
 
-def scan_objects(cal, world, shots, log=print, masks=None) -> None:
-    """Vật không phải cube trong các khung quét: vết đáy trên mặt bàn từ mặt nạ của nhiều góc nhìn (`carve`)."""
-    from cube_vision import carve
-    if masks is None:
+def scan_objects(cal, world, shots, log=print, labeller=None) -> None:
+    """Vật không phải cube: nối các khung quét thành đám mây điểm 3D (`cube_vision.pointcloud`), tách cụm, khớp hình.
+
+    labeller: tùy chọn, có `.detect(khung) -> [(nhãn, độ tin, mặt nạ)]` (YOLOE) để đặt tên vật; không có thì "vật".
+    """
+    from cube_vision import pointcloud as PC
+    camera, table_z = A.wrist_camera(cal), float(cal["tag_top_z"]) - 0.030
+    frames = [(shot[1][0], camera, A.base_T_optical(shot[0], cal)) for shot in shots if shot[1]]
+    cloud = PC.triangulate(frames)
+    cubes = [world.entry(i)["centre"][:2] for i in world.cube_ids()]
+    found = PC.objects(cloud, table_z, cubes, world.inside)
+    log(f"Đám mây điểm từ {len(frames)} khung: {len(cloud['points'])} điểm 3D, {len(found)} vật khác cube.")
+    if found and labeller is None:
         try:
             import object_masks
-            masks = object_masks.ObjectMasks()
-        except Exception as exc:  # noqa: BLE001 - thiếu ultralytics / trọng số: world vẫn có cube
-            log(f"Không dựng vật khác cube (cần chạy bằng .venv có ultralytics): {exc}")
-            return
-    camera, views, votes = A.wrist_camera(cal), [], []
-    for real, frames, _ in shots:
-        if not frames:
-            continue
-        found = masks.detect(frames[0])
-        union = np.zeros(frames[0].shape[:2], np.uint8)
-        for _, _, mask in found:
-            union |= mask
-        T = A.base_T_optical(real, cal)
-        views.append((camera, T, union))
-        votes.append((T, found))
-    table_z = float(cal["tag_top_z"]) - 0.030
-    region = np.asarray(world.region, float) if world.region else np.array([[-0.36, -0.30], [-0.02, 0.30]])
-    bounds = ((region[:, 0].min(), region[:, 0].max()), (region[:, 1].min(), region[:, 1].max()))
-    cubes = [world.entry(i)["centre"][:2] for i in world.cube_ids()]
-    found = carve.footprints(views, table_z, bounds, keep_out=cubes)
-    for item in found:
-        # Mọi góc nhìn đều từ phía đế tay máy: vết đáy lẫn "bóng" phía sau vật. Chỉ tin mép gần + bề ngang -> hộp vuông.
-        box = carve.near_side_box(item.pop("cells"))
-        if box is None:
-            continue
-        height, used = carve.height_from_views(box, views, table_z)
-        item.update(shadow=item["polygon"], polygon=box["polygon"], centre=box["centre"],
-                    area_m2=box["width_m"] ** 2, width_m=box["width_m"], height_m=height, height_views=used)
-    for item in found:                                          # nhãn: lớp được nhiều góc nhìn gọi nhất tại tâm vật
-        names = {}
-        for T, instances in votes:
-            cam = (np.linalg.inv(T) @ np.r_[item["centre"], table_z, 1.0])[:3]
-            uv = camera.project(cam.reshape(1, 3))[0]
-            if not np.isfinite(uv).all() or not (0 <= uv[0] < 640 and 0 <= uv[1] < 480):
+            labeller = object_masks.ObjectMasks()
+        except Exception:  # noqa: BLE001 - không có ultralytics (python hệ thống): vật vẫn có hình, chỉ thiếu tên
+            labeller = None
+    if found and labeller is not None:
+        seen = [(T, labeller.detect(image)) for image, _, T in frames]
+        for item in found:                                      # nhãn: lớp được nhiều khung gọi nhất tại thân vật
+            names, probe = {}, np.r_[item["centre"], table_z + item["height_m"] / 2.0, 1.0]
+            for T, instances in seen:
+                uv = camera.project((np.linalg.inv(T) @ probe)[:3].reshape(1, 3))[0]
+                if not np.isfinite(uv).all() or not (0 <= uv[0] < 640 and 0 <= uv[1] < 480):
+                    continue
+                for label, confidence, mask in instances:
+                    if mask[int(uv[1]), int(uv[0])]:
+                        names[label] = names.get(label, 0.0) + confidence
+            if names:
+                item["label"] = max(names, key=names.get)
+        # Đám mây chỉ có điểm ở chỗ có hoa văn (thường là dải giữa mặt trước) và nhiễu vài mm theo chiều sâu, nên tự nó
+        # không đủ để phân biệt mặt cong với mặt phẳng. Vật có nhãn tròn hoặc cung khớp được: dựng trụ từ mặt gần
+        # của đám điểm + bề ngang thật đo ở viền vật trong ảnh.
+        for index, item in enumerate(found):
+            if item["shape"] != "cylinder" and item["label"] not in object_masks_round():
                 continue
-            for label, confidence, mask in instances:
-                if mask[int(uv[1]), int(uv[0])]:
-                    names[label] = names.get(label, 0.0) + confidence
-        item["label"] = max(names, key=names.get) if names else "vật"
+            probe = np.r_[item["centre"], table_z + item["height_m"] / 2.0]
+            widths = [PC.silhouette_width(camera, T, mask, probe) for T, instances in seen for _, _, mask in instances]
+            widths = [v for v in widths if v and v / 2.0 <= PC.CIRCLE_RADIUS_M[1]]
+            if not widths:
+                continue
+            found[index] = PC.cylinder_from_near_edge(item, float(np.median(widths)) / 2.0)
+            found[index]["fit"] = (f"trụ: mặt gần từ {item['n_points']} điểm 3D, đường kính từ viền vật trong "
+                                   f"{len(widths)} khung")
     world.set_objects(found, "wrist-scan")
     for item in world.objects:
         x, y = item["centre"] * 1000
-        tall = "chiều cao chưa đo được" if item["height_m"] is None else f"cao ~{item['height_m'] * 1000:.0f} mm"
-        log(f"  vật '{item['label']}': hộp ước lượng tâm ({x:+.0f}, {y:+.0f}) mm, ngang ~{item['width_m'] * 1000:.0f} mm, "
-            f"{tall}, {item['n_views']} góc nhìn")
+        log(f"  vật '{item['label']}' ({'trụ' if item['shape'] == 'cylinder' else 'hộp'}): tâm ({x:+.0f}, {y:+.0f}) mm, "
+            f"ngang ~{item['width_m'] * 1000:.0f} mm, cao ~{item['height_m'] * 1000:.0f} mm, {item['n_points']} điểm 3D từ "
+            f"{item['n_views']} khung ({item['fit']})")
+
+
+def object_masks_round() -> tuple:
+    """Nhãn YOLOE của vật thân tròn: dựng thành hình trụ."""
+    return ("cup", "mug", "bottle", "can")
 
 
 def scan_faces(cal, world, shots, log=print) -> None:
@@ -219,7 +224,7 @@ def cmd_scan(args):
         keep = default_path().parent / "scan" / time.strftime("%Y%m%d-%H%M%S")
         world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around,
                      use_plane=not args.no_plane, faces=not args.no_faces, keep_dir=keep,
-                     objects=args.objects)
+                     objects=not args.no_objects)
     add_fixed_cameras(world)
     sure = sum(1 for t in world.tags.values() if t["sure"])
     print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn), {len(world.faces)} cube nhận bằng mặt khác, "
@@ -459,8 +464,9 @@ def cmd_show(_args):
     for item in world.objects:
         x, y = item["centre"] * 1000
         tall = "chiều cao chưa đo được" if item.get("height_m") is None else f"cao ~{item['height_m'] * 1000:.0f} mm"
-        print(f"  vật '{item['label']}': hộp ước lượng tâm ({x:+.0f}, {y:+.0f}) mm, ngang ~{item.get('width_m', 0) * 1000:.0f} mm, "
-              f"{tall}, {item['n_views']} góc nhìn, {now - item['stamp']:.0f} s trước")
+        print(f"  vật '{item['label']}' ({item.get('shape', 'hộp')}): tâm ({x:+.0f}, {y:+.0f}) mm, "
+              f"ngang ~{item.get('width_m', 0) * 1000:.0f} mm, {tall}, {item.get('n_points', 0)} điểm 3D, "
+              f"{now - item['stamp']:.0f} s trước")
     for name, cam in world.cameras.items():
         x, y, z = cam["world_T_optical"][:3, 3] * 1000
         print(f"  camera {name}: ({x:+.0f}, {y:+.0f}, {z:+.0f}) mm")
@@ -485,9 +491,8 @@ def main():
     ap.add_argument("--once", action="store_true", help="với --watch: ghi một lần nhìn rồi thoát")
     ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
     ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
-    ap.add_argument("--objects", action="store_true",
-                    help="với --scan (THỬ NGHIỆM, cần .venv): thêm vật khác cube thành hộp ước lượng. Đo thật với một "
-                         "cốc: hộp lệch vài cm và chiều cao sai, vì chưa có pose nào thấy trọn cả đáy lẫn đỉnh vật")
+    ap.add_argument("--no-objects", action="store_true",
+                    help="với --scan: không dựng vật khác cube (cốc, hộp...) từ đám mây điểm")
     ap.add_argument("--no-faces", action="store_true",
                     help="chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()

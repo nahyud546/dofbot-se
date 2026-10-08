@@ -122,12 +122,15 @@ class WorldMap:
         return self.faces[int(cube_id)]
 
     def set_objects(self, found, source: str, stamp: float | None = None) -> None:
-        """Thay toàn bộ danh sách vật bất kỳ bằng kết quả `carve.footprints` (mỗi mục có thêm "label")."""
+        """Thay toàn bộ danh sách vật bất kỳ bằng kết quả `pointcloud.objects`."""
         stamp = time.time() if stamp is None else float(stamp)
         self.objects = [{"label": str(item.get("label", "vật")), "polygon": np.asarray(item["polygon"], float),
                          "centre": np.asarray(item["centre"], float), "area_m2": float(item["area_m2"]),
                          "n_views": int(item["n_views"]), "height_m": item.get("height_m"),
-                         "width_m": float(item.get("width_m", 0.0)), "source": source,
+                         "width_m": float(item.get("width_m", 0.0)), "shape": str(item.get("shape", "box")),
+                         "fit": str(item.get("fit", "")), "n_points": int(item.get("n_points", 0)),
+                         "points": np.round(np.asarray(item.get("points", np.zeros((0, 3))), float), 4),
+                         "colours": np.asarray(item.get("colours", np.zeros((0, 3))), int), "source": source,
                          "stamp": stamp} for item in found if self.inside(item["centre"])]
 
     def forget(self, tag_id: int) -> None:
@@ -228,7 +231,7 @@ class WorldMap:
             ring = np.r_[item["polygon"], item["polygon"][:1]]
             base = px(np.c_[ring, np.full(len(ring), z)])
             top = None if not item.get("height_m") else px(np.c_[ring, np.full(len(ring), z + item["height_m"])])
-            out["objects"].append((item, base, top))
+            out["objects"].append((item, base, top, px(item["points"]) if len(item.get("points", ())) else None))
         for zone, item in self.zones.items():
             out["zones"][zone] = px([[item["xy"][0], item["xy"][1], z]])[0]
         return out
@@ -276,7 +279,10 @@ class WorldMap:
                                     "normal": np.asarray(tag["normal"], float)}
         world.region = [[float(x), float(y)] for x, y in (data.get("region") or [])]
         world.objects = [{**item, "polygon": np.asarray(item["polygon"], float).reshape(-1, 2),
-                          "centre": np.asarray(item["centre"], float)} for item in (data.get("objects") or [])]
+                          "centre": np.asarray(item["centre"], float),
+                          "points": np.asarray(item.get("points") or np.zeros((0, 3)), float).reshape(-1, 3),
+                          "colours": np.asarray(item.get("colours") or np.zeros((0, 3)), int).reshape(-1, 3)}
+                         for item in (data.get("objects") or [])]
         for key, face in (data.get("faces") or {}).items():
             world.faces[int(key)] = {**face, "corners": np.asarray(face["corners"], float).reshape(4, 3),
                                      "centre": np.asarray(face["centre"], float),

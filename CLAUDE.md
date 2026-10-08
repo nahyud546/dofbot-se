@@ -64,8 +64,9 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
   đã có trong world (`cube_vision/camera_pose.py`). Chi tiết và lệnh: `docs/architecture/frames.md`.
   World chỉ gồm **vùng mặt bàn camera tay quét được** (`active_view.scan_region`, lưu `region`); ngoài vùng không ghi.
   Cube không ngửa tag được nhận bằng mặt màu / hình in (`world_watch.observe_faces`, cần đủ sáng: ảnh < 90/255 là
-  hụt). Vật khác cube (`--scan --objects` bằng `.venv`, YOLOE + `cube_vision/carve.py`) còn THỬ NGHIỆM: trên tay
-  thật hộp lệch vài cm (xem `frames.md`), nên mặc định tắt.
+  hụt). Vật khác cube: `--scan` nối các khung thành đám mây điểm 3D bằng pose camera từ FK + hand-eye
+  (`cube_vision/pointcloud.py`), gom cụm, khớp trụ/hộp, lưu `objects` (kèm điểm 3D); tên vật và đường kính trụ cần
+  YOLOE (`.venv`). Giới hạn đã đo ở `frames.md`.
 - **`projects/cube_vision/`** là thư viện độc lập: không được import T8 hay ROS. Robot cụ thể đi vào qua tham số
   (`ZoneLayout`, `arm.execute("look")`, `scene.zone_survey`). T8 nối vào bằng adapter mỏng (`t8_pipeline/zone_survey.py`).
 - **`projects/vision_experiments/` và `projects/t8_pipeline/`** là module phẳng, import nhau bằng tên trần
@@ -119,5 +120,16 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
   "verify" nghĩa là chạy tay thật có người duyệt, không tự chạy.
 - **ui-ux-pro-max** — chỉ dùng khi làm giao diện (dashboard, trang web điều khiển). Repo chưa có front end; khi tạo thì
   đặt ở thư mục riêng (ví dụ `web/`), không trộn vào `projects/` hay `ros/`.
-- Ghi nhớ của dự án vẫn là auto-memory của Claude Code (`~/.claude/projects/-home-jloy-Desktop-robot-arm/memory/`);
-  không plugin nào ở trên thay phần đó.
+- Không plugin nào ở trên là bộ nhớ dự án; phần đó ở mục dưới.
+
+## Bộ nhớ dự án (`docs/memory/`)
+
+Quyết định + lý do, số đo trên tay thật, bẫy, việc treo: những thứ không đọc ra được từ code hay git. Quy tắc đọc/ghi
+và trạng thái hiện tại được nạp tự động:
+
+@docs/memory/README.md
+@docs/memory/state.md
+
+- Trước khi phân tích lại hiệu chuẩn, IK, hay một lỗi phần cứng: đọc `decisions.md`, `measurements.md`, `pitfalls.md`.
+- Cuối phiên, hoặc khi người dùng nói "lưu memory": ghi đè `state.md`, thêm một mục vào `log.md`, chuyển điều mới học
+  vào đúng file. Kiến thức về repo ghi ở đây (vào git), không ghi vào auto-memory ở `~/.claude`.

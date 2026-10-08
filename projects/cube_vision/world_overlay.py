@@ -56,7 +56,11 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
             if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
                     and -w < b[0] < 2 * w and -h < b[1] < 2 * h and np.hypot(*(a - b)) < max(w, h) / 3):
                 _line(out, a, b, (255, 120, 0), 2)
-    for item, ring, top in drawn["objects"]:         # vật không phải cube: hộp ước lượng (đáy; có chiều cao thì cả hộp)
+    for item, ring, top, dots in drawn["objects"]:   # vật không phải cube: điểm 3D đã đo + hình khớp (đáy, nắp, cạnh)
+        for uv in (dots if dots is not None else ()):
+            p = _pt(uv)
+            if p and 0 <= p[0] < w and 0 <= p[1] < h:
+                cv2.circle(out, p, 2, (0, 255, 0), -1)
         for loop in (ring, top):
             if loop is not None:
                 for a, b in zip(loop[:-1], loop[1:]):
@@ -69,7 +73,7 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
         if p:
             x, y = item["centre"] * 1000
             tall = "" if not item.get("height_m") else f", cao {item['height_m'] * 1000:.0f}"
-            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f}{tall} (hop uoc luong)", (p[0] - 40, p[1]),
+            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f}{tall} ({'tru' if item.get('shape') == 'cylinder' else 'hop'})", (p[0] - 40, p[1]),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2, cv2.LINE_AA)
     for k, (a, b) in enumerate(drawn["axes"]):
         _line(out, a, b, AXIS_COLOURS[k], 3)

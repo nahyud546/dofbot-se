@@ -228,11 +228,18 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
   biệt được. Ghi vào `faces` của world (không làm mốc định vị cho camera khác; tag đọc được thì tag thắng). Vị trí
   cùng cube giữa `--scan` và `--watch` lệch ≤ 2 mm. **Cần đủ sáng**: ở độ sáng 63/255 không nhận được, ở 154 nhận đủ.
   Tốc độ nhận mặt: 0,7 s/khung bằng `.venv` (GPU), ~4 s bằng python hệ thống (CPU).
-- **Vật khác cube** (THỬ NGHIỆM, `build_world.py --scan --objects` bằng `.venv`): YOLOE cho mặt nạ từng khung quét,
-  `cube_vision/carve.py` giao các "bóng" trên mặt bàn, lấy mép gần + bề ngang thành hộp vuông, chiều cao từ khung
-  thấy trọn đỉnh vật. Trong giả lập (vật nằm trọn trong mọi khung) tâm lệch < 12 mm, cao lệch < 20 mm. **Trên tay
-  thật chưa đạt**: với một cốc Ø ~8 cm cao ~9,5 cm, hộp lệch vài cm và cao ra 59 mm. Nguyên nhân đo được: khung
-  vòng gần cắt mất đỉnh cốc, khung vòng xa cắt mất đáy, và YOLOE chỉ nhận cốc ở 3/15 khung, nên không có ≥ 2 khung
-  cùng thấy đáy. Việc còn thiếu: khi thấy một vật thì tự chọn pose đưa vật vào GIỮA khung (như `next_view` làm cho
-  tag) rồi mới dựng hình. Cách thuần hình học (so ảnh nắn về mặt bàn) cũng đã thử và không dùng được: tự phơi sáng
-  làm ô màu phẳng bị báo nhầm.
+- **Vật khác cube** (`build_world.py --scan`, tắt bằng `--no-objects`): nối các khung quét thành MỘT đám mây điểm
+  3D trong hệ base (`cube_vision/pointcloud.py`). Cùng một điểm trên vật hiện ở nhiều khung chồng nhau; đặc trưng
+  SIFT khớp giữa hai khung cho hai tia, pose camera của từng khung đã biết từ FK + hand-eye nên hai tia cắt nhau ở
+  vị trí mét thật, và vật lớn hơn một khung vẫn ghép được. Đo thật (15 khung): ~1250 điểm, hai tia khớp lệch nhau
+  0,3–1,5 mm; cả 4 cube hiện đúng chỗ ở độ cao ~30 mm. Sau đó bỏ điểm sát bàn và điểm thuộc cube, gom cụm, khớp hình:
+  cung tròn (hoặc nhãn YOLOE là cốc/lon/chai) → hình trụ, mặt gần lấy từ đám điểm, đường kính lấy từ viền vật trong
+  ảnh (YOLOE, cần `.venv`); còn lại → hộp bao **phần nhìn thấy**. World lưu `objects`: hình, tâm, đa giác đáy, chiều
+  cao, và tối đa 400 điểm 3D + màu của từng vật.
+  Kết quả với cốc Ø ~7–8 cm: hai lần quét cho tâm (-177, -123) và (-171, -125) mm, cao 106 và 108 mm, đường kính
+  70 và 56 mm (dao động vì YOLOE lúc nhận 4 khung lúc 1 khung). Chưa đối chiếu bằng thước.
+  Giới hạn: chỉ có điểm ở chỗ có hoa văn (mặt trơn một màu thì không); độ sâu nhiễu vài mm vì hai khung chỉ cách
+  nhau 2–5 cm; chỉ thấy mặt quay về phía đế, nên vật dạng hộp mới có mặt trước (gói khăn giấy ra hộp 77 × 14 mm);
+  bằng python hệ thống (không có YOLOE) vật không có tên và hình trụ hẹp hơn thật.
+  Đã thử và bỏ: giao bóng mặt nạ trên mặt bàn (hộp lệch vài cm: không có hai khung cùng thấy đáy vật) và so ảnh nắn
+  về mặt bàn (tự phơi sáng làm ô màu phẳng bị báo nhầm).
