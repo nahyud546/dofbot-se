@@ -32,7 +32,7 @@ import dofbot_frames as D  # noqa: E402
 from cube_vision import camera_pose as P  # noqa: E402
 from cube_vision import cameras, intrinsics as I  # noqa: E402
 from cube_vision import world_overlay as O  # noqa: E402
-from cube_vision.world_map import WorldMap  # noqa: E402
+from cube_vision.world_map import WorldMap, snap_to_layer  # noqa: E402
 
 DRIFT_MOVED_PX = 8.0
 
@@ -45,8 +45,11 @@ def camera_model(name):
     return model
 
 
-def scan(session, tags=None, look_around=True, log=print) -> WorldMap:
-    """Đo mọi tag bằng camera tay rồi trả world mới (chưa lưu)."""
+def scan(session, tags=None, look_around=True, use_plane=True, log=print) -> WorldMap:
+    """Đo mọi tag bằng camera tay rồi trả world mới (chưa lưu).
+
+    use_plane: tag nằm ngửa đúng tầng thì lấy độ cao đã biết của tầng thay cho độ cao đo (xem snap_to_layer).
+    """
     world = WorldMap()
     try:
         world.table_z = float(json.loads(M.CALIB_FILE.read_text())["table_z"])
@@ -55,8 +58,17 @@ def scan(session, tags=None, look_around=True, log=print) -> WorldMap:
     results = A.measure(session.observe, session.cal, tags, look_around=look_around, log=log)
     for tag_id, result in results.items():
         log(A.describe(tag_id, result))
-        if result["fused"]:
-            world.update_tag(tag_id, result["fused"], "wrist", sure=bool(result["quality"]))
+        fused = result["fused"]
+        if not fused:
+            continue
+        source = "wrist"
+        if use_plane:
+            fused, layer = snap_to_layer(fused, float(session.cal["tag_top_z"]))
+            if layer is not None:
+                fused["layer"], source = layer, "wrist+plane"
+                log(f"    -> nằm ngửa ở tầng {layer}: dùng độ cao đã biết {fused['centre'][2] * 1000:.1f} mm "
+                    f"(đo được lệch {fused['dz_m'] * 1000:+.1f} mm)")
+        world.update_tag(tag_id, fused, source, sure=bool(result["quality"]))
     return world
 
 
@@ -92,7 +104,8 @@ def see_tags(name, source="auto"):
 
 def cmd_scan(args):
     with A.WristSession() as session:
-        world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around)
+        world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around,
+                     use_plane=not args.no_plane)
     add_fixed_cameras(world)
     sure = sum(1 for t in world.tags.values() if t["sure"])
     print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn).")
@@ -148,7 +161,8 @@ def cmd_show(_args):
         x, y, z = tag["centre"] * 1000
         tilt = math.degrees(math.acos(max(-1.0, min(1.0, float(tag["normal"][2])))))
         print(f"  tag {tag_id}: ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, nghiêng {tilt:.0f}°, ±{tag['std_m'] * 1000:.1f} mm, "
-              f"{tag['n_views']} góc nhìn, {'chắc' if tag['sure'] else 'CHƯA CHẮC'}, {now - tag['stamp']:.0f} s trước")
+              f"{tag['n_views']} góc nhìn, {tag['source']}, {'chắc' if tag['sure'] else 'CHƯA CHẮC'}, "
+              f"{now - tag['stamp']:.0f} s trước")
     for name, cam in world.cameras.items():
         x, y, z = cam["world_T_optical"][:3, 3] * 1000
         print(f"  camera {name}: ({x:+.0f}, {y:+.0f}, {z:+.0f}) mm")
@@ -159,6 +173,7 @@ def main():
     ap.add_argument("--scan", action="store_true")
     ap.add_argument("--tags", nargs="*", type=int)
     ap.add_argument("--no-look-around", action="store_true")
+    ap.add_argument("--no-plane", action="store_true", help="giữ độ cao đo 3D, không lấy độ cao đã biết của tầng")
     ap.add_argument("--locate", metavar="CAMERA")
     ap.add_argument("--save", action="store_true", help="với --locate: lưu làm pose camera cố định")
     ap.add_argument("--check", metavar="CAMERA")

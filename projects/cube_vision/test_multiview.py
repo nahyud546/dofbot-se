@@ -90,6 +90,59 @@ class Fusion(unittest.TestCase):
         self.assertEqual(Q.worst_view(fused), 2)
 
 
+class RobustFusion(unittest.TestCase):
+    """Khi pose camera sai cỡ mm (hand-eye chưa đạt 3D), trung vị PnP phải bền hơn tam giác hóa."""
+
+    def shaken(self, seed, error_m=0.004):
+        rng = np.random.default_rng(seed)
+        views = observe(FLAT, EYES, noise=0.3, seed=seed)
+        for view in views:                                   # camera thật lệch khỏi chỗ FK + hand-eye nói
+            view.a_T_optical = view.a_T_optical.copy()
+            view.a_T_optical[:3, 3] += rng.normal(0, error_m, 3)
+        return views
+
+    def test_camera_pose_errors_hurt_triangulation_more_than_the_median(self):
+        joint, robust = [], []
+        for seed in range(15):
+            views = self.shaken(seed)
+            joint.append(abs(MV.solve_tag(views)["centre"][2] - FLAT[2, 3]))
+            robust.append(abs(MV.robust_tag(views)["centre"][2] - FLAT[2, 3]))
+        self.assertLess(np.median(robust), 0.7 * np.median(joint))
+
+    def test_reports_how_much_the_views_disagree_instead_of_a_tiny_sigma(self):
+        fused = MV.robust_tag(self.shaken(1, error_m=0.006))
+        self.assertGreater(max(fused["spread_m"]), 0.002)
+        self.assertGreater(max(fused["pos_std_m"]), 0.001)
+        clean = MV.robust_tag(observe(FLAT, EYES, noise=0.2))
+        self.assertLess(max(clean["spread_m"]), 0.003)
+        self.assertTrue(Q.assess_fused(clean), Q.assess_fused(clean).text())
+
+    def test_one_view_far_off_is_dropped_and_named(self):
+        views = observe(FLAT, EYES, noise=0.2)
+        views[1].a_T_optical = views[1].a_T_optical.copy()
+        views[1].a_T_optical[:3, 3] += [0.02, 0.0, 0.0]
+        fused = MV.robust_tag(views)
+        self.assertEqual(fused["dropped"], ["v1"])
+        self.assertEqual(fused["n_views"], 3)
+        self.assertLess(np.linalg.norm(fused["centre"] - FLAT[:3, 3]), 0.002)
+
+    def test_single_view_is_never_called_sure_and_wide_disagreement_is_flagged(self):
+        one = Q.assess_fused(MV.robust_tag(observe(FLAT, EYES[:1])))
+        self.assertFalse(one)
+        views = observe(FLAT, EYES[:2], noise=0.2)
+        views[1].a_T_optical = views[1].a_T_optical.copy()
+        views[1].a_T_optical[:3, 3] += [0.0, 0.0, 0.025]
+        quality = Q.assess_fused(MV.robust_tag(views))
+        self.assertFalse(quality)
+        self.assertIn("độ cao", quality.text())
+
+    def test_upright_tag_keeps_its_orientation(self):
+        eyes = [[-0.10, -0.14, 0.12], [-0.20, -0.16, 0.10], [-0.14, -0.15, 0.17]]
+        fused = MV.robust_tag(observe(UPRIGHT, eyes))
+        self.assertLess(np.linalg.norm(fused["centre"] - UPRIGHT[:3, 3]), 0.003)
+        self.assertGreater(float(fused["normal"] @ UPRIGHT[:3, 2]), 0.97)
+
+
 class Rules(unittest.TestCase):
     def test_good_single_view_passes_but_alone_is_not_enough(self):
         view = observe(FLAT, EYES[:1], noise=0.1)[0]

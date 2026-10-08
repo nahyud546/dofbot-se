@@ -46,6 +46,37 @@ def cube_from_tag(corners, edge: float = CUBE_EDGE_M) -> dict:
     return {"centre": cube_centre, "R": R, "vertices": vertices}
 
 
+def snap_to_layer(fused: dict, tag_top_z: float, edge: float = CUBE_EDGE_M, max_layer: int = 3,
+                  max_tilt_deg: float = 12.0, max_dz: float = 0.010):
+    """Tag nằm ngửa trên bàn/trên cube khác: thay độ cao đo được bằng độ cao ĐÃ BIẾT của tầng gần nhất.
+
+    Một camera đơn đo ngang tốt hơn đo sâu nhiều (đo thật: ngang ±1–2 mm, cao ±5 mm). Khi mặt tag gần nằm ngang và
+    độ cao đo được cách một tầng (tag_top_z + n·30 mm) không quá `max_dz`, giữ x, y và hướng xoay quanh trục đứng,
+    đặt z đúng tầng và làm phẳng mặt tag. Trả (fused mới, tầng) hoặc (fused cũ, None) khi không áp dụng được
+    (tag nghiêng/dựng đứng, hoặc lơ lửng giữa hai tầng: khi đó giữ số đo 3D thật).
+    """
+    normal = np.asarray(fused["normal"], float)
+    if normal[2] < np.cos(np.radians(max_tilt_deg)):
+        return fused, None
+    centre = np.asarray(fused["centre"], float)
+    layer = int(round((centre[2] - tag_top_z) / edge))
+    z = tag_top_z + edge * layer
+    if not 0 <= layer <= max_layer or abs(centre[2] - z) > max_dz:
+        return fused, None
+    corners = np.asarray(fused["corners"], float).reshape(4, 3)
+    x = corners[1] - corners[0]
+    yaw = np.arctan2(x[1], x[0])
+    c, s = np.cos(yaw), np.sin(yaw)
+    R = np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+    half = float(np.linalg.norm(x)) / 2.0
+    local = np.array([[-half, -half, 0.0], [half, -half, 0.0], [half, half, 0.0], [-half, half, 0.0]])
+    new_centre = np.array([centre[0], centre[1], z])
+    out = dict(fused)
+    out.update(corners=local @ R.T + new_centre, centre=new_centre, normal=np.array([0.0, 0.0, 1.0]),
+               dz_m=float(centre[2] - z))
+    return out, layer
+
+
 @dataclass
 class WorldMap:
     tags: dict = field(default_factory=dict)        # {id: {corners, centre, normal, std_m, n_views, source, stamp, sure}}
@@ -60,8 +91,9 @@ class WorldMap:
         """Ghi kết quả `multiview.solve_tag`. Không ghi đè một mục chắc chắn bằng một mục kém hơn còn mới."""
         entry = {"corners": np.asarray(fused["corners"], float).reshape(4, 3),
                  "centre": np.asarray(fused["centre"], float), "normal": np.asarray(fused["normal"], float),
-                 "std_m": float(np.max(fused["pos_std_m"])), "n_views": int(fused["n_views"]),
+                 "std_m": float(np.max(np.nan_to_num(fused["pos_std_m"], posinf=0.02))), "n_views": int(fused["n_views"]),
                  "rms_px": float(fused["rms_px"]), "source": source, "sure": bool(sure),
+                 "layer": fused.get("layer"),
                  "stamp": time.time() if stamp is None else float(stamp)}
         old = self.tags.get(int(tag_id))
         if old and old["sure"] and not entry["sure"] and entry["stamp"] - old["stamp"] < 5.0:

@@ -21,6 +21,11 @@ MAX_PNP_ERR_PX = 3.0
 MAX_OBLIQUE_DEG = 65.0        # nhìn xiên quá: tag bị ép dẹt, một cạnh chỉ còn vài pixel
 MIN_FLIP_RATIO = 2.0          # nghiệm lật khớp gần bằng nghiệm chọn -> chưa biết pháp tuyến hướng nào
 MIN_VIEWS = 2
+# Gộp kiểu trung vị PnP (multiview.robust_tag): các góc nhìn phải thống nhất nhau trong mức này. Đo thật 2026-10-08
+# với hand-eye hiện tại (chưa đạt 3D): ngang lệch 1–2 mm, đứng lệch 4–6 mm giữa các pose tay khác nhau.
+MIN_DISTINCT_M = 0.020        # hai góc nhìn phải từ hai chỗ khác nhau thật (không phải cùng một pose chụp lại)
+MAX_SPREAD_XY_M = 0.004
+MAX_SPREAD_Z_M = 0.008
 MIN_BASELINE_M = 0.035        # hai tâm camera gần nhau hơn: thị sai quá nhỏ để chốt độ sâu
 MAX_POS_STD_M = 0.002
 MAX_FUSED_RMS_PX = 2.5
@@ -94,6 +99,8 @@ def assess_fused(fused, min_views: int = MIN_VIEWS) -> Quality:
     """Chấm kết quả gộp nhiều khung: đủ để coi là x, y, z thật chưa."""
     if not fused:
         return Quality(False, 0.0, ["chưa có khung nào dùng được"], [HINT_RESHOOT])
+    if "spread_m" in fused:
+        return _assess_robust(fused, min_views)
     reasons, hints = [], []
     std = float(np.max(fused["pos_std_m"]))
     detail = {"n_views": fused["n_views"], "baseline_m": fused["baseline_m"], "pos_std_m": std,
@@ -114,6 +121,33 @@ def assess_fused(fused, min_views: int = MIN_VIEWS) -> Quality:
     if fused["n_views"] >= min_views and std > MAX_POS_STD_M:
         _add(reasons, hints, f"vị trí còn bất định ±{std * 1000:.1f} mm (cần ≤ {MAX_POS_STD_M * 1000:g})", HINT_PARALLAX)
     score = max(0.0, 1.0 - std / (4 * MAX_POS_STD_M)) * max(0.0, 1.0 - fused["rms_px"] / (2 * MAX_FUSED_RMS_PX))
+    return Quality(not reasons, float(score), reasons, hints, detail)
+
+
+def _assess_robust(fused, min_views) -> Quality:
+    """Kết quả của `multiview.robust_tag`: chấm bằng độ thống nhất (mm) giữa các góc nhìn, không bằng pixel."""
+    reasons, hints = [], []
+    spread = np.asarray(fused["spread_m"], float)
+    detail = {"n_views": fused["n_views"], "baseline_m": fused["baseline_m"], "spread_m": spread.tolist(),
+              "rms_px": fused["rms_px"], "flip_margin": fused["flip_margin"], "dropped": list(fused["dropped"])}
+    if fused["n_views"] < min_views:
+        _add(reasons, hints, f"mới có {fused['n_views']} góc nhìn (cần ≥ {min_views}): chưa có gì để đối chiếu",
+             HINT_PARALLAX)
+    else:
+        if fused["baseline_m"] < MIN_DISTINCT_M:
+            _add(reasons, hints, f"các góc nhìn gần như cùng một chỗ ({fused['baseline_m'] * 1000:.0f} mm, cần ≥ "
+                 f"{MIN_DISTINCT_M * 1000:.0f})", HINT_PARALLAX)
+        if max(spread[0], spread[1]) > MAX_SPREAD_XY_M:
+            _add(reasons, hints, f"các góc nhìn lệch nhau {max(spread[0], spread[1]) * 1000:.1f} mm theo phương ngang "
+                 f"(cần ≤ {MAX_SPREAD_XY_M * 1000:g})", HINT_PARALLAX)
+        if spread[2] > MAX_SPREAD_Z_M:
+            _add(reasons, hints, f"các góc nhìn lệch nhau {spread[2] * 1000:.1f} mm theo độ cao "
+                 f"(cần ≤ {MAX_SPREAD_Z_M * 1000:g})", HINT_PARALLAX)
+    if fused["flip_margin"] < MIN_FLIP_RATIO:
+        _add(reasons, hints, f"hướng mặt tag còn mơ hồ (tỉ số {fused['flip_margin']:.1f})", HINT_FRONTAL)
+    finite = spread[np.isfinite(spread)]
+    score = 0.0 if len(finite) < 3 else max(0.0, 1.0 - max(spread[0], spread[1]) / (2 * MAX_SPREAD_XY_M)) * max(
+        0.0, 1.0 - spread[2] / (2 * MAX_SPREAD_Z_M))
     return Quality(not reasons, float(score), reasons, hints, detail)
 
 

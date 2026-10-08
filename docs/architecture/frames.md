@@ -127,11 +127,26 @@ camera tay quét + tự nhìn quanh ──▶ pose 6D từng tag trong world ─
 | Vẽ world đè lên ảnh camera | `python -m cube_vision.world_overlay --camera phone` (thêm `--handheld` khi cầm tay) | `cube_vision/world_overlay.py` |
 | Xem 3D | `ros2 launch cap_vision world_view.launch.py` | `ros/src/cap_vision/cap_vision/world_publisher.py` |
 
+Số đo thật ngày 2026-10-08 (4 cube trên bàn, iPhone đặt sát mặt bàn cách đế ~43 cm):
+
+- Camera tay, nhiều góc nhìn: phương ngang các góc nhìn lệch nhau 0,1–1,3 mm; độ cao đo thấp hơn thật 1,4–4,7 mm.
+  Nguyên nhân: hand-eye hiện tại chỉ đạt trên mặt phẳng (`accepted_3d: false`), pose camera sai cỡ mm khi J3 ≠ 0.
+  Vì vậy (a) gộp bằng trung vị PnP từng góc nhìn (`multiview.robust_tag`), không tam giác hóa: tam giác hóa với
+  thị sai vài cm khuếch đại sai số pose thành z lệch tới +8 mm; (b) tag nằm ngửa đúng tầng thì lấy độ cao đã biết
+  của tầng (`world_map.snap_to_layer`), tag nghiêng/dựng đứng giữ số đo 3D.
+- iPhone đặt vào world bằng 3 tag: RMS chiếu lại 1,9 px; tag thứ tư không tham gia giải lệch 12 px (≈ 6 mm).
+  Vị trí iPhone lặp lại trong 3 mm giữa các lần giải.
+- Tag trên bàn gần đồng phẳng nên PnP có nghiệm lật (camera "chui xuống dưới bàn"); `camera_pose` tối ưu từ nhiều
+  pose khởi tạo và bỏ nghiệm nằm dưới mặt bàn.
+
+Muốn z thật tốt hơn (không cần mặt phẳng): hiệu chuẩn intrinsic camera tay bằng ChArUco rồi giải lại hand-eye
+chỉ với 6 tham số pose cho tới khi đạt 3D.
+
 Luật "nhìn chưa ổn" (ngưỡng ở đầu `view_quality.py`): tag nhỏ hơn 28 px, sát mép ảnh, PnP lệch quá 3 px, nhìn
-xiên quá 65°, hướng mặt tag còn mơ hồ, J1 ngoài vùng hand-eye; và sau khi gộp: ít hơn 2 góc nhìn, thị sai dưới
-35 mm, các góc nhìn không khớp nhau, vị trí bất định quá ±2 mm. Mỗi luật kèm gợi ý (lại gần, vào giữa ảnh, nhìn
-thẳng hơn, đổi chỗ lấy thị sai) để bộ chọn pose biết đổi gì; tối đa 4 lần nhìn thêm cho mỗi tag, hết thì báo
-"CHƯA CHẮC" chứ không ép ra số.
+xiên quá 65°, hướng mặt tag còn mơ hồ, J1 ngoài vùng hand-eye; và sau khi gộp: ít hơn 2 góc nhìn, hai góc nhìn
+cách nhau dưới 20 mm, các góc nhìn lệch nhau quá 4 mm theo phương ngang hoặc 8 mm theo độ cao. Mỗi luật kèm gợi ý
+(lại gần, vào giữa ảnh, nhìn thẳng hơn, đổi chỗ) để bộ chọn pose biết đổi gì; tối đa 4 lần nhìn thêm cho mỗi tag,
+hết thì báo "CHƯA CHẮC" chứ không ép ra số.
 
 Camera cầm tay: không có GPS/IMU, nên mỗi khung phải thấy ít nhất 2 tag mà world đã biết chắc, tách nhau từ 40 mm;
 không đủ thì báo "chưa định vị". World là ảnh chụp của một cảnh tĩnh: sau khi tay gắp/thả phải quét lại.
@@ -169,7 +184,7 @@ Sinh ngày 2026-10-08 bằng `dofbot_frames.py --dump`.
 | `wrist_cam_T_wrist_optical` | quy ước | hằng | cube_search_center_math.MOUNT_RZ90 | xyz = (+0.0, +0.0, +0.0) mm; rpy = (+0.0, -0.0, +90.0)° |
 | `base_link_T_table` | hiệu chuẩn hand-eye | hằng | config/robot/hand_eye.json: table_z (= tag_top_z − 0,030) | xyz = (+0.0, +0.0, +27.8) mm; rpy = (+0.0, -0.0, +0.0)° |
 | `base_link_T_ext_optical` | hiệu chuẩn camera ngoài | hằng | config/robot/external_camera.json: base_T_ext | xyz = (-354.1, +14.3, +313.5) mm; rpy = (-141.5, +1.2, -91.6)° |
-| `base_link_T_phone_optical` | hiệu chuẩn camera ngoài | CÒN THIẾU | config/robot/cameras/phone.json: base_T_optical | chưa có — `python projects/vision_experiments/build_world.py --scan  rồi  --locate phone --save` |
+| `base_link_T_phone_optical` | hiệu chuẩn camera ngoài | hằng | config/robot/cameras/phone.json: base_T_optical | xyz = (-428.7, -28.2, +153.6) mm; rpy = (-103.1, -1.2, -86.0)° |
 
 Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
 
@@ -178,9 +193,10 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
 - `world_T_ext_optical` = world_T_base_link · base_link_T_ext_optical  
   → xyz = (-354.1, +14.3, +313.5) mm; rpy = (-141.5, +1.2, -91.6)°
 - `world_T_phone_optical` = world_T_base_link · base_link_T_phone_optical  
-  → chưa hiệu chuẩn
+  → xyz = (-428.7, -28.2, +153.6) mm; rpy = (-103.1, -1.2, -86.0)°
 
 | Camera | Cỡ ảnh | fx, fy | cx, cy | k1, k2 | Xoay luồng | Nguồn |
 |---|---|---|---|---|---|---|
 | `wrist_optical` | 640×480 | 935.3, 990.3 | 322.6, 229.7 | -0.444, +0.000 | 0° | config/robot/hand_eye.json: K, k1 (fit chung với hand-eye) |
 | `ext_optical` | 1280×720 | 932.4, 932.4 | 623.0, 428.7 | +0.060, +0.000 | 0° | config/robot/external_camera.json: K, k1 (fit chung với pose) |
+| `phone_optical` | 720×1280 | 957.4, 956.5 | 359.9, 641.7 | +0.139, -0.449 | 90° | config/robot/cameras/phone.json |

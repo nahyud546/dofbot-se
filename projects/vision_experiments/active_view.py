@@ -96,17 +96,12 @@ def next_view(target_base, used_servos, cal, hints=(), normal=(0.0, 0.0, 1.0), p
 
 
 def fuse(views):
-    """Gộp các góc nhìn; khi có ≥ 3 và một góc lệch hẳn thì loại góc đó rồi gộp lại. Trả (fused, quality, views)."""
-    views = list(views)
-    fused = MV.solve_tag(views) if views else None
-    quality = Q.assess_fused(fused)
-    while fused and not quality and Q.HINT_RESHOOT in quality.hints and len(views) >= 3:
-        trimmed = views[:Q.worst_view(fused)] + views[Q.worst_view(fused) + 1:]
-        again = MV.solve_tag(trimmed)
-        if again is None or again["rms_px"] > 0.7 * fused["rms_px"]:
-            break                                        # loại đi không cải thiện rõ: không phải lỗi của một khung
-        views, fused, quality = trimmed, again, Q.assess_fused(again)
-    return fused, quality, views
+    """Gộp các góc nhìn bằng trung vị PnP (bền với sai số pose camera); góc lệch hẳn bị loại ngay trong đó.
+
+    Trả (fused, quality, các view còn dùng). Xem `multiview` về lý do không tam giác hóa với hand-eye hiện tại.
+    """
+    fused = MV.robust_tag(views) if views else None
+    return fused, Q.assess_fused(fused), (fused["views"] if fused else [])
 
 
 def measure(observe, cal, tags=None, look_around=True, max_extra=MAX_EXTRA_VIEWS, log=print):
@@ -165,9 +160,12 @@ def describe(tag_id, result) -> str:
     x, y, z = fused["centre"] * 1000
     tilt = math.degrees(math.acos(max(-1.0, min(1.0, float(fused["normal"][2])))))
     state = "ỔN" if quality else "CHƯA CHẮC: " + quality.text()
+    spread = np.asarray(fused.get("spread_m", fused["pos_std_m"]), float) * 1000
+    agree = "một góc nhìn" if not np.isfinite(spread).all() else \
+        f"các góc nhìn lệch nhau ngang {max(spread[0], spread[1]):.1f} / đứng {spread[2]:.1f} mm"
+    dropped = f", bỏ {len(fused['dropped'])} góc lệch" if fused.get("dropped") else ""
     return (f"tag {tag_id}: world ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, mặt tag nghiêng {tilt:.0f}° so với phương đứng; "
-            f"{fused['n_views']} góc nhìn (+{result['extra']} nhìn thêm), thị sai {fused['baseline_m'] * 1000:.0f} mm, "
-            f"khớp {fused['rms_px']:.1f} px, ±{max(fused['pos_std_m']) * 1000:.1f} mm — {state}")
+            f"{fused['n_views']} góc nhìn (+{result['extra']} nhìn thêm{dropped}), {agree} — {state}")
 
 
 # ------------------------------------------------------------------ phần cứng

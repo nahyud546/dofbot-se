@@ -10,7 +10,7 @@ from cube_vision import camera_pose as P
 from cube_vision import multiview as MV
 from cube_vision.frames import CameraModel, invert
 from cube_vision.test_multiview import look_at, tag_pose
-from cube_vision.world_map import CUBE_EDGE_M, WorldMap, cube_from_tag
+from cube_vision.world_map import CUBE_EDGE_M, WorldMap, cube_from_tag, snap_to_layer
 
 PHONE = CameraModel("phone", (980.0, 985.0, 362.0, 641.0), (720, 1280), k1=0.08, k2=-0.1, rotate=90)
 TAGS = {1: tag_pose([-0.16, 0.05, 0.058], (0, 0, 0.3)), 2: tag_pose([-0.21, -0.04, 0.058], (0, 0, -0.6)),
@@ -48,6 +48,21 @@ class CameraPose(unittest.TestCase):
         self.assertFalse(P.pose_from_tags({}, detect(), PHONE)["ok"])
         self.assertIsNone(P.drift_px({}, detect(), PHONE, TRUE_POSE))
 
+    def test_coplanar_tags_seen_at_a_grazing_angle_do_not_flip_the_camera_under_the_table(self):
+        flat = {i: MV.tag_points() @ T[:3, :3].T + T[:3, 3] for i, T in
+                {1: tag_pose([-0.22, -0.06, 0.055], (0, 0, 0.2)), 2: tag_pose([-0.146, -0.057, 0.055], (0, 0, -0.4)),
+                 4: tag_pose([-0.188, -0.009, 0.055], (0, 0, 0.9))}.items()}
+        low = look_at([-0.43, -0.03, 0.15], [-0.18, -0.03, 0.05])           # như iPhone đặt sát mặt bàn
+        opt = invert(low)
+        for seed in range(6):
+            rng = np.random.default_rng(seed)
+            seen = {i: PHONE.project(c @ opt[:3, :3].T + opt[:3, 3]) + rng.normal(0, 0.8, (4, 2))
+                    for i, c in flat.items()}
+            result = P.pose_from_tags(flat, seen, PHONE)
+            self.assertTrue(result["ok"], result["reasons"])
+            self.assertGreater(result["world_T_optical"][2, 3], 0.08)
+            self.assertLess(np.linalg.norm(result["world_T_optical"][:3, 3] - low[:3, 3]), 0.05)
+
     def test_a_tag_whose_world_position_is_wrong_is_caught(self):
         wrong = dict(WORLD)
         wrong[3] = WORLD[3] + [0.03, 0.0, 0.0]                           # cube bị dời 3 cm sau khi dựng world
@@ -68,6 +83,27 @@ class World(unittest.TestCase):
         self.assertAlmostEqual(cube["vertices"][:, 2].min(), 0.028, places=6)
         side = cube_from_tag(WORLD[4])                                   # tag dựng đứng: cube lùi theo phương ngang
         self.assertAlmostEqual(side["centre"][2], TAGS[4][2, 3], delta=0.002)
+
+    def test_flat_tag_takes_the_known_layer_height_and_keeps_xy_and_yaw(self):
+        measured = self.fused(tag_pose([-0.19, 0.04, 0.0535], (0.06, -0.04, 0.5)))      # đo thấp 4 mm, nghiêng ~4°
+        snapped, layer = snap_to_layer(measured, 0.0578)
+        self.assertEqual(layer, 0)
+        np.testing.assert_allclose(snapped["centre"], [-0.19, 0.04, 0.0578], atol=1e-9)
+        np.testing.assert_allclose(snapped["corners"][:, 2], 0.0578, atol=1e-9)
+        sides = np.linalg.norm(snapped["corners"] - np.roll(snapped["corners"], -1, axis=0), axis=1)
+        np.testing.assert_allclose(sides, 0.020, atol=1e-6)
+        edge = snapped["corners"][1] - snapped["corners"][0]
+        self.assertAlmostEqual(np.arctan2(edge[1], edge[0]), 0.5, delta=0.03)
+        stacked, layer = snap_to_layer(self.fused(tag_pose([-0.19, 0.04, 0.0905])), 0.0578)
+        self.assertEqual(layer, 1)
+        self.assertAlmostEqual(stacked["centre"][2], 0.0878, places=6)
+
+    def test_tilted_upright_or_floating_tags_keep_their_measured_3d_pose(self):
+        for pose in (TAGS[4], tag_pose([-0.19, 0.04, 0.072]), tag_pose([-0.19, 0.04, 0.058], (0.4, 0, 0))):
+            measured = self.fused(pose)
+            same, layer = snap_to_layer(measured, 0.0578)
+            self.assertIsNone(layer)
+            self.assertIs(same, measured)
 
     def test_round_trip_through_the_file_keeps_everything(self):
         world = WorldMap(table_z=0.028)
