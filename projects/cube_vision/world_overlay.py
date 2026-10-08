@@ -45,8 +45,12 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
     """
     out = frame.copy()
     drawn = world.project_into(model, world_T_optical)
-    for a, b in drawn["grid"]:
-        _line(out, a, b, (200, 200, 120), 1)
+    h, w = out.shape[:2]
+    for line in drawn["grid"]:                       # chỉ vẽ các khúc mà cả hai đầu chiếu được và nằm gần ảnh
+        for a, b in zip(line[:-1], line[1:]):
+            if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
+                    and -w < b[0] < 2 * w and -h < b[1] < 2 * h):
+                _line(out, a, b, (200, 200, 120), 1)
     for k, (a, b) in enumerate(drawn["axes"]):
         _line(out, a, b, AXIS_COLOURS[k], 3)
     errors = {}

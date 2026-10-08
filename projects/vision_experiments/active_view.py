@@ -152,6 +152,19 @@ def measure(observe, cal, tags=None, look_around=True, max_extra=MAX_EXTRA_VIEWS
     return out
 
 
+def stable_tags(recent, max_jitter_px: float = 1.5) -> dict:
+    """Tag có mặt trong MỌI khung của `recent` ([{id: (4,2)}]) và đứng yên trong `max_jitter_px`: {id: góc trung bình}."""
+    recent = list(recent)
+    if not recent:
+        return {}
+    out = {}
+    for tag_id in set.intersection(*(set(frame) for frame in recent)):
+        stack = np.array([frame[tag_id] for frame in recent])
+        if float(np.max(np.abs(stack - stack.mean(axis=0)))) <= max_jitter_px:
+            out[tag_id] = stack.mean(axis=0)
+    return out
+
+
 def describe(tag_id, result) -> str:
     fused, quality = result["fused"], result["quality"]
     if not fused:
@@ -248,7 +261,73 @@ class WristSession:
             return None, stable, frame
         return [(a + b) / 2.0 for a, b in zip(before, after)], stable, frame
 
+    # -- đọc khớp ở luồng riêng: vòng hiển thị chạy theo tốc độ camera, không phải chờ serial (~0,4 s mỗi lần đọc)
+    def start_polling(self):
+        import collections
+        import threading
+        import time
+        self._readings = collections.deque(maxlen=60)          # (bắt đầu đọc, đọc xong, 5 góc khớp)
+        self._stop = threading.Event()
+
+        def loop():
+            while not self._stop.is_set():
+                started = time.time()
+                try:
+                    servo = C.read_servo(self.arm)
+                except Exception:  # noqa: BLE001 - lỗi serial tạm thời: thử lại
+                    time.sleep(0.1)
+                    continue
+                self._readings.append((started, time.time(), servo))
+
+        self._thread = threading.Thread(target=loop, daemon=True)
+        self._thread.start()
+
+    def stop_polling(self):
+        if getattr(self, "_stop", None) is not None:
+            self._stop.set()
+            self._thread.join(timeout=3.0)
+            self._stop = None
+
+    def latest_joints(self):
+        readings = getattr(self, "_readings", None)
+        return list(readings[-1][2]) if readings else None
+
+    def joints_at(self, t: float, still_deg: float = 1.0):
+        """Góc khớp tại thời điểm t của một khung ảnh, chỉ khi tay ĐỨNG YÊN quanh thời điểm đó.
+
+        Cần một lần đọc xong trước t và một lần bắt đầu sau t khớp nhau trong `still_deg`. Trả list 5 góc; False
+        khi hai lần đọc lệch nhau (tay đang động) hoặc không có lần đọc trước; None khi lần đọc sau chưa tới.
+        """
+        readings = list(getattr(self, "_readings", ()))
+        before = [r for r in readings if r[1] <= t]
+        after = [r for r in readings if r[0] >= t]
+        if not after:
+            return None
+        if not before:
+            return False
+        a, b = before[-1][2], after[0][2]
+        if max(abs(x - y) for x, y in zip(a, b)) > still_deg:
+            return False
+        return [(x + y) / 2.0 for x, y in zip(a, b)]
+
+    def grab(self):
+        """(thời điểm, khung 640x480, {tag_id: 4 góc nằm gọn trong ảnh}) của MỘT khung; (None, None, {}) khi lỗi."""
+        import time
+        import cv2
+        ok, raw = self.cap.read()
+        if not ok or raw is None:
+            return None, None, {}
+        stamp = time.time()
+        frame = raw if (raw.shape[1], raw.shape[0]) == IMAGE_SIZE else cv2.resize(raw, IMAGE_SIZE)
+        seen = {}
+        for tag in self.det.detect(frame):
+            corners = np.asarray(tag["corners"], float).reshape(4, 2)
+            if corners.min() >= 8 and corners[:, 0].max() <= 632 and corners[:, 1].max() <= 472:
+                seen[int(tag["id"])] = corners
+        return stamp, frame, seen
+
     def __exit__(self, *exc):
+        self.stop_polling()
         try:
             if self.park and (exc[0] is None or exc[0] is KeyboardInterrupt):
                 C.move_and_settle(self.arm, READY, ms=1800)

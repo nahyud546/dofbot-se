@@ -26,8 +26,9 @@ SOURCE = "wrist-watch"
 MOVED_M = 0.015               # ước lượng mới cách chỗ đã ghi hơn mức này => cube đã bị dời
 NEW_VIEW_M = 0.015            # tâm camera phải cách các góc nhìn đã giữ chừng này mới tính là góc nhìn mới
 MAX_VIEWS = 8
-MISSING_AFTER = 3             # số lần nhìn liên tiếp "lẽ ra thấy mà không thấy" trước khi xóa
-MISSING_MARGIN_PX = 70.0
+MISSING_AFTER = 3             # số lần nhìn liên tiếp "lẽ ra thấy mà không thấy" trước khi xóa...
+MISSING_AFTER_S = 4.0         # ...và phải kéo dài chừng này giây: tay người che cube vài giây khi sắp xếp là chuyện thường
+MISSING_MARGIN_PX = 14.0      # cả 4 góc tag phải nằm trong ảnh cách mép chừng này thì tag mới "lẽ ra đọc được"
 
 
 class Watcher:
@@ -37,6 +38,8 @@ class Watcher:
         self.tag_top_z = float(cal["tag_top_z"])
         self.views = {}           # {tag_id: [View]} các góc nhìn đang dùng cho từng cube
         self.unseen = {}          # {tag_id: số lần liên tiếp lẽ ra thấy mà không thấy}
+        self.unseen_since = {}    # {tag_id: thời điểm bắt đầu chuỗi không thấy đó}
+        self.expected = set()     # tag của world mà lần nhìn gần nhất lẽ ra phải thấy nhưng không thấy
 
     def _fuse(self, tag_id):
         """(fused, chắc?) từ các góc nhìn đang giữ của một tag."""
@@ -103,31 +106,42 @@ class Watcher:
                 continue
             self.world.forget(tag_id)
             self.world.update_tag(tag_id, fused, SOURCE, sure=sure, stamp=stamp)
-            self.unseen[tag_id] = 0
+            self.unseen.pop(tag_id, None)
+            self.unseen_since.pop(tag_id, None)
             events["used"].append(tag_id)
             if is_new:
                 events["new"].append(tag_id)
             elif moved:
                 events["moved"].append(tag_id)
-        # Cube của world lẽ ra nằm gọn trong khung nhìn này mà không thấy.
-        if not (clear_view if clear_view is not None else bool(events["used"])):
-            return events
+        # Cube của world lẽ ra đọc được trong khung nhìn này (cả 4 góc tag nằm trong ảnh) mà không thấy.
+        import time as _time
+        now = _time.time() if stamp is None else float(stamp)
         w, h = camera.image_size
         opt_T_base = np.linalg.inv(base_T_opt)
+        self.expected = set()
         for tag_id, tag in list(self.world.tags.items()):
             if tag_id in seen:
                 continue
-            cam = (opt_T_base @ np.r_[tag["centre"], 1.0])[:3]
-            uv = camera.project(cam.reshape(1, 3))[0] if cam[2] > 0.05 else np.array([np.nan, np.nan])
-            inside = (np.isfinite(uv).all() and MISSING_MARGIN_PX <= uv[0] <= w - MISSING_MARGIN_PX
-                      and MISSING_MARGIN_PX <= uv[1] <= h - MISSING_MARGIN_PX)
+            cam = np.asarray(tag["corners"], float) @ opt_T_base[:3, :3].T + opt_T_base[:3, 3]
+            uv = camera.project(cam) if cam[:, 2].min() > 0.05 else np.full((4, 2), np.nan)
+            inside = (np.isfinite(uv).all() and uv[:, 0].min() >= MISSING_MARGIN_PX
+                      and uv[:, 0].max() <= w - MISSING_MARGIN_PX and uv[:, 1].min() >= MISSING_MARGIN_PX
+                      and uv[:, 1].max() <= h - MISSING_MARGIN_PX)
             if not inside:
+                self.unseen.pop(tag_id, None)                     # ra khỏi khung nhìn: không kết luận gì, bắt đầu lại
+                self.unseen_since.pop(tag_id, None)
                 continue
+            self.expected.add(tag_id)
+            if not (clear_view if clear_view is not None else bool(events["used"])):
+                continue                                          # ảnh không đáng tin: không tính là một lần mất
             self.unseen[tag_id] = self.unseen.get(tag_id, 0) + 1
-            if self.unseen[tag_id] >= MISSING_AFTER:
+            since = self.unseen_since.setdefault(tag_id, now)
+            if self.unseen[tag_id] >= MISSING_AFTER and now - since >= MISSING_AFTER_S:
                 self.world.forget(tag_id)
                 self.views.pop(tag_id, None)
                 self.unseen.pop(tag_id, None)
+                self.unseen_since.pop(tag_id, None)
+                self.expected.discard(tag_id)
                 events["removed"].append(tag_id)
         return events
 

@@ -174,7 +174,14 @@ class CameraModel:
         """(N,3) điểm trong hệ optical -> (N,2) pixel; NaN cho điểm nằm sau camera."""
         pts = np.asarray(points_optical, float).reshape(-1, 3)
         z = np.where(pts[:, 2] > 1e-9, pts[:, 2], np.nan)
-        x, y = self._distort(pts[:, 0] / z, pts[:, 1] / z)
+        xn, yn = pts[:, 0] / z, pts[:, 1] / z
+        # Đa thức méo chỉ đúng trong vùng nó còn đơn điệu (đạo hàm theo bán kính > 0). Ngoài vùng đó (điểm lệch xa
+        # trục nhìn) nó gập ngược lại và cho pixel vô nghĩa nằm ngay trong ảnh: trả NaN thay vì vẽ sai.
+        r2 = xn * xn + yn * yn
+        with np.errstate(invalid="ignore"):
+            valid = (1.0 + 3.0 * self.k1 * r2 + 5.0 * self.k2 * r2 * r2) > 0.0
+        xn, yn = np.where(valid, xn, np.nan), np.where(valid, yn, np.nan)
+        x, y = self._distort(xn, yn)
         fx, fy, cx, cy = self.K
         return np.stack([fx * x + cx, fy * y + cy], axis=1)
 

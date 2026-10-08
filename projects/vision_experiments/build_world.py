@@ -139,47 +139,72 @@ def cmd_watch(args):
             time.sleep(2.0)
             session.arm.Arm_serial_set_torque(0)
         print("Đang theo dõi (q hoặc Ctrl+C để thoát). World:", world.save())
+        import collections
         model, last_text, last_save = A.wrist_camera(session.cal), "", 0.0
+        recent, pending = collections.deque(maxlen=3), collections.deque(maxlen=90)
+        started, frames, looks = time.time(), 0, 0
+        session.start_polling()
         try:
             while True:
-                try:
-                    servo, seen, frame = session.look()
-                except RuntimeError as exc:                    # đọc khớp lỗi tạm thời: thử lại
-                    print("  đọc khớp lỗi:", exc)
-                    time.sleep(0.3)
-                    continue
+                stamp, frame, seen = session.grab()
                 if frame is None:
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                     continue
-                note = "tay dang chuyen dong"
-                if servo is not None:
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    clear = bool(seen) or (I.sharpness(gray) >= WATCH_MIN_SHARPNESS and gray.mean() >= WATCH_MIN_BRIGHTNESS)
-                    events = watcher.observe(servo, seen, clear_view=clear)
+                frames += 1
+                recent.append(seen)
+                steady = A.stable_tags(recent) if len(recent) == recent.maxlen else {}
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                clear = bool(steady) or (I.sharpness(gray) >= WATCH_MIN_SHARPNESS
+                                         and gray.mean() >= WATCH_MIN_BRIGHTNESS)
+                pending.append((stamp, steady, clear))
+                # Khung nào đã có lần đọc khớp sau nó thì kết luận được: tay đứng yên (ghi) hay đang động (bỏ).
+                confirmed, moving = None, False
+                while pending:
+                    servo = session.joints_at(pending[0][0])
+                    if servo is None:
+                        break
+                    item = pending.popleft()
+                    if servo is False:
+                        moving = True
+                    else:
+                        confirmed = (servo, item)
+                if confirmed is not None:
+                    servo, (at, tags, was_clear) = confirmed
+                    events = watcher.observe(servo, tags, stamp=at, clear_view=was_clear)
+                    looks += 1
                     text = W.describe(events)
                     if text and text != last_text:
                         print(f"  [{time.strftime('%H:%M:%S')}] J={[round(v) for v in servo[:4]]}: {text}")
                     last_text = text
-                    changed = events["used"] or events["removed"]
-                    if changed and time.time() - last_save > 0.4:
+                    if (events["used"] or events["removed"]) and time.time() - last_save > 0.4:
                         world.save()
                         last_save = time.time()
-                    note = f"J={[round(v) for v in servo[:4]]}  world: {len(world.tags)} cube" + (
-                        "  NGOAI VUNG HAND-EYE" if events["skipped"] else "")
+                    if args.once:
+                        break
+                now_servo = session.latest_joints()
                 if not args.no_window:
-                    if servo is not None:
-                        view, _ = O.draw(frame, world, model, A.base_T_optical(servo, session.cal), seen, note)
-                    else:
+                    if now_servo is None:
                         view = frame.copy()
-                        cv2.putText(view, note, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        cv2.putText(view, "dang doc khop...", (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                    else:
+                        j1_range = session.cal.get("j1_valid_range")
+                        outside = bool(j1_range) and not (j1_range[0] <= now_servo[0] <= j1_range[1])
+                        note = f"J={[round(v) for v in now_servo[:4]]} world: {len(world.tags)} cube" + (
+                            " | tay dang chuyen dong" if moving else "") + (" | NGOAI VUNG HAND-EYE" if outside else "")
+                        unseen = set(world.tags) - set(steady)       # cube của world không thấy trong khung này: vẽ xám
+                        view, _ = O.draw(frame, world, model, A.base_T_optical(now_servo, session.cal), steady, note,
+                                         missing=unseen)
                     cv2.imshow("camera tay -> world", view)
                     if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                         break
-                if args.once and servo is not None:
+                if args.seconds and time.time() - started > args.seconds:
                     break
         except KeyboardInterrupt:
             pass
         finally:
+            session.stop_polling()
+            elapsed = max(time.time() - started, 1e-6)
+            print(f"Đã chạy {elapsed:.0f} s: {frames / elapsed:.1f} khung/giây hiển thị, {looks / elapsed:.1f} lần ghi/giây.")
             if args.free:
                 session.arm.Arm_serial_set_torque(1)
                 print("Đã bật lại lực servo.")
@@ -263,6 +288,7 @@ def main():
     ap.add_argument("--fresh", action="store_true", help="với --watch: bắt đầu từ world rỗng thay vì world đã lưu")
     ap.add_argument("--once", action="store_true", help="với --watch: ghi một lần nhìn rồi thoát")
     ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
+    ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
     args = ap.parse_args()
     if args.watch:
         cmd_watch(args)

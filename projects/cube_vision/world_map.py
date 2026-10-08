@@ -132,7 +132,7 @@ class WorldMap:
     def project_into(self, model: CameraModel, world_T_optical, grid_m: float = 0.05, extent_m: float = 0.30) -> dict:
         """World -> pixel của một camera: thứ để vẽ đè lên ảnh. Điểm sau camera là NaN.
 
-        Trả {"axes": [(gốc, đầu trục)x3], "grid": [đoạn], "cubes": {id: [12 cạnh]}, "tags": {id: (4,2)},
+        Trả {"axes": [(gốc, đầu trục)x3], "grid": [(N,2) đường gấp khúc], "cubes": {id: [12 cạnh]}, "tags": {id: (4,2)},
              "zones": {zone: (u, v)}}.
         """
         opt_T_world = invert(world_T_optical)
@@ -146,10 +146,16 @@ class WorldMap:
         out = {"axes": [tuple(px([origin, origin + 0.05 * np.eye(3)[k]])) for k in range(3)], "grid": [],
                "cubes": {}, "tags": {}, "zones": {}}
         steps = np.arange(-extent_m, extent_m + 1e-9, grid_m)
+        along = np.arange(0.0, 1.0 + 1e-9, 0.02 / max(extent_m, 0.02) / 2.0)   # lấy mẫu ~1 cm dọc từng đường
+
+        def polyline(a, b):                                # (N,2) pixel dọc đoạn a-b; điểm không chiếu được là NaN
+            a, b = np.asarray(a, float), np.asarray(b, float)
+            return px(a + along[:, None] * (b - a))
+
         for s in steps:                                    # lưới trên mặt bàn, phía làm việc (x âm)
-            out["grid"].append(tuple(px([[-extent_m, s, z], [0.0, s, z]])))
+            out["grid"].append(polyline([-extent_m, s, z], [0.0, s, z]))
             if s <= 0:
-                out["grid"].append(tuple(px([[s, -extent_m, z], [s, extent_m, z]])))
+                out["grid"].append(polyline([s, -extent_m, z], [s, extent_m, z]))
         for tag_id, tag in self.tags.items():
             out["tags"][tag_id] = px(tag["corners"])
             vertices = px(cube_from_tag(tag["corners"])["vertices"])
