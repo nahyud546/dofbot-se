@@ -146,7 +146,9 @@ class Region(unittest.TestCase):
         lo, hi = CAL["j1_valid_range"]
         for servo in A.SCAN_POSES:
             self.assertTrue(lo <= servo[0] <= hi, servo)
-            self.assertEqual(servo[2:4], [0.0, 0.0])
+            self.assertLessEqual(servo[2], 29.0)                     # trong vùng hand-eye: J3 0–29°, J4 0–19°
+            self.assertLessEqual(servo[3], 19.0)
+            self.assertGreaterEqual(C.tip_z(servo), C.MIN_TIP_Z)
         self.assertGreaterEqual(len({s[0] for s in A.SCAN_POSES}), 5)
 
     def test_region_is_one_polygon_in_front_of_the_arm_wider_than_the_old_three_angle_scan(self):
@@ -157,14 +159,15 @@ class Region(unittest.TestCase):
         world = WorldMap(region=region)
         self.assertTrue(world.inside([-0.22, 0.0]))                  # giữa vùng làm việc
         self.assertFalse(world.inside([0.20, 0.0]))                  # sau lưng tay máy
-        self.assertFalse(world.inside([-0.60, 0.0]))                 # xa quá tầm nhìn
+        self.assertTrue(world.inside([-0.45, 0.0]))                  # vòng xa
+        self.assertFalse(world.inside([-0.75, 0.0]))                 # xa quá tầm nhìn
         self.assertFalse(world.inside([0.0, 0.0]))                   # ngay đế tay máy
 
     def test_every_spot_inside_the_region_is_seen_by_some_scan_pose(self):
         from cube_vision.world_map import WorldMap
         world, camera, z = WorldMap(region=A.scan_region(CAL)[0]), A.wrist_camera(CAL), CAL["tag_top_z"] - 0.03
-        for x in np.arange(-0.34, 0.0, 0.02):
-            for y in np.arange(-0.30, 0.301, 0.02):
+        for x in np.arange(-0.58, 0.0, 0.02):
+            for y in np.arange(-0.58, 0.581, 0.02):
                 if not world.inside([x, y], margin_m=-0.01):
                     continue
                 seen = False

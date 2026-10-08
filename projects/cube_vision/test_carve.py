@@ -66,3 +66,29 @@ class Footprints(unittest.TestCase):
     def test_known_cubes_are_kept_out(self):
         views = views_of([-0.20, 0.0], 0.02, 0.03, AROUND)
         self.assertEqual(carve.footprints(views, 0.0, BOUNDS, keep_out=[(-0.20, 0.0)], keep_out_m=0.04), [])
+
+
+class OneSidedBox(unittest.TestCase):
+    """Camera chỉ nhìn từ phía đế tay máy: tin mép gần + bề ngang, giả thiết sâu = ngang."""
+    EYES = [[-0.02, y, 0.25] for y in (-0.10, 0.0, 0.10)]
+
+    def test_box_sits_on_the_true_base_when_every_view_sees_the_whole_object(self):
+        views = views_of([-0.20, 0.0], 0.035, 0.09, self.EYES)
+        found = carve.footprints(views, 0.0, BOUNDS)[0]
+        box = carve.near_side_box(found["cells"])
+        self.assertLess(np.linalg.norm(box["centre"] - [-0.20, 0.0]), 0.012)
+        self.assertAlmostEqual(box["width_m"], 0.07, delta=0.015)
+        height, used = carve.height_from_views(box, views, 0.0)
+        self.assertEqual(used, 3)
+        self.assertAlmostEqual(height, 0.09, delta=0.02)
+
+    def test_height_is_not_reported_when_the_top_is_cut_off_in_every_view(self):
+        views = views_of([-0.20, 0.0], 0.035, 0.09, self.EYES)
+        box = carve.near_side_box(carve.footprints(views, 0.0, BOUNDS)[0]["cells"])
+        cropped = []
+        for camera, T, mask in views:
+            top = int(np.nonzero(mask.any(axis=1))[0].min())
+            shifted = np.zeros_like(mask)
+            shifted[:480 - top] = mask[top:]                           # đẩy mặt nạ chạm mép trên ảnh
+            cropped.append((camera, T, shifted))
+        self.assertEqual(carve.height_from_views(box, cropped, 0.0), (None, 0))

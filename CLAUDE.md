@@ -64,8 +64,8 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
   đã có trong world (`cube_vision/camera_pose.py`). Chi tiết và lệnh: `docs/architecture/frames.md`.
   World chỉ gồm **vùng mặt bàn camera tay quét được** (`active_view.scan_region`, lưu `region`); ngoài vùng không ghi.
   Cube không ngửa tag được nhận bằng mặt màu / hình in (`world_watch.observe_faces`, cần đủ sáng: ảnh < 90/255 là
-  hụt). Vật khác cube (`--scan` bằng `.venv`, YOLOE + `cube_vision/carve.py`) mới chỉ có vết đáy ước lượng, chưa
-  có chiều cao.
+  hụt). Vật khác cube (`--scan --objects` bằng `.venv`, YOLOE + `cube_vision/carve.py`) còn THỬ NGHIỆM: trên tay
+  thật hộp lệch vài cm (xem `frames.md`), nên mặc định tắt.
 - **`projects/cube_vision/`** là thư viện độc lập: không được import T8 hay ROS. Robot cụ thể đi vào qua tham số
   (`ZoneLayout`, `arm.execute("look")`, `scene.zone_survey`). T8 nối vào bằng adapter mỏng (`t8_pipeline/zone_survey.py`).
 - **`projects/vision_experiments/` và `projects/t8_pipeline/`** là module phẳng, import nhau bằng tên trần
@@ -108,3 +108,16 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
 - `workspaces/dofbot_robot_arm_6dof/` là kho git riêng (chess, teleop, MoveIt), bị ignore. Perception đang dùng đã được
   chép sang `ros/src`; sửa perception thì sửa ở `ros/src`, không sửa bản trong kho lồng.
 - `workspaces/dofbot_ws`, `LargeModel_ws`, `legacy`, `vendor/yahboom` là mã Yahboom gốc: không thuộc luồng T8.
+
+## Plugin Claude Code (cài ở `~/.claude`, phạm vi user, dùng chung mọi project)
+
+- **ponytail** — tự bật mỗi phiên qua hook: viết ít code nhất mà đủ, dùng lại cái đã có trong repo trước.
+  `/ponytail lite|full|ultra|off`, `/ponytail:ponytail-review`, `/ponytail:ponytail-audit`. Nó không được cắt
+  phần "Bất biến an toàn" ở trên: viewer + Space, các giới hạn J1/sàn thả, kiểm `moved(frame)` đều giữ nguyên.
+- **agent-skills** — quy trình `/spec` → `/plan` → `/build` → `/test` → `/review` → `/ship`. Bước test trong repo này
+  luôn là `/usr/bin/python3 -m pytest` (skill `run-tests`), không dùng pytest của `.venv`; thay đổi chạm phần cứng thì
+  "verify" nghĩa là chạy tay thật có người duyệt, không tự chạy.
+- **ui-ux-pro-max** — chỉ dùng khi làm giao diện (dashboard, trang web điều khiển). Repo chưa có front end; khi tạo thì
+  đặt ở thư mục riêng (ví dụ `web/`), không trộn vào `projects/` hay `ros/`.
+- Ghi nhớ của dự án vẫn là auto-memory của Claude Code (`~/.claude/projects/-home-jloy-Desktop-robot-arm/memory/`);
+  không plugin nào ở trên thay phần đó.

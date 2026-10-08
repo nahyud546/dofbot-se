@@ -57,6 +57,74 @@ def footprints(views, table_z: float, bounds, cell: float = CELL_M, min_views: i
         cells = np.argwhere(labels == k)                              # (hàng = chỉ số x, cột = chỉ số y)
         xy = np.c_[xs[cells[:, 0]], ys[cells[:, 1]]]
         hull = cv2.convexHull((xy * 1000.0).astype(np.float32)).reshape(-1, 2) / 1000.0
-        found.append({"polygon": hull, "centre": xy.mean(axis=0), "area_m2": area,
+        found.append({"polygon": hull, "centre": xy.mean(axis=0), "area_m2": area, "cells": xy,
                       "n_views": int(hit.reshape(gx.shape)[labels == k].max()), "cell": cell})
     return sorted(found, key=lambda item: -item["area_m2"])
+
+
+BOX_BAND_M = 0.03             # dải sát mép gần dùng để đo bề ngang vật
+MAX_HEIGHT_M = 0.30
+
+
+def near_side_box(cells_xy, eye_xy=(0.0, 0.0)) -> dict | None:
+    """Hộp ước lượng của một vật khi mọi góc nhìn đều từ MỘT phía (camera tay nhìn từ đế ra ngoài).
+
+    Vết đáy từ `footprints` gồm đáy thật + "bóng" phía sau vật mà không góc nào nhìn tới. Phần tin được là MÉP GẦN
+    (phía camera) và BỀ NGANG ở mép đó. Giả thiết kiểu cube: bề sâu = bề ngang. Trả {"centre", "polygon" (4,2) hình
+    vuông quay mặt về `eye_xy`, "width_m", "near_m"} hoặc None.
+    """
+    xy = np.asarray(cells_xy, float).reshape(-1, 2) - np.asarray(eye_xy, float)
+    if len(xy) < 4:
+        return None
+    radial = xy.mean(axis=0)
+    radial = radial / np.linalg.norm(radial)
+    tangent = np.array([-radial[1], radial[0]])
+    r, t = xy @ radial, xy @ tangent
+    near = float(np.percentile(r, 3))
+    band = r <= near + BOX_BAND_M
+    width = float(np.percentile(t[band], 97) - np.percentile(t[band], 3))
+    if width <= 0:
+        return None
+    mid = float((np.percentile(t[band], 97) + np.percentile(t[band], 3)) / 2.0)
+    centre = np.asarray(eye_xy, float) + radial * (near + width / 2.0) + tangent * mid
+    h = width / 2.0
+    polygon = np.array([centre + a * h * radial + b * h * tangent for a, b in ((-1, -1), (-1, 1), (1, 1), (1, -1))])
+    return {"centre": centre, "polygon": polygon, "width_m": width, "near_m": near, "radial": radial}
+
+
+def height_from_views(box: dict, views, table_z: float, eye_xy=(0.0, 0.0)):
+    """Chiều cao vật từ các góc nhìn thấy TRỌN đỉnh vật (mặt nạ không chạm mép trên ảnh): tia qua điểm cao nhất của
+    mặt nạ cắt mặt đứng ở mép XA của hộp. Trả (chiều cao m, số góc nhìn dùng) hoặc (None, 0)."""
+    radial = np.asarray(box["radial"], float)
+    far = float((box["centre"] - np.asarray(eye_xy, float)) @ radial) + box["width_m"] / 2.0
+    probe = np.r_[box["centre"], float(table_z) + 0.03]
+    heights = []
+    for camera, a_T_optical, mask in views:
+        T = np.asarray(a_T_optical, float)
+        inv = invert(T)
+        uv = camera.project((inv[:3, :3] @ probe + inv[:3, 3]).reshape(1, 3))[0]
+        if not np.isfinite(uv).all():
+            continue
+        count, labels = cv2.connectedComponents((mask > 0).astype(np.uint8))
+        u = int(np.clip(uv[0], 0, mask.shape[1] - 1))
+        column = labels[:, u]
+        rows = np.nonzero(column)[0]
+        if not len(rows):
+            continue
+        blob = column[rows[np.argmin(np.abs(rows - uv[1]))]]         # mảng mặt nạ gần điểm dò nhất trên cột đó
+        ys, xs = np.nonzero(labels == blob)
+        top = int(ys.min())
+        if top <= 4:
+            continue                                                 # đỉnh vật bị cắt ở mép trên ảnh: không đo được
+        top_u = float(np.median(xs[ys == top]))
+        ray = T[:3, :3] @ camera.ray(top_u, float(top))
+        along = float(ray[:2] @ radial)
+        if along <= 1e-6:
+            continue
+        s = (far - float((T[:2, 3] - np.asarray(eye_xy, float)) @ radial)) / along
+        z = float(T[2, 3] + s * ray[2]) - float(table_z)
+        if s > 0 and 0.005 < z < MAX_HEIGHT_M:
+            heights.append(z)
+    if not heights:
+        return None, 0
+    return float(np.median(heights)), len(heights)

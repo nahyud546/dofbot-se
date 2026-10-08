@@ -56,15 +56,20 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
             if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
                     and -w < b[0] < 2 * w and -h < b[1] < 2 * h and np.hypot(*(a - b)) < max(w, h) / 3):
                 _line(out, a, b, (255, 120, 0), 2)
-    for item, ring in drawn["objects"]:              # vật không phải cube: vết đáy ước lượng trên mặt bàn
-        if not np.isfinite(ring).all():
-            continue
-        for a, b in zip(ring[:-1], ring[1:]):
-            _line(out, a, b, (255, 0, 255), 2)
-        p = _pt(ring[:-1].mean(axis=0))
+    for item, ring, top in drawn["objects"]:         # vật không phải cube: hộp ước lượng (đáy; có chiều cao thì cả hộp)
+        for loop in (ring, top):
+            if loop is not None:
+                for a, b in zip(loop[:-1], loop[1:]):
+                    _line(out, a, b, (255, 0, 255), 2)
+        if top is not None:
+            for a, b in zip(ring[:-1], top[:-1]):
+                _line(out, a, b, (255, 0, 255), 2)
+        anchor = top if top is not None and np.isfinite(top).all() else ring
+        p = _pt(anchor[:-1].mean(axis=0)) if np.isfinite(anchor).all() else None
         if p:
             x, y = item["centre"] * 1000
-            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f} (day uoc luong)", (p[0] - 40, p[1]),
+            tall = "" if not item.get("height_m") else f", cao {item['height_m'] * 1000:.0f}"
+            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f}{tall} (hop uoc luong)", (p[0] - 40, p[1]),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2, cv2.LINE_AA)
     for k, (a, b) in enumerate(drawn["axes"]):
         _line(out, a, b, AXIS_COLOURS[k], 3)

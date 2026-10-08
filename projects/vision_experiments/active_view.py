@@ -35,8 +35,13 @@ READY = [90.0, 125.0, 0.0, 0.0, 90.0]
 # (`j1_valid_range` trong hand_eye.json: 40,3–134,6°); ống kính mở rộng nên vùng thấy được còn rộng hơn khoảng J1 này.
 SCAN_J1 = (42.0, 66.0, 90.0, 114.0, 133.0)
 SCAN_POSES = [[j1, j2, 0.0, 0.0, 90.0] for j2 in (125.0, 110.0) for j1 in SCAN_J1]
+# Vòng xa: camera cao ~24 cm, nghiêng ~51° so với phương thẳng xuống, thấy mặt bàn cách đế ~26–57 cm (652 cm² mỗi
+# khung, gấp 3 vòng gần) và thấy trọn vật cao. Vẫn trong vùng hand-eye (J2 74–135°, J3 0–29°, J4 0–19°).
+# Ở xa thế này tag 20 mm quá nhỏ để đo (luật "lại gần hơn" sẽ từ chối): vòng xa dùng cho mặt cube và vật khác.
+SCAN_FAR = [120.0, 20.0, 0.0]
+SCAN_POSES += [[j1, *SCAN_FAR, 90.0] for j1 in SCAN_J1]
 REGION_INSET_PX = 40.0          # bỏ viền ảnh: ở đó méo lớn và vật thường bị cắt
-REGION_MAX_RANGE_M = 0.45       # tia gần ngang đi rất xa: vùng world không vươn quá tầm này tính từ gốc
+REGION_MAX_RANGE_M = 0.60       # tia gần ngang đi rất xa: vùng world không vươn quá tầm này tính từ gốc
 REGION_CELL_M = 0.004
 MAX_EXTRA_VIEWS = 4
 MIN_NEW_BASELINE_M = 0.03       # pose mới phải dời tâm camera ít nhất chừng này so với mọi pose đã dùng

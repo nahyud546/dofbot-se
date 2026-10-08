@@ -126,7 +126,8 @@ class WorldMap:
         stamp = time.time() if stamp is None else float(stamp)
         self.objects = [{"label": str(item.get("label", "vật")), "polygon": np.asarray(item["polygon"], float),
                          "centre": np.asarray(item["centre"], float), "area_m2": float(item["area_m2"]),
-                         "n_views": int(item["n_views"]), "height_m": item.get("height_m"), "source": source,
+                         "n_views": int(item["n_views"]), "height_m": item.get("height_m"),
+                         "width_m": float(item.get("width_m", 0.0)), "source": source,
                          "stamp": stamp} for item in found if self.inside(item["centre"])]
 
     def forget(self, tag_id: int) -> None:
@@ -223,9 +224,11 @@ class WorldMap:
             out["faces"][cube_id] = px(face["corners"])
             vertices = px(cube_from_tag(face["corners"])["vertices"])
             out["cubes"][cube_id] = [(vertices[a], vertices[b]) for a, b in _CUBE_EDGES]
-        for item in self.objects:
+        for item in self.objects:                          # đáy trên mặt bàn; biết chiều cao thì thêm nắp + cạnh đứng
             ring = np.r_[item["polygon"], item["polygon"][:1]]
-            out["objects"].append((item, px(np.c_[ring, np.full(len(ring), z)])))
+            base = px(np.c_[ring, np.full(len(ring), z)])
+            top = None if not item.get("height_m") else px(np.c_[ring, np.full(len(ring), z + item["height_m"])])
+            out["objects"].append((item, base, top))
         for zone, item in self.zones.items():
             out["zones"][zone] = px([[item["xy"][0], item["xy"][1], z]])[0]
         return out

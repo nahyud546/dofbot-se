@@ -133,6 +133,14 @@ def scan_objects(cal, world, shots, log=print, masks=None) -> None:
     bounds = ((region[:, 0].min(), region[:, 0].max()), (region[:, 1].min(), region[:, 1].max()))
     cubes = [world.entry(i)["centre"][:2] for i in world.cube_ids()]
     found = carve.footprints(views, table_z, bounds, keep_out=cubes)
+    for item in found:
+        # Mọi góc nhìn đều từ phía đế tay máy: vết đáy lẫn "bóng" phía sau vật. Chỉ tin mép gần + bề ngang -> hộp vuông.
+        box = carve.near_side_box(item.pop("cells"))
+        if box is None:
+            continue
+        height, used = carve.height_from_views(box, views, table_z)
+        item.update(shadow=item["polygon"], polygon=box["polygon"], centre=box["centre"],
+                    area_m2=box["width_m"] ** 2, width_m=box["width_m"], height_m=height, height_views=used)
     for item in found:                                          # nhãn: lớp được nhiều góc nhìn gọi nhất tại tâm vật
         names = {}
         for T, instances in votes:
@@ -147,8 +155,9 @@ def scan_objects(cal, world, shots, log=print, masks=None) -> None:
     world.set_objects(found, "wrist-scan")
     for item in world.objects:
         x, y = item["centre"] * 1000
-        log(f"  vật '{item['label']}': đáy ước lượng quanh ({x:+.0f}, {y:+.0f}) mm, ~{item['area_m2'] * 1e4:.0f} cm², "
-            f"{item['n_views']} góc nhìn; chiều cao chưa đo được")
+        tall = "chiều cao chưa đo được" if item["height_m"] is None else f"cao ~{item['height_m'] * 1000:.0f} mm"
+        log(f"  vật '{item['label']}': hộp ước lượng tâm ({x:+.0f}, {y:+.0f}) mm, ngang ~{item['width_m'] * 1000:.0f} mm, "
+            f"{tall}, {item['n_views']} góc nhìn")
 
 
 def scan_faces(cal, world, shots, log=print) -> None:
@@ -210,7 +219,7 @@ def cmd_scan(args):
         keep = default_path().parent / "scan" / time.strftime("%Y%m%d-%H%M%S")
         world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around,
                      use_plane=not args.no_plane, faces=not args.no_faces, keep_dir=keep,
-                     objects=not args.no_objects)
+                     objects=args.objects)
     add_fixed_cameras(world)
     sure = sum(1 for t in world.tags.values() if t["sure"])
     print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn), {len(world.faces)} cube nhận bằng mặt khác, "
@@ -449,8 +458,9 @@ def cmd_show(_args):
               f"{now - face['stamp']:.0f} s trước")
     for item in world.objects:
         x, y = item["centre"] * 1000
-        print(f"  vật '{item['label']}': đáy ước lượng quanh ({x:+.0f}, {y:+.0f}) mm, ~{item['area_m2'] * 1e4:.0f} cm², "
-              f"{item['n_views']} góc nhìn, chiều cao chưa đo được, {now - item['stamp']:.0f} s trước")
+        tall = "chiều cao chưa đo được" if item.get("height_m") is None else f"cao ~{item['height_m'] * 1000:.0f} mm"
+        print(f"  vật '{item['label']}': hộp ước lượng tâm ({x:+.0f}, {y:+.0f}) mm, ngang ~{item.get('width_m', 0) * 1000:.0f} mm, "
+              f"{tall}, {item['n_views']} góc nhìn, {now - item['stamp']:.0f} s trước")
     for name, cam in world.cameras.items():
         x, y, z = cam["world_T_optical"][:3, 3] * 1000
         print(f"  camera {name}: ({x:+.0f}, {y:+.0f}, {z:+.0f}) mm")
@@ -475,7 +485,9 @@ def main():
     ap.add_argument("--once", action="store_true", help="với --watch: ghi một lần nhìn rồi thoát")
     ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
     ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
-    ap.add_argument("--no-objects", action="store_true", help="với --scan: không dựng vật khác cube (cốc, hộp...)")
+    ap.add_argument("--objects", action="store_true",
+                    help="với --scan (THỬ NGHIỆM, cần .venv): thêm vật khác cube thành hộp ước lượng. Đo thật với một "
+                         "cốc: hộp lệch vài cm và chiều cao sai, vì chưa có pose nào thấy trọn cả đáy lẫn đỉnh vật")
     ap.add_argument("--no-faces", action="store_true",
                     help="chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()

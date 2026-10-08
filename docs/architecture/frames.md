@@ -217,18 +217,22 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
 
 ## Vùng world, cube nhận bằng mặt khác, vật bất kỳ (2026-10-08)
 
-- **Vùng world** = hợp các vết nhìn của bộ pose quét trên mặt bàn (`active_view.scan_region`, 10 pose: J1 = 42, 66,
-  90, 114, 133° × J2 = 124, 110°, J3 = J4 = 0). Đo được 844 cm², hình quạt bán kính ~12–32 cm quanh đế. Lưu trong
-  world (`region`); cube/vật có tâm ngoài vùng (quá viền 15 mm) không được ghi; lưới chỉ vẽ trong vùng. J1 giữ trong
-  `j1_valid_range` của hand-eye (40,3–134,6°): muốn rộng hơn phải hiệu chuẩn lại hand-eye trước.
+- **Vùng world** = hợp các vết nhìn của bộ pose quét trên mặt bàn (`active_view.scan_region`), 15 pose:
+  vòng gần J2 = 125 và 110 (J3 = J4 = 0; camera cao 18–20 cm, thấy 13–32 cm quanh đế) và vòng xa
+  J2 = 120, J3 = 20 (camera cao ~24 cm, nghiêng 51°, thấy 26–57 cm), mỗi vòng J1 = 42, 66, 90, 114, 133°.
+  Đo được 2952 cm² (chỉ vòng gần: 844 cm²). Lưu trong world (`region`); cube/vật có tâm ngoài vùng (quá viền 15 mm)
+  không được ghi; lưới chỉ vẽ trong vùng. Mọi pose nằm trong vùng hand-eye (J1 40–135°, J2 74–135°, J3 0–29°,
+  J4 0–19°). Ở vòng xa tag 20 mm quá nhỏ để đo: vòng xa phục vụ mặt cube và vật khác.
 - **Cube không ngửa tag**: `Identifier(FULL)` cho 4 góc mặt trên (màu hoặc hình in) → `multiview.flat_face` thử 8 thứ
   tự góc × 4 tầng với mặt 30 mm nằm phẳng. Đo thật: đúng tầng lệch 1,8–4,6 px, sai tầng 13–21 px, nên tầng tự phân
   biệt được. Ghi vào `faces` của world (không làm mốc định vị cho camera khác; tag đọc được thì tag thắng). Vị trí
   cùng cube giữa `--scan` và `--watch` lệch ≤ 2 mm. **Cần đủ sáng**: ở độ sáng 63/255 không nhận được, ở 154 nhận đủ.
   Tốc độ nhận mặt: 0,7 s/khung bằng `.venv` (GPU), ~4 s bằng python hệ thống (CPU).
-- **Vật khác cube** (`build_world.py --scan` chạy bằng `.venv`): YOLOE cho mặt nạ từng khung quét, `cube_vision/carve.py`
-  giao các "bóng" trên mặt bàn thành vết đáy. Đo thật với một cốc Ø ~8 cm: có trong world với nhãn `cup`, nhưng vết
-  đáy to hơn thật (~116 cm² so với ~50 cm²) và **chiều cao chưa đo được**: camera tay chỉ cao 15–20 cm nên vật cao
-  luôn bị cắt ở mép ảnh, và mọi góc nhìn đều từ cùng một phía. Cách thuần hình học (so ảnh nắn về mặt bàn giữa các góc
-  nhìn) đã thử và không dùng được: chỉ 28 % ô được ≥ 2 góc nhìn thấy, và tự phơi sáng làm ô màu phẳng bị báo nhầm.
-
+- **Vật khác cube** (THỬ NGHIỆM, `build_world.py --scan --objects` bằng `.venv`): YOLOE cho mặt nạ từng khung quét,
+  `cube_vision/carve.py` giao các "bóng" trên mặt bàn, lấy mép gần + bề ngang thành hộp vuông, chiều cao từ khung
+  thấy trọn đỉnh vật. Trong giả lập (vật nằm trọn trong mọi khung) tâm lệch < 12 mm, cao lệch < 20 mm. **Trên tay
+  thật chưa đạt**: với một cốc Ø ~8 cm cao ~9,5 cm, hộp lệch vài cm và cao ra 59 mm. Nguyên nhân đo được: khung
+  vòng gần cắt mất đỉnh cốc, khung vòng xa cắt mất đáy, và YOLOE chỉ nhận cốc ở 3/15 khung, nên không có ≥ 2 khung
+  cùng thấy đáy. Việc còn thiếu: khi thấy một vật thì tự chọn pose đưa vật vào GIỮA khung (như `next_view` làm cho
+  tag) rồi mới dựng hình. Cách thuần hình học (so ảnh nắn về mặt bàn) cũng đã thử và không dùng được: tự phơi sáng
+  làm ô màu phẳng bị báo nhầm.
