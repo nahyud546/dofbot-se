@@ -27,6 +27,7 @@ RATIO = 0.75                  # tỉ lệ Lowe: khớp tốt nhất phải hơn 
 MIN_HEIGHT_M = 0.012          # thấp hơn mức này coi là hình in trên thảm / nhiễu độ sâu
 CLUSTER_CELL_M = 0.01
 MIN_CLUSTER_POINTS = 25
+MIN_CLUSTER_SHARE = 0.05      # cụm phải có ít nhất chừng này phần số điểm của cụm lớn nhất
 MIN_CELL_POINTS = 3           # ô lưới gom cụm phải có chừng này điểm mới tính là thuộc vật
 CUBE_KEEP_OUT_M = 0.035
 CIRCLE_TOL_M = 0.004
@@ -157,9 +158,23 @@ def fit_shape(points, table_z: float, eye_xy=(0.0, 0.0)) -> dict:
             return {"shape": "cylinder", "centre": centre, "polygon": polygon, "width_m": 2.0 * radius,
                     "height_m": height, "fit": f"cung tròn {arc:.0f}°, {inliers.mean() * 100:.0f}% điểm khớp trong "
                                                f"{CIRCLE_TOL_M * 1000:.0f} mm"}
-    (cx, cy), (w, h), angle = cv2.minAreaRect((xy * 1000.0).astype(np.float32))
-    box = cv2.boxPoints(((cx, cy), (w, h), angle)) / 1000.0
-    return {"shape": "box", "centre": np.array([cx, cy]) / 1000.0, "polygon": box, "width_m": max(w, h) / 1000.0,
+    # Hộp: thử mọi hướng xoay, lấy hướng cho hộp NHỎ nhất, bề rộng theo phân vị 3–97 % để vài điểm lạc không kéo giãn
+    # hộp. (Trục chính PCA không dùng được: đám điểm gần vuông thì trục chính quay tùy ý, hộp ra hình thoi.)
+    best = None
+    for angle in np.radians(np.arange(0.0, 90.0, 3.0)):
+        axes = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+        along = xy @ axes.T
+        lo, hi = np.percentile(along, 3, axis=0), np.percentile(along, 97, axis=0)
+        area = float(np.prod(hi - lo))
+        if best is None or area < best[0]:
+            best = (area, axes, lo, hi)
+    _, axes, lo, hi = best
+    centre = ((lo + hi) / 2.0) @ axes
+    half = (hi - lo) / 2.0
+    box = np.array([centre + (a * half[0]) * axes[0] + (b * half[1]) * axes[1]
+                    for a, b in ((-1, -1), (1, -1), (1, 1), (-1, 1))])
+    w, h = float(2 * half[0]) * 1000.0, float(2 * half[1]) * 1000.0
+    return {"shape": "box", "centre": centre, "polygon": box, "width_m": max(w, h) / 1000.0,
             "height_m": height, "fit": f"hộp bao phần nhìn thấy {max(w, h):.0f} x {min(w, h):.0f} mm"}
 
 
@@ -173,19 +188,26 @@ def objects(cloud: dict, table_z: float, keep_out=(), inside=None, eye_xy=(0.0, 
     points, colours, pairs = points[keep], colours[keep], pairs[keep]
     if len(points) < MIN_CLUSTER_POINTS:
         return []
-    cells = np.floor(points[:, :2] / CLUSTER_CELL_M).astype(int)
+    # Gom cụm trong lưới 3D (không phải trên mặt bàn): hai vật cao đứng cạnh nhau thường bị nối bởi vài điểm thấp
+    # nằm giữa (quai cốc, hình in bị đo lệch độ cao); trong 3D chúng chỉ chạm nhau ở sát bàn nên tách được.
+    from scipy import ndimage
+    cells = np.floor(points / CLUSTER_CELL_M).astype(int)
     low = cells.min(axis=0)
     counts = np.zeros(tuple(cells.max(axis=0) - low + 1), np.int32)
     np.add.at(counts, tuple((cells - low).T), 1)
-    # Ô chỉ có một hai điểm lẻ là khớp nhầm: không cho chúng bắc cầu giữa hai vật. Vật thật cho ô dày điểm.
-    dense = (counts >= MIN_CELL_POINTS).astype(np.uint8)
-    _, labels = cv2.connectedComponents(dense, connectivity=8)
+    # Ô chỉ có vài điểm lẻ là khớp nhầm: không cho chúng bắc cầu giữa hai vật. Đám mây càng dày (nhiều khung) thì
+    # ngưỡng càng cao: lấy theo ô điển hình của chính đám mây đó.
+    threshold = max(MIN_CELL_POINTS, int(np.percentile(counts[counts > 0], 50)))
+    labels, _ = ndimage.label(counts >= threshold, structure=np.ones((3, 3, 3)))
     of_point = labels[tuple((cells - low).T)]
     points, colours, pairs, of_point = (v[of_point > 0] for v in (points, colours, pairs, of_point))
     found = []
-    for label in np.unique(of_point):
+    sizes = {int(label): int((of_point == label).sum()) for label in np.unique(of_point)}
+    # Cụm quá ít điểm so với vật rõ nhất là chưa đủ dữ liệu để gọi là một vật (dây cáp, mảng nhiễu).
+    enough = max(MIN_CLUSTER_POINTS, int(MIN_CLUSTER_SHARE * max(sizes.values(), default=0)))
+    for label in sizes:
         sel = of_point == label
-        if sel.sum() < MIN_CLUSTER_POINTS:
+        if sizes[label] < enough:
             continue
         shape = fit_shape(points[sel], table_z, eye_xy)
         if inside is not None and not inside(shape["centre"]):

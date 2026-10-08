@@ -236,8 +236,13 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
   cung tròn (hoặc nhãn YOLOE là cốc/lon/chai) → hình trụ, mặt gần lấy từ đám điểm, đường kính lấy từ viền vật trong
   ảnh (YOLOE, cần `.venv`); còn lại → hộp bao **phần nhìn thấy**. World lưu `objects`: hình, tâm, đa giác đáy, chiều
   cao, và tối đa 400 điểm 3D + màu của từng vật.
-  Kết quả với cốc Ø ~7–8 cm: hai lần quét cho tâm (-177, -123) và (-171, -125) mm, cao 106 và 108 mm, đường kính
-  70 và 56 mm (dao động vì YOLOE lúc nhận 4 khung lúc 1 khung). Chưa đối chiếu bằng thước.
+  **Tay tự nhìn quanh vật** (`active_view.object_views`, `build_world.look_at_objects`): sau lượt dựng đầu, với tối đa
+  3 vật nhiều điểm nhất, tay đi 8 pose an toàn trong vùng hand-eye có vật nằm giữa khung và tâm camera trải xa nhau
+  (≥ 2 cm từng cặp), rồi dựng lại từ tất cả khung. Đo thật 2026-10-08: 15 khung quét → 1148 điểm; thêm 16 khung
+  quanh hai vật → 13 574 điểm. Gom cụm trong lưới 3D 1 cm (trên mặt bàn thì cốc và gói khăn bị quai cốc nối liền).
+  Cốc: trụ Ø 76 mm, cao 103 mm, tâm (-195, -127) mm, 5641 điểm từ 23 khung; vẽ đè lên 31 khung đều ôm đúng thân và
+  miệng cốc. Gói khăn giấy: hộp 81 × 71 mm cao 80 mm, chỉ bao phần có chữ in (phần trơn không có điểm). Trước khi có
+  bước nhìn quanh, hai lần quét cho cốc Ø 56 và 70 mm, cao 106 và 108 mm. Chưa đối chiếu bằng thước.
   Giới hạn: chỉ có điểm ở chỗ có hoa văn (mặt trơn một màu thì không); độ sâu nhiễu vài mm vì hai khung chỉ cách
   nhau 2–5 cm; chỉ thấy mặt quay về phía đế, nên vật dạng hộp mới có mặt trước (gói khăn giấy ra hộp 77 × 14 mm);
   bằng python hệ thống (không có YOLOE) vật không có tên và hình trụ hẹp hơn thật.
