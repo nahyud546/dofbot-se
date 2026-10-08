@@ -53,6 +53,8 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
 - **Tọa độ cube không lấy từ TF của perception** (thường `None`). `t8_ros_scene_worker` tự tính XY + tầng từ pixel +
   khớp thật + hand-eye (`vision_experiments/cube_layer.locate_cube`, `gravity_pose` khi chỉ thấy một mặt), nên chạy được
   từ pose bất kỳ chứ không buộc READY_POSE.
+- **Hệ tọa độ** khai báo một chỗ: `vision_experiments/dofbot_frames.py` (đồ thị `world`/`base_link`/…/camera), toán ở
+  `cube_vision/frames.py`, ghi chú ở `docs/architecture/frames.md`. Quy ước `a_T_b`: điểm hệ b → hệ a.
 - **`projects/cube_vision/`** là thư viện độc lập: không được import T8 hay ROS. Robot cụ thể đi vào qua tham số
   (`ZoneLayout`, `arm.execute("look")`, `scene.zone_survey`). T8 nối vào bằng adapter mỏng (`t8_pipeline/zone_survey.py`).
 - **`projects/vision_experiments/` và `projects/t8_pipeline/`** là module phẳng, import nhau bằng tên trần

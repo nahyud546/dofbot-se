@@ -244,7 +244,6 @@ def solve(points, pixels, image_size, groups=None, holdout_every=5):
             "fit_rms_px": rms, "n_points": int(len(points)), "n_groups": len(order),
             "holdout_px": [float(v) for v in holdout_px], "holdout_m": [float(v) for v in holdout_m],
             "cv_m": [float(v) for v in cv_m],
-            "cv_m": [float(v) for v in cv_m],
             "z_levels_m": [round(l * 0.01, 3) for l in levels],
             "accepted": not reasons, "reasons": reasons}
 
