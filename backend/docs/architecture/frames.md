@@ -295,4 +295,12 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
   Còn lại: bịch khăn giấy thật không được bộ tách vật nhận ra trên khung iPhone (không có quan sát nào ở chỗ nó),
   nên nó không tự đi theo; và chưa so MÀU của mặt nạ với màu vật đã quét, nên một vật lạ cùng cỡ vẫn có thể bị nhận
   nhầm. Vị trí vật khi đi theo là NỘI SUY từ mép gần + bề ngang của mặt nạ, không phải đo lại hình dạng.
+- **Lần chạy thứ hai (2026-10-08 16:54), bản sửa trên KHÔNG đủ**: hộp bịch khăn vẫn bị kéo về (-151, -37) mm trong
+  14 s sau khi quét. Lý do: lượt quét đó không ghi được cube lục vào world (world chỉ có cube 1, 3, 4) nên `not_cubes`
+  không có gì để loại, và iPhone gọi cube lục là `box` (0,22) đều đặn mọi khung nên luật "3 lần thấy" cũng qua.
+  Sửa: một camera chỉ được dời vật mà chính nó ĐÃ BẮT ĐƯỢC tại chỗ đang ghi (trong 6 cm, `ANCHOR_M`, `Follower.anchors`,
+  khóa theo từng camera); file phụ của iPhone kèm tâm các cube iPhone tự thấy (`cubes`) để `merge_seen` loại cả chúng.
+  Hệ quả: vật mà iPhone không tách được tại chỗ (bịch khăn) đứng yên rồi chuyển xám, không bị đoán. Chưa chạy lại
+  trên iPhone thật. Trong cả hai lần chạy, world chỉ ghi `moved_by: phone`: nhánh gộp hai camera (giao đường ngắm /
+  hai phía đối diện) CHƯA lần nào chạy trên phần cứng thật, mới qua test giả lập.
 

@@ -228,8 +228,10 @@ class SeenJob:
                 self.note = (f"vat thay {len(observations)}" + (f", doi {moved}" if moved else "")
                              + (f", cube mat mau {sorted(cubes)}" if cubes else ""))
                 tmp = self.path.with_suffix(".tmp")
+                here = [fit["centre"] for fit, _, _ in list(self.live.face_cubes.values())] + list(self.live.live_cubes)
                 tmp.write_text(json.dumps({"stamp": time.time(), "camera": self.camera,
-                                           "objects": [OT.to_json(o) for o in observations]}))
+                                           "objects": [OT.to_json(o) for o in observations],
+                                           "cubes": [np.asarray(c, float)[:2].tolist() for c in here]}))
                 tmp.replace(self.path)
             except Exception as exc:  # noqa: BLE001
                 self.note = f"loi tim vat: {exc}"[:60]

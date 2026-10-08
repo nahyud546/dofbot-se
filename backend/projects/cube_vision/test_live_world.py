@@ -285,6 +285,10 @@ class LiveCarriesEverything(unittest.TestCase):
         self.assertTrue(live.update(see(TAGS, TRUE_POSE))["ok"])
         seen = {"label": "cup", "centre": np.array([-0.30, -0.12]), "width_m": 0.07, "near_ok": True, "side_ok": True,
                 "eye": np.zeros(2), "bearing": np.array([1.0, 0.0])}
+        for _ in range(4):                                                            # chưa từng thấy tại chỗ: không dời
+            time.sleep(0.01)
+            self.assertEqual(live.see_objects([seen]), [])
+        self.assertEqual(live.see_objects([dict(seen, centre=np.array([-0.21, -0.10]))]), [])   # bắt được tại chỗ
         self.assertEqual(live.see_objects([seen]), [])                                # một lần thấy chưa đủ để dời
         time.sleep(0.01)
         live.see_objects([seen])

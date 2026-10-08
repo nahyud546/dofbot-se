@@ -25,6 +25,7 @@ CUBE_GATE_M = 0.05            # quan sát có tâm cách một cube dưới mứ
 CONFIRM_SIGHTINGS = 3         # phải thấy vật ở chỗ mới chừng này lần...
 CONFIRM_WINDOW_S = 2.5        # ...trong chừng này giây...
 CONFIRM_SPREAD_M = 0.03       # ...và các lần đó thống nhất trong mức này, mới dời vật
+ANCHOR_M = 0.06               # camera phải từng thấy vật trong tầm này quanh CHỖ ĐANG GHI thì mới được dời vật đó
 SIZE_RATIO = (0.5, 2.0)       # bề ngang quan sát / bề ngang đã đo phải trong khoảng này mới là cùng một vật
 MIN_STEREO_ANGLE_DEG = 20.0   # hai đường ngắm lệch nhau ít hơn mức này thì giao điểm không ổn: lấy trung bình
 ROUND_LABELS = ("cup", "mug", "bottle", "can")
@@ -155,18 +156,32 @@ class Follower:
     """Chỉ cho vật dời khi chỗ mới được thấy LẶP LẠI và thống nhất; tâm mới là trung vị của các lần thấy đó.
 
     Một mặt nạ sai của một khung (nhận nhầm vật khác, mặt nạ dính hai vật) không còn kéo vật đi, và vật đứng yên
-    không còn nhảy theo nhiễu của từng khung."""
+    không còn nhảy theo nhiễu của từng khung.
+
+    Camera còn phải BẮT ĐƯỢC vật tại chỗ đang ghi trước đã (`ANCHOR_M`), rồi mới được dời nó. Đo thật 2026-10-08:
+    iPhone không tách được bịch khăn giấy ở chỗ của nó, nhưng gọi cube lục cách đó 16 cm là "box" đều đặn mọi khung,
+    nên luật "thấy lặp lại" không chặn được: hộp bịch khăn vẫn bị kéo về cube. Vật mà camera này chưa từng thấy tại
+    chỗ thì đứng yên (rồi chuyển xám), không đoán.
+
+    `index` là khóa bất kỳ băm được: nhiều camera dùng chung một Follower thì dùng khóa (camera, chỉ số vật)."""
 
     def __init__(self):
-        self.sightings = {}       # {chỉ số vật: [(thời điểm, tâm)]} các lần thấy vật ở CHỖ KHÁC chỗ đang ghi
+        self.sightings = {}       # {khóa vật: [(thời điểm, tâm)]} các lần thấy vật ở CHỖ KHÁC chỗ đang ghi
+        self.anchors = {}         # {khóa vật: tâm đang ghi lúc camera bắt được vật tại chỗ}
 
-    def confirmed(self, index: int, centre, current, now: float | None = None):
+    def confirmed(self, index, centre, current, now: float | None = None):
         """Ghi một lần thấy vật `index` ở `centre`; trả tâm mới (trung vị) khi đã đủ xác nhận để dời, không thì None."""
         now = time.time() if now is None else float(now)
-        centre = np.asarray(centre, float)[:2]
-        if np.linalg.norm(centre - np.asarray(current, float)[:2]) <= MOVED_M:
+        centre, current = np.asarray(centre, float)[:2], np.asarray(current, float)[:2]
+        gap = float(np.linalg.norm(centre - current))
+        if gap <= ANCHOR_M:
+            self.anchors[index] = current.copy()
+        if gap <= MOVED_M:
             self.sightings.pop(index, None)                         # vẫn ở chỗ cũ: xóa mọi nghi ngờ đã tích
             return None
+        anchor = self.anchors.get(index)
+        if anchor is None or np.linalg.norm(anchor - current) > MOVED_M:
+            return None                                             # chưa từng bắt được vật này tại chỗ đang ghi
         seen = [(t, c) for t, c in self.sightings.get(index, []) if now - t <= CONFIRM_WINDOW_S]
         if seen and seen[-1][0] == now:
             return None                                             # cùng một quan sát được đọc lại: không tính hai lần
@@ -179,6 +194,7 @@ class Follower:
         if np.max(np.linalg.norm(recent - median, axis=1)) > CONFIRM_SPREAD_M:
             return None                                             # các lần thấy chưa thống nhất: chờ thêm
         self.sightings.pop(index, None)
+        self.anchors[index] = median.copy()
         return median
 
 
@@ -215,18 +231,19 @@ def moved_copy(item: dict, centre, source: str, stamp: float | None = None) -> d
 
 
 def relocate(objects, observations, source: str, stamp: float | None = None, follower: Follower | None = None,
-             cubes=()):
+             cubes=(), keys=None):
     """Áp các quan sát của MỘT camera lên danh sách vật. Trả (danh sách vật mới, [chỉ số vật đã dời], {chỉ số: quan sát}).
 
     follower: có thì vật chỉ dời sau khi chỗ mới được xác nhận nhiều lần (nên dùng với luồng camera sống).
-    cubes: tâm các cube đã biết; quan sát trùng chỗ cube bị bỏ."""
+    cubes: tâm các cube đã biết; quan sát trùng chỗ cube bị bỏ. keys: khóa của từng vật trong follower (mặc định
+    là chỉ số trong `objects`)."""
     matched = match(objects, not_cubes(observations, cubes))
     out, moved = list(objects), []
     now = time.time() if stamp is None else float(stamp)
     for index, obs in matched.items():
         current = np.asarray(objects[index]["centre"], float)[:2]
         if follower is not None:
-            target = follower.confirmed(index, obs["centre"], current, now)
+            target = follower.confirmed(index if keys is None else keys[index], obs["centre"], current, now)
         else:
             target = obs["centre"] if np.linalg.norm(np.asarray(obs["centre"], float) - current) > MOVED_M else None
         if target is not None:

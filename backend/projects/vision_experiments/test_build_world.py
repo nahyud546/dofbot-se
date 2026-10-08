@@ -99,7 +99,28 @@ class MergeSeen(unittest.TestCase):
                                   follower=self.follower, now=self.clock)
         return lines
 
+    def in_place(self, wrist=False):
+        """Camera bắt được vật tại chỗ đang ghi: điều kiện để sau đó được dời nó."""
+        here = self.world.objects[0]["centre"]
+        self.assertEqual(self.looks(wrist=self.wrist(here), times=1) if wrist else self.looks(self.phone(here), times=1), [])
+
+    def test_an_object_this_camera_never_saw_in_place_is_not_moved_by_it(self):
+        self.world.set_objects([dict(self.T.cup_item([-0.31, -0.07]), label="box", shape="box")], "wrist-scan")
+        seen = self.phone([-0.150, -0.046], label="box")       # cube lục KHÔNG có trong world, bị gọi là "box" mọi khung
+        self.assertEqual(self.looks(seen, times=8), [])
+        np.testing.assert_allclose(self.world.objects[0]["centre"], [-0.31, -0.07])
+
+    def test_a_cube_only_the_phone_sees_is_not_an_object(self):
+        self.in_place()
+        seen = self.OT.to_json(dict(self.phone([-0.27, 0.05]), stamp=self.clock + 0.4))
+        for _ in range(5):
+            self.clock += 0.4
+            self.path.write_text(self.json.dumps({"stamp": self.clock, "camera": "phone", "cubes": [[-0.27, 0.06]],
+                                                  "objects": [dict(seen, stamp=self.clock)]}))
+            self.assertEqual(B.merge_seen(self.world, [], follower=self.follower, now=self.clock), [])
+
     def test_the_cup_follows_what_the_phone_sees_and_keeps_its_shape(self):
+        self.in_place()
         self.assertEqual(self.looks(self.phone([-0.27, 0.05]), times=2), [])       # hai lần thấy chưa đủ để dời
         lines = self.looks(self.phone([-0.27, 0.05]), times=1)
         self.assertEqual(len(lines), 1)
@@ -135,16 +156,19 @@ class MergeSeen(unittest.TestCase):
 
     def test_phone_and_wrist_together_intersect_their_sight_lines(self):
         truth = [-0.25, -0.02]                                                     # iPhone chếch một bên, đoán xa sai 4 cm
+        self.in_place()
         lines = self.looks(self.phone(truth, eye=[-0.30, 0.40, 0.35], range_error=0.04), self.wrist(truth, whole=False))
         self.assertIn("giao hai đường ngắm", lines[0])
         self.assertLess(np.linalg.norm(self.world.objects[0]["centre"] - truth), 0.01)
 
     def test_phone_facing_the_arm_and_wrist_take_the_middle_of_the_two_near_edges(self):
         truth = [-0.25, -0.02]
+        self.in_place()
         lines = self.looks(self.phone(truth, range_error=0.04), self.wrist(truth))
         self.assertIn("hai phía đối diện", lines[0])
         self.assertLess(np.linalg.norm(self.world.objects[0]["centre"] - truth), 0.01)
 
     def test_the_wrist_alone_moves_an_object_only_when_it_sees_it_whole(self):
+        self.in_place(wrist=True)
         self.assertEqual(self.looks(wrist=self.wrist([-0.24, -0.02], whole=False)), [])
         self.assertEqual(len(self.looks(wrist=self.wrist([-0.24, -0.02]))), 1)

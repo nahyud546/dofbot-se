@@ -299,11 +299,12 @@ def merge_seen(world, wrist_seen, camera: str = "phone", follower=None, now=None
     from cube_vision.world_overlay import seen_path
     if not world.objects:
         return []
-    now, phone_seen = (time.time() if now is None else float(now)), []
+    now, phone_seen, phone_cubes = (time.time() if now is None else float(now)), [], []
     try:
         data = json.loads(seen_path(camera).read_text())
         if now - float(data.get("stamp", 0.0)) <= SEEN_FRESH_S:
             phone_seen = [OT.from_json(o) for o in data.get("objects", [])]
+            phone_cubes = [np.asarray(c, float) for c in data.get("cubes", [])]
     except (OSError, ValueError, TypeError):
         pass
     wrist_seen = [o for o in wrist_seen if now - float(o.get("stamp", 0.0)) <= SEEN_FRESH_S]
@@ -312,7 +313,7 @@ def merge_seen(world, wrist_seen, camera: str = "phone", follower=None, now=None
         if not _FOLLOWER:
             _FOLLOWER.append(OT.Follower())
         follower = _FOLLOWER[0]
-    cubes = [world.entry(i)["centre"] for i in world.cube_ids()]
+    cubes = [world.entry(i)["centre"] for i in world.cube_ids()] + phone_cubes   # cả cube chỉ iPhone đang thấy
     phone_seen, wrist_seen = OT.not_cubes(phone_seen, cubes), OT.not_cubes(wrist_seen, cubes)
     matched = OT.match(world.objects, phone_seen)
     for index, seen in matched.items():
@@ -328,7 +329,7 @@ def merge_seen(world, wrist_seen, camera: str = "phone", follower=None, now=None
                 break
         if np.linalg.norm(centre - item["centre"][:2]) <= OT.MOVED_M:
             item["seen_stamp"] = now                            # camera vừa xác nhận vật còn ở chỗ đang ghi
-        centre = follower.confirmed(index, centre, item["centre"], seen.get("stamp", now))
+        centre = follower.confirmed((camera, index), centre, item["centre"], seen.get("stamp", now))
         if centre is not None and world.inside(centre):
             x0, y0 = item["centre"][:2] * 1000
             world.objects[index] = OT.moved_copy(item, centre, how)
@@ -339,7 +340,7 @@ def merge_seen(world, wrist_seen, camera: str = "phone", follower=None, now=None
     if whole and free:
         stamp = max(float(o.get("stamp", now)) for o in whole)
         updated, moved, _ = OT.relocate([world.objects[i] for i in free], whole, "camera tay", stamp=stamp,
-                                        follower=follower)
+                                        follower=follower, keys=[("wrist", i) for i in free])
         for k in moved:
             if world.inside(updated[k]["centre"]):
                 item = world.objects[free[k]]
