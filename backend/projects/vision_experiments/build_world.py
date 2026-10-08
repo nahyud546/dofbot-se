@@ -112,7 +112,7 @@ def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=
             extra = look_at_objects(session, found, frames, log, keep_dir)
             if extra:
                 log(f"Dựng lại vật với {extra} khung chụp thêm quanh vật:")
-                scan_objects(session.cal, world, frames, log)
+                scan_objects(session.cal, world, frames, log, strict=True)
     return world
 
 
@@ -153,14 +153,17 @@ def look_at_objects(session, found, frames, log=print, keep_dir=None) -> int:
 _LABELLER = []                  # YOLOE nạp một lần cho cả hai lượt dựng vật
 
 
-def scan_objects(cal, world, frames, log=print, labeller=None) -> list:
+def scan_objects(cal, world, frames, log=print, labeller=None, strict=False) -> list:
     """Vật không phải cube: nối các khung quét thành đám mây điểm 3D (`cube_vision.pointcloud`), tách cụm, khớp hình.
 
     labeller: tùy chọn, có `.detect(khung) -> [(nhãn, độ tin, mặt nạ)]` (YOLOE) để đặt tên vật; không có thì "vật".
     """
     from cube_vision import pointcloud as PC
     camera, table_z = A.wrist_camera(cal), float(cal["tag_top_z"]) - 0.030
-    cloud = PC.triangulate(frames)
+    # Lượt đầu (ít khung, chồng nhau ít) chỉ để biết vật ở đâu mà nhìn quanh: chấp nhận điểm từ 2 khung. Lượt cuối
+    # (strict) có khung dày quanh vật: chỉ giữ điểm được ≥ 3 khung xác nhận với thị sai ≥ 6°, đám điểm gọn hơn nhiều
+    # (đo thật: mặt trước bịch khăn nhòe 79 mm dọc hướng nhìn còn 24 mm).
+    cloud = PC.triangulate(frames, min_frames=3, min_parallax_deg=6.0) if strict else PC.triangulate(frames)
     cubes = [world.entry(i)["centre"][:2] for i in world.cube_ids()]
     found = PC.objects(cloud, table_z, cubes, world.inside)
     log(f"Đám mây điểm từ {len(frames)} khung: {len(cloud['points'])} điểm 3D, {len(found)} vật khác cube.")

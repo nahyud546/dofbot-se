@@ -27,7 +27,7 @@ RATIO = 0.75                  # tỉ lệ Lowe: khớp tốt nhất phải hơn 
 MIN_HEIGHT_M = 0.012          # thấp hơn mức này coi là hình in trên thảm / nhiễu độ sâu
 CLUSTER_CELL_M = 0.01
 MIN_CLUSTER_POINTS = 25
-MIN_CLUSTER_SHARE = 0.05      # cụm phải có ít nhất chừng này phần số điểm của cụm lớn nhất
+MIN_CLUSTER_SHARE = 0.10      # cụm phải có ít nhất chừng này phần số điểm của cụm lớn nhất
 MIN_CELL_POINTS = 3           # ô lưới gom cụm phải có chừng này điểm mới tính là thuộc vật
 CUBE_KEEP_OUT_M = 0.035
 CIRCLE_TOL_M = 0.004
@@ -35,9 +35,17 @@ CIRCLE_RADIUS_M = (0.015, 0.09)
 MAX_STORED_POINTS = 400
 
 
-def triangulate(frames) -> dict:
+def triangulate(frames, min_frames: int = 2, min_parallax_deg: float = MIN_PARALLAX_DEG,
+                max_miss_m: float = MAX_RAY_MISS_M) -> dict:
     """frames: [(ảnh BGR, CameraModel, a_T_optical)]. Trả {"points" (N,3) trong hệ a, "colours" (N,3) BGR,
-    "pairs" (N,2) chỉ số hai khung sinh ra điểm, "miss_m" (N,)}."""
+    "pairs" (N,2) hai khung đầu thấy điểm, "n_frames" (N,) số khung thấy điểm, "miss_m" (N,)}.
+
+    Mỗi điểm là một VỆT: cùng một đặc trưng được khớp qua nhiều khung (nối các cặp khớp hợp hình học lại), rồi giải
+    MỘT vị trí từ mọi tia của vệt. `min_frames` ≥ 3 làm điểm chắc hơn hẳn giao hai tia: hai khung cách nhau 2–5 cm
+    nhìn vật ở 30 cm cho độ sâu nhiễu cỡ cm (đo thật: mặt trước bịch khăn nhòe 79 mm dọc hướng nhìn); nhiều khung thì
+    đường đáy dài hơn và điểm khớp nhầm bị lộ vì không tia nào đồng quy. `min_parallax_deg`: góc lớn nhất giữa hai
+    tia của vệt phải đạt mức này.
+    """
     sift = cv2.SIFT_create(4000, contrastThreshold=0.02)
     feats = []
     for image, camera, a_T_optical in frames:
@@ -46,10 +54,18 @@ def triangulate(frames) -> dict:
         pixels = np.array([kp.pt for kp in keypoints]).reshape(-1, 2)
         rays = np.array([T[:3, :3] @ camera.ray(u, v) for u, v in pixels]).reshape(-1, 3)
         feats.append((pixels, descriptors, rays, T[:3, 3], image))
+    offsets = np.cumsum([0] + [len(f[0]) for f in feats])
+    parent = np.arange(offsets[-1])
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
     matcher = cv2.BFMatcher()
-    points, colours, pairs, misses = [], [], [], []
     for i, j in itertools.combinations(range(len(feats)), 2):
-        (px_i, des_i, rays_i, eye_i, image_i), (_, des_j, rays_j, eye_j, _) = feats[i], feats[j]
+        (_, des_i, rays_i, eye_i, _), (_, des_j, rays_j, eye_j, _) = feats[i], feats[j]
         if des_i is None or des_j is None or len(des_i) < 2 or len(des_j) < 2:
             continue
         if np.linalg.norm(eye_i - eye_j) < MIN_BASELINE_M:
@@ -58,29 +74,62 @@ def triangulate(frames) -> dict:
                 if len(m) == 2 and m[0].distance < RATIO * m[1].distance]
         if len(good) < 8:
             continue
-        qi = np.array([m.queryIdx for m in good])
-        u, v = rays_i[qi], rays_j[[m.trainIdx for m in good]]
+        qi, qj = np.array([m.queryIdx for m in good]), np.array([m.trainIdx for m in good])
+        u, v = rays_i[qi], rays_j[qj]
         w0 = eye_i - eye_j                                         # điểm gần nhau nhất của hai tia
         b = (u * v).sum(axis=1)
         denom = np.maximum(1.0 - b * b, 1e-9)
         d, e = u @ w0, v @ w0
         s, t = (b * e - d) / denom, (e - b * d) / denom
-        on_i, on_j = eye_i + s[:, None] * u, eye_j + t[:, None] * v
-        miss = np.linalg.norm(on_i - on_j, axis=1)
-        parallax = np.degrees(np.arccos(np.clip(b, -1.0, 1.0)))
-        ok = (s > 0.03) & (t > 0.03) & (miss < MAX_RAY_MISS_M) & (parallax > MIN_PARALLAX_DEG)
-        if not ok.any():
+        miss = np.linalg.norm((eye_i + s[:, None] * u) - (eye_j + t[:, None] * v), axis=1)
+        for a, c in zip(qi[(s > 0.03) & (t > 0.03) & (miss < max_miss_m)], qj[(s > 0.03) & (t > 0.03) & (miss < max_miss_m)]):
+            ra, rc = find(offsets[i] + a), find(offsets[j] + c)    # cặp khớp hợp hình học: nối vào cùng một vệt
+            if ra != rc:
+                parent[ra] = rc
+    tracks = {}
+    for index in range(offsets[-1]):
+        root = find(index)
+        if root != index or parent[index] != index:
+            tracks.setdefault(root, []).append(index)
+    for root in list(tracks):
+        if root not in tracks[root]:
+            tracks[root].append(root)
+    points, colours, pairs, counts, misses = [], [], [], [], []
+    frame_of = np.searchsorted(offsets, np.arange(offsets[-1]), side="right") - 1
+    eye3 = np.eye(3)
+    for members in tracks.values():
+        owners = frame_of[members]
+        if len(members) < max(2, min_frames) or len(set(owners)) != len(members):
+            continue                                               # quá ít khung, hoặc hai đặc trưng của cùng một khung: vệt lẫn
+        rays = np.array([feats[f][2][m - offsets[f]] for f, m in zip(owners, members)])
+        eyes = np.array([feats[f][3] for f in owners])
+        # điểm gần mọi tia nhất: sum (I - d d^T) (X - e) = 0
+        A = np.sum(eye3 - rays[:, :, None] * rays[:, None, :], axis=0)
+        rhs = np.sum(eyes - rays * np.sum(rays * eyes, axis=1, keepdims=True), axis=0)
+        try:
+            X = np.linalg.solve(A, rhs)
+        except np.linalg.LinAlgError:
             continue
-        points.append(((on_i + on_j) / 2.0)[ok])
-        at = np.clip(np.round(px_i[qi][ok]).astype(int), 0, [image_i.shape[1] - 1, image_i.shape[0] - 1])
-        colours.append(image_i[at[:, 1], at[:, 0]])
-        pairs.append(np.tile([i, j], (int(ok.sum()), 1)))
-        misses.append(miss[ok])
+        along = np.sum((X - eyes) * rays, axis=1)
+        off = np.linalg.norm((X - eyes) - along[:, None] * rays, axis=1)
+        parallax = np.degrees(np.arccos(np.clip(np.min(rays @ rays.T), -1.0, 1.0)))
+        if along.min() <= 0.03 or off.max() >= max_miss_m or parallax < min_parallax_deg:
+            continue
+        first = int(np.argmin(owners))
+        f, m = owners[first], members[first] - offsets[owners[first]]
+        image = feats[f][4]
+        px = np.clip(np.round(feats[f][0][m]).astype(int), 0, [image.shape[1] - 1, image.shape[0] - 1])
+        points.append(X)
+        colours.append(image[px[1], px[0]])
+        ordered = sorted(set(int(o) for o in owners))
+        pairs.append(ordered[:2])
+        counts.append(len(ordered))
+        misses.append(float(off.max()))
     if not points:
         return {"points": np.zeros((0, 3)), "colours": np.zeros((0, 3), np.uint8), "pairs": np.zeros((0, 2), int),
-                "miss_m": np.zeros(0)}
-    return {"points": np.vstack(points), "colours": np.vstack(colours), "pairs": np.vstack(pairs),
-            "miss_m": np.concatenate(misses)}
+                "n_frames": np.zeros(0, int), "miss_m": np.zeros(0)}
+    return {"points": np.array(points), "colours": np.array(colours), "pairs": np.array(pairs),
+            "n_frames": np.array(counts), "miss_m": np.array(misses)}
 
 
 def fit_circle(xy, eye_xy=(0.0, 0.0), tol: float = CIRCLE_TOL_M, rounds: int = 300, seed: int = 0):
