@@ -50,7 +50,8 @@ def camera_model(name):
     return model
 
 
-def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=True, keep_dir=None) -> WorldMap:
+def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=True, keep_dir=None,
+         objects=False) -> WorldMap:
     """Đo mọi tag bằng camera tay rồi trả world mới (chưa lưu).
 
     use_plane: tag nằm ngửa đúng tầng thì lấy độ cao đã biết của tầng thay cho độ cao đo (xem snap_to_layer).
@@ -65,7 +66,7 @@ def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=
 
     def observe(servo):
         real, seen = session.observe(servo)
-        if grab_frame is not None and (faces or keep_dir) and len(shots) < len(A.SCAN_POSES):
+        if grab_frame is not None and (faces or keep_dir or objects) and len(shots) < len(A.SCAN_POSES):
             frames = [f for f in (grab_frame(), grab_frame()) if f is not None]
             shots.append(([float(v) for v in real[:5]], frames, set(seen)))
         return real, seen
@@ -101,7 +102,53 @@ def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=
         log(f"Đã lưu {len(shots)} khung quét vào {keep_dir}")
     if faces and shots:
         scan_faces(session.cal, world, shots, log)
+    if objects and shots:
+        scan_objects(session.cal, world, shots, log)
     return world
+
+
+def scan_objects(cal, world, shots, log=print, masks=None) -> None:
+    """Vật không phải cube trong các khung quét: vết đáy trên mặt bàn từ mặt nạ của nhiều góc nhìn (`carve`)."""
+    from cube_vision import carve
+    if masks is None:
+        try:
+            import object_masks
+            masks = object_masks.ObjectMasks()
+        except Exception as exc:  # noqa: BLE001 - thiếu ultralytics / trọng số: world vẫn có cube
+            log(f"Không dựng vật khác cube (cần chạy bằng .venv có ultralytics): {exc}")
+            return
+    camera, views, votes = A.wrist_camera(cal), [], []
+    for real, frames, _ in shots:
+        if not frames:
+            continue
+        found = masks.detect(frames[0])
+        union = np.zeros(frames[0].shape[:2], np.uint8)
+        for _, _, mask in found:
+            union |= mask
+        T = A.base_T_optical(real, cal)
+        views.append((camera, T, union))
+        votes.append((T, found))
+    table_z = float(cal["tag_top_z"]) - 0.030
+    region = np.asarray(world.region, float) if world.region else np.array([[-0.36, -0.30], [-0.02, 0.30]])
+    bounds = ((region[:, 0].min(), region[:, 0].max()), (region[:, 1].min(), region[:, 1].max()))
+    cubes = [world.entry(i)["centre"][:2] for i in world.cube_ids()]
+    found = carve.footprints(views, table_z, bounds, keep_out=cubes)
+    for item in found:                                          # nhãn: lớp được nhiều góc nhìn gọi nhất tại tâm vật
+        names = {}
+        for T, instances in votes:
+            cam = (np.linalg.inv(T) @ np.r_[item["centre"], table_z, 1.0])[:3]
+            uv = camera.project(cam.reshape(1, 3))[0]
+            if not np.isfinite(uv).all() or not (0 <= uv[0] < 640 and 0 <= uv[1] < 480):
+                continue
+            for label, confidence, mask in instances:
+                if mask[int(uv[1]), int(uv[0])]:
+                    names[label] = names.get(label, 0.0) + confidence
+        item["label"] = max(names, key=names.get) if names else "vật"
+    world.set_objects(found, "wrist-scan")
+    for item in world.objects:
+        x, y = item["centre"] * 1000
+        log(f"  vật '{item['label']}': đáy ước lượng quanh ({x:+.0f}, {y:+.0f}) mm, ~{item['area_m2'] * 1e4:.0f} cm², "
+            f"{item['n_views']} góc nhìn; chiều cao chưa đo được")
 
 
 def scan_faces(cal, world, shots, log=print) -> None:
@@ -162,10 +209,12 @@ def cmd_scan(args):
     with A.WristSession() as session:
         keep = default_path().parent / "scan" / time.strftime("%Y%m%d-%H%M%S")
         world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around,
-                     use_plane=not args.no_plane, faces=not args.no_faces, keep_dir=keep)
+                     use_plane=not args.no_plane, faces=not args.no_faces, keep_dir=keep,
+                     objects=not args.no_objects)
     add_fixed_cameras(world)
     sure = sum(1 for t in world.tags.values() if t["sure"])
-    print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn), {len(world.faces)} cube nhận bằng mặt khác.")
+    print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn), {len(world.faces)} cube nhận bằng mặt khác, "
+          f"{len(world.objects)} vật khác.")
 
 
 class FaceJob:
@@ -398,6 +447,10 @@ def cmd_show(_args):
         print(f"  cube {cube_id} (mặt {face['label']} ngửa lên, không đọc tag): ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, "
               f"tầng {face['layer']}, khớp {face['rms_px']:.1f} px, {face['n_views']} lần nhìn, "
               f"{now - face['stamp']:.0f} s trước")
+    for item in world.objects:
+        x, y = item["centre"] * 1000
+        print(f"  vật '{item['label']}': đáy ước lượng quanh ({x:+.0f}, {y:+.0f}) mm, ~{item['area_m2'] * 1e4:.0f} cm², "
+              f"{item['n_views']} góc nhìn, chiều cao chưa đo được, {now - item['stamp']:.0f} s trước")
     for name, cam in world.cameras.items():
         x, y, z = cam["world_T_optical"][:3, 3] * 1000
         print(f"  camera {name}: ({x:+.0f}, {y:+.0f}, {z:+.0f}) mm")
@@ -422,6 +475,7 @@ def main():
     ap.add_argument("--once", action="store_true", help="với --watch: ghi một lần nhìn rồi thoát")
     ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
     ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
+    ap.add_argument("--no-objects", action="store_true", help="với --scan: không dựng vật khác cube (cốc, hộp...)")
     ap.add_argument("--no-faces", action="store_true",
                     help="chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()

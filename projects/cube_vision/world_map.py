@@ -82,6 +82,8 @@ def snap_to_layer(fused: dict, tag_top_z: float, edge: float = CUBE_EDGE_M, max_
 class WorldMap:
     tags: dict = field(default_factory=dict)        # {id: {corners, centre, normal, std_m, n_views, source, stamp, sure}}
     faces: dict = field(default_factory=dict)       # {cube_id: như tags nhưng `corners` là MẶT TRÊN 30 mm; + label}
+    objects: list = field(default_factory=list)     # vật không phải cube: [{label, polygon (N,2) đáy trên bàn, centre,
+                                                    #   area_m2, n_views, height_m (None = chưa đo được), source, stamp}]
     zones: dict = field(default_factory=dict)       # {zone: {xy, source, stamp}}
     cameras: dict = field(default_factory=dict)     # {tên: {world_T_optical, K, k1, k2, image_size, rotate, stamp}}
     region: list = field(default_factory=list)      # [[x, y], ...] đa giác trên mặt bàn: vùng camera tay quét được
@@ -118,6 +120,14 @@ class WorldMap:
             "label": str(label), "confidence": float(confidence), "n_views": int(n_views), "source": source,
             "sure": bool(sure), "stamp": time.time() if stamp is None else float(stamp)}
         return self.faces[int(cube_id)]
+
+    def set_objects(self, found, source: str, stamp: float | None = None) -> None:
+        """Thay toàn bộ danh sách vật bất kỳ bằng kết quả `carve.footprints` (mỗi mục có thêm "label")."""
+        stamp = time.time() if stamp is None else float(stamp)
+        self.objects = [{"label": str(item.get("label", "vật")), "polygon": np.asarray(item["polygon"], float),
+                         "centre": np.asarray(item["centre"], float), "area_m2": float(item["area_m2"]),
+                         "n_views": int(item["n_views"]), "height_m": item.get("height_m"), "source": source,
+                         "stamp": stamp} for item in found if self.inside(item["centre"])]
 
     def forget(self, tag_id: int) -> None:
         self.tags.pop(int(tag_id), None)
@@ -181,7 +191,7 @@ class WorldMap:
         z = self.table_z or 0.0
         origin = np.array([0.0, 0.0, z])
         out = {"axes": [tuple(px([origin, origin + 0.05 * np.eye(3)[k]])) for k in range(3)], "grid": [],
-               "cubes": {}, "tags": {}, "faces": {}, "zones": {}, "region": None}
+               "cubes": {}, "tags": {}, "faces": {}, "zones": {}, "region": None, "objects": []}
         steps = np.arange(-extent_m, extent_m + 1e-9, grid_m)
         along = np.arange(0.0, 1.0 + 1e-9, 0.02 / max(extent_m, 0.02) / 2.0)   # lấy mẫu ~1 cm dọc từng đường
 
@@ -213,6 +223,9 @@ class WorldMap:
             out["faces"][cube_id] = px(face["corners"])
             vertices = px(cube_from_tag(face["corners"])["vertices"])
             out["cubes"][cube_id] = [(vertices[a], vertices[b]) for a, b in _CUBE_EDGES]
+        for item in self.objects:
+            ring = np.r_[item["polygon"], item["polygon"][:1]]
+            out["objects"].append((item, px(np.c_[ring, np.full(len(ring), z)])))
         for zone, item in self.zones.items():
             out["zones"][zone] = px([[item["xy"][0], item["xy"][1], z]])[0]
         return out
@@ -224,6 +237,8 @@ class WorldMap:
                 return value.tolist()
             if isinstance(value, dict):
                 return {str(k): clean(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [clean(v) for v in value]
             return value
         cubes = {}
         for tag_id in self.cube_ids():
@@ -233,7 +248,7 @@ class WorldMap:
                                   "top_face": entry.get("label", "tag"), "sure": bool(entry.get("sure", True))}
         return {"frame": self.frame, "created": self.created, "saved": time.time(), "table_z": self.table_z,
                 "tags": clean(self.tags), "faces": clean(self.faces), "cubes": cubes, "zones": clean(self.zones), "cameras": clean(self.cameras),
-                "region": [[float(x), float(y)] for x, y in self.region]}
+                "region": [[float(x), float(y)] for x, y in self.region], "objects": clean(self.objects)}
 
     def save(self, path=None) -> Path:
         path = Path(path or default_path())
@@ -257,6 +272,8 @@ class WorldMap:
                                     "centre": np.asarray(tag["centre"], float),
                                     "normal": np.asarray(tag["normal"], float)}
         world.region = [[float(x), float(y)] for x, y in (data.get("region") or [])]
+        world.objects = [{**item, "polygon": np.asarray(item["polygon"], float).reshape(-1, 2),
+                          "centre": np.asarray(item["centre"], float)} for item in (data.get("objects") or [])]
         for key, face in (data.get("faces") or {}).items():
             world.faces[int(key)] = {**face, "corners": np.asarray(face["corners"], float).reshape(4, 3),
                                      "centre": np.asarray(face["centre"], float),

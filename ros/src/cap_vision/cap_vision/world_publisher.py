@@ -144,6 +144,19 @@ def main(args=None):
                 for x, y in list(region) + [region[0]]:
                     ring.points.append(Point(x=float(x), y=float(y), z=float(table_z or 0.0) + 0.001))
                 array.markers.append(ring)
+            for index, item in enumerate(world.get("objects") or []):
+                polygon = item.get("polygon") or []
+                if len(polygon) < 3:
+                    continue
+                ring = self.marker("object", index, Marker.LINE_STRIP, stamp, rgba=(1.0, 0.0, 1.0, 1.0), scale=(0.003, 0, 0))
+                for x, y in list(polygon) + [polygon[0]]:
+                    ring.points.append(Point(x=float(x), y=float(y), z=float(table_z or 0.0) + 0.002))
+                array.markers.append(ring)
+                text = self.marker("object_label", index, Marker.TEXT_VIEW_FACING, stamp, scale=(0.0, 0.0, 0.012))
+                text.pose.position.x, text.pose.position.y = float(item["centre"][0]), float(item["centre"][1])
+                text.pose.position.z = float(table_z or 0.0) + 0.03
+                text.text = f"{item.get('label', 'vật')} (đáy ước lượng, chưa đo chiều cao)"
+                array.markers.append(text)
             for key, cube in (world.get("cubes") or {}).items():
                 tag = (world.get("tags") or {}).get(key, {})
                 by_face = cube.get("seen_by") == "face"

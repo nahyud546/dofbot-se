@@ -56,6 +56,16 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
             if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
                     and -w < b[0] < 2 * w and -h < b[1] < 2 * h and np.hypot(*(a - b)) < max(w, h) / 3):
                 _line(out, a, b, (255, 120, 0), 2)
+    for item, ring in drawn["objects"]:              # vật không phải cube: vết đáy ước lượng trên mặt bàn
+        if not np.isfinite(ring).all():
+            continue
+        for a, b in zip(ring[:-1], ring[1:]):
+            _line(out, a, b, (255, 0, 255), 2)
+        p = _pt(ring[:-1].mean(axis=0))
+        if p:
+            x, y = item["centre"] * 1000
+            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f} (day uoc luong)", (p[0] - 40, p[1]),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2, cv2.LINE_AA)
     for k, (a, b) in enumerate(drawn["axes"]):
         _line(out, a, b, AXIS_COLOURS[k], 3)
     errors = {}

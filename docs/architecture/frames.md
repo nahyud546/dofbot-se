@@ -214,3 +214,21 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
 | `wrist_optical` | 640×480 | 935.3, 990.3 | 322.6, 229.7 | -0.444, +0.000 | 0° | config/robot/hand_eye.json: K, k1 (fit chung với hand-eye) |
 | `ext_optical` | 1280×720 | 932.4, 932.4 | 623.0, 428.7 | +0.060, +0.000 | 0° | config/robot/external_camera.json: K, k1 (fit chung với pose) |
 | `phone_optical` | 720×1280 | 957.4, 956.5 | 359.9, 641.7 | +0.139, -0.449 | 90° | config/robot/cameras/phone.json |
+
+## Vùng world, cube nhận bằng mặt khác, vật bất kỳ (2026-10-08)
+
+- **Vùng world** = hợp các vết nhìn của bộ pose quét trên mặt bàn (`active_view.scan_region`, 10 pose: J1 = 42, 66,
+  90, 114, 133° × J2 = 124, 110°, J3 = J4 = 0). Đo được 844 cm², hình quạt bán kính ~12–32 cm quanh đế. Lưu trong
+  world (`region`); cube/vật có tâm ngoài vùng (quá viền 15 mm) không được ghi; lưới chỉ vẽ trong vùng. J1 giữ trong
+  `j1_valid_range` của hand-eye (40,3–134,6°): muốn rộng hơn phải hiệu chuẩn lại hand-eye trước.
+- **Cube không ngửa tag**: `Identifier(FULL)` cho 4 góc mặt trên (màu hoặc hình in) → `multiview.flat_face` thử 8 thứ
+  tự góc × 4 tầng với mặt 30 mm nằm phẳng. Đo thật: đúng tầng lệch 1,8–4,6 px, sai tầng 13–21 px, nên tầng tự phân
+  biệt được. Ghi vào `faces` của world (không làm mốc định vị cho camera khác; tag đọc được thì tag thắng). Vị trí
+  cùng cube giữa `--scan` và `--watch` lệch ≤ 2 mm. **Cần đủ sáng**: ở độ sáng 63/255 không nhận được, ở 154 nhận đủ.
+  Tốc độ nhận mặt: 0,7 s/khung bằng `.venv` (GPU), ~4 s bằng python hệ thống (CPU).
+- **Vật khác cube** (`build_world.py --scan` chạy bằng `.venv`): YOLOE cho mặt nạ từng khung quét, `cube_vision/carve.py`
+  giao các "bóng" trên mặt bàn thành vết đáy. Đo thật với một cốc Ø ~8 cm: có trong world với nhãn `cup`, nhưng vết
+  đáy to hơn thật (~116 cm² so với ~50 cm²) và **chiều cao chưa đo được**: camera tay chỉ cao 15–20 cm nên vật cao
+  luôn bị cắt ở mép ảnh, và mọi góc nhìn đều từ cùng một phía. Cách thuần hình học (so ảnh nắn về mặt bàn giữa các góc
+  nhìn) đã thử và không dùng được: chỉ 28 % ô được ≥ 2 góc nhìn thấy, và tự phơi sáng làm ô màu phẳng bị báo nhầm.
+

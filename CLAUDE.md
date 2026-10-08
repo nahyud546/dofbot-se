@@ -62,6 +62,10 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
 - **World chung cho nhiều camera**: camera tay đo tag bằng nhiều góc nhìn (`active_view.py` tự nhìn thêm khi luật
   trong `cube_vision/view_quality.py` báo chưa chắc) → `cube_vision/world_map.py`; camera khác tự định vị bằng tag
   đã có trong world (`cube_vision/camera_pose.py`). Chi tiết và lệnh: `docs/architecture/frames.md`.
+  World chỉ gồm **vùng mặt bàn camera tay quét được** (`active_view.scan_region`, lưu `region`); ngoài vùng không ghi.
+  Cube không ngửa tag được nhận bằng mặt màu / hình in (`world_watch.observe_faces`, cần đủ sáng: ảnh < 90/255 là
+  hụt). Vật khác cube (`--scan` bằng `.venv`, YOLOE + `cube_vision/carve.py`) mới chỉ có vết đáy ước lượng, chưa
+  có chiều cao.
 - **`projects/cube_vision/`** là thư viện độc lập: không được import T8 hay ROS. Robot cụ thể đi vào qua tham số
   (`ZoneLayout`, `arm.execute("look")`, `scene.zone_survey`). T8 nối vào bằng adapter mỏng (`t8_pipeline/zone_survey.py`).
 - **`projects/vision_experiments/` và `projects/t8_pipeline/`** là module phẳng, import nhau bằng tên trần
