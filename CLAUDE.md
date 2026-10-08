@@ -32,6 +32,7 @@ python projects/t8_pipeline/zone_survey.py --zones 3 4        # đo vị trí ô
 python projects/vision_experiments/calibrate_external.py --status
 python projects/vision_experiments/dofbot_frames.py --dump     # bảng hệ tọa độ + ma trận hiện tại
 python projects/vision_experiments/build_world.py --scan       # tay nhìn quanh, dựng world (data/world/latest.json)
+python projects/vision_experiments/build_world.py --watch      # chỉ nhìn: tay ở pose nào, thấy cube nào ghi vào world
 ros2 launch cap_vision world_view.launch.py                    # xem world trong RViz
 ```
 

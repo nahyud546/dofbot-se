@@ -15,6 +15,7 @@ lại khi thấy vẽ sai.
 from __future__ import annotations
 
 import argparse
+import os
 import time
 
 import cv2
@@ -22,7 +23,7 @@ import numpy as np
 
 from . import camera_pose as P
 from . import cameras
-from .world_map import WorldMap
+from .world_map import WorldMap, default_path
 
 AXIS_COLOURS = [(0, 0, 255), (0, 200, 0), (255, 0, 0)]        # x đỏ, y xanh lá, z xanh dương (BGR)
 
@@ -96,6 +97,13 @@ def detect_tags(frame, detector) -> dict:
     return {int(t["id"]): np.asarray(t["corners"], float).reshape(4, 2) for t in detector.detect(frame)}
 
 
+def _mtime(path):
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return None
+
+
 def save_debug(frame, view, seen, info, folder=None):
     """Lưu khung thô, ảnh vẽ, góc tag và kết quả theo dõi để phát lại offline (phím `s`). Trả đường dẫn thư mục."""
     import json
@@ -142,6 +150,8 @@ def main():
     if cap is None:
         raise SystemExit(f"Không mở được camera '{args.camera}'. (DroidCam chỉ cho một kết nối: tắt cửa sổ khác.)")
     lost = 0
+    world_path = args.world or default_path()
+    loaded, checked = _mtime(world_path), time.time()
     live = None if args.fixed else LiveWorld(world, model, args.camera)
     pose = world.cameras[args.camera]["world_T_optical"]
     last_write = 0.0
@@ -162,6 +172,16 @@ def main():
                     grab(cap, model.rotate, warm=10)
                 continue
             lost = 0
+            if time.time() - checked > 0.5:                 # world đổi (camera tay vừa ghi thêm/dời cube): nạp lại
+                checked = time.time()
+                stamp = _mtime(world_path)
+                if stamp != loaded and stamp is not None:
+                    fresh = WorldMap.load(world_path)
+                    if fresh.tags:
+                        fresh.cameras.setdefault(args.camera, world.cameras[args.camera])
+                        world, loaded = fresh, stamp
+                        if live is not None:
+                            live.world = world
             seen = detect_tags(frame, detector)
             errors = {}
             if live is None:

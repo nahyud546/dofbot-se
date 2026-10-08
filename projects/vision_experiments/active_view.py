@@ -170,7 +170,14 @@ def describe(tag_id, result) -> str:
 
 # ------------------------------------------------------------------ phần cứng
 class WristSession:
-    """Giữ cổng serial + camera tay trong một khối `with`; luôn đưa tay về READY và nhả thiết bị."""
+    """Giữ cổng serial + camera tay trong một khối `with`; nhả thiết bị khi xong.
+
+    park=True (mặc định): đưa tay về READY khi thoát. park=False: không gửi lệnh chuyển động nào khi thoát
+    (dùng cho chế độ chỉ nhìn).
+    """
+
+    def __init__(self, park: bool = True):
+        self.park = park
 
     def __enter__(self):
         import fcntl
@@ -207,9 +214,43 @@ class WristSession:
         real = C.move_and_settle(self.arm, servo)
         return real, E._stable_tags(self.cap, self.det)
 
+    def look(self, still_deg: float = 1.0):
+        """Chỉ đọc, KHÔNG lái tay: (khớp thật | None nếu tay đang chuyển động, {tag_id: 4 góc}, khung ảnh).
+
+        Đọc khớp trước và sau khi lấy ảnh; hai lần lệch quá `still_deg` thì tay đang động, lần nhìn này không dùng.
+        """
+        import cv2
+        import time
+        before = C.read_servo(self.arm)
+        # Xả bộ đệm: khung đọc về tức thì là khung cũ (có thể chụp lúc tay còn đang chuyển động); khung phải chờ
+        # mới có là khung tươi. Không xả thì vừa tới pose mới sẽ nhận phải ảnh nhòe của lúc đang đi.
+        for _ in range(12):
+            started = time.time()
+            self.cap.grab()
+            if time.time() - started > 0.02:
+                break
+        seen, frame = {}, None
+        for _ in range(3):
+            ok, raw = self.cap.read()
+            if not ok or raw is None:
+                return None, {}, None
+            frame = raw if (raw.shape[1], raw.shape[0]) == IMAGE_SIZE else cv2.resize(raw, IMAGE_SIZE)
+            for tag in self.det.detect(frame):
+                seen.setdefault(int(tag["id"]), []).append(np.asarray(tag["corners"], float).reshape(4, 2))
+        after = C.read_servo(self.arm)
+        stable = {}
+        for tag_id, stack in seen.items():
+            stack = np.array(stack)
+            inside = stack.min() >= 8 and stack[..., 0].max() <= 632 and stack[..., 1].max() <= 472
+            if len(stack) == 3 and inside and float(np.max(np.abs(stack - stack.mean(axis=0)))) <= 1.5:
+                stable[tag_id] = stack.mean(axis=0)
+        if max(abs(a - b) for a, b in zip(before, after)) > still_deg:
+            return None, stable, frame
+        return [(a + b) / 2.0 for a, b in zip(before, after)], stable, frame
+
     def __exit__(self, *exc):
         try:
-            if exc[0] is None or exc[0] is KeyboardInterrupt:
+            if self.park and (exc[0] is None or exc[0] is KeyboardInterrupt):
                 C.move_and_settle(self.arm, READY, ms=1800)
         except Exception:  # noqa: BLE001
             pass

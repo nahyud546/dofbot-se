@@ -122,6 +122,7 @@ camera tay quét + tự nhìn quanh ──▶ pose 6D từng tag trong world ─
 |---|---|---|
 | Intrinsic một lần cho mỗi camera | `python projects/vision_experiments/calibrate_intrinsics.py --camera phone --with-board` | `cube_vision/intrinsics.py` |
 | Tay quét, tự nhìn thêm khi chưa chắc | `python projects/vision_experiments/build_world.py --scan` | `active_view.py`, `cube_vision/view_quality.py`, `cube_vision/multiview.py` |
+| World tự cập nhật, tay ở pose bất kỳ, không lái tay | `python projects/vision_experiments/build_world.py --watch` (`--goto J1..J5`: đi tới một pose rồi nhìn; `--free`: nhả lực servo để tự bẻ tay) | `vision_experiments/world_watch.py` |
 | Đặt camera khác vào world | `python projects/vision_experiments/build_world.py --locate phone --save` | `cube_vision/camera_pose.py` |
 | Camera cố định còn nguyên chỗ không | `python projects/vision_experiments/build_world.py --check phone` | `camera_pose.drift_px` |
 | Vẽ world đè lên ảnh camera, theo kịp camera dời và cube dời | `cd projects && python -m cube_vision.world_overlay --camera phone` (`--fixed`: dùng pose đã lưu; `--write-live FILE`: ghi world sống cho RViz) | `cube_vision/world_overlay.py`, `cube_vision/live_world.py` |
@@ -141,6 +142,12 @@ Số đo thật ngày 2026-10-08 (4 cube trên bàn, iPhone đặt sát mặt b�
 
 Muốn z thật tốt hơn (không cần mặt phẳng): hiệu chuẩn intrinsic camera tay bằng ChArUco rồi giải lại hand-eye
 chỉ với 6 tham số pose cho tới khi đạt 3D.
+
+`--watch` đo thật 2026-10-08: cùng một cube nhìn từ 3–5 pose tay tùy ý (J3, J4 gập, J5 xoay 40°/150°) cho tọa độ
+world lệch nhau theo phương ngang trung vị 1,2 mm, lớn nhất 3,0 mm (12 lần nhìn, 3 cube). Mỗi lần nhìn dùng góc khớp
+thật đọc về lúc đó; lần nhìn có J1 ngoài vùng hand-eye bị bỏ. Cube thấy ở chỗ khác chỗ đã ghi quá 15 mm là đã dời;
+cube lẽ ra trong khung nhìn mà 3 lần liền không thấy (và lần nhìn đó đáng tin: có thấy tag khác hoặc ảnh nét) thì
+xóa; cube ngoài khung nhìn được giữ. `world_overlay` tự nạp lại file world khi nó đổi.
 
 Luật "nhìn chưa ổn" (ngưỡng ở đầu `view_quality.py`): tag nhỏ hơn 28 px, sát mép ảnh, PnP lệch quá 3 px, nhìn
 xiên quá 65°, hướng mặt tag còn mơ hồ, J1 ngoài vùng hand-eye; và sau khi gộp: ít hơn 2 góc nhìn, hai góc nhìn

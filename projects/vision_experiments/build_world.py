@@ -2,6 +2,8 @@
 """Dựng world: camera tay quét bàn, đo từng tag bằng nhiều góc nhìn, rồi đặt các camera khác vào cùng hệ.
 
     python projects/vision_experiments/build_world.py --scan            # tay nhìn quanh, ghi data/world/latest.json
+    python projects/vision_experiments/build_world.py --watch           # chỉ nhìn: tay ở pose nào, thấy gì ghi nấy
+    python projects/vision_experiments/build_world.py --watch --goto 70 110 10 0 90   # đi tới pose này rồi nhìn
     python projects/vision_experiments/build_world.py --locate phone    # iPhone đang ở đâu trong world (in ra)
     python projects/vision_experiments/build_world.py --locate phone --save   # ... và lưu làm camera cố định
     python projects/vision_experiments/build_world.py --check phone     # camera cố định có bị xê dịch không
@@ -35,6 +37,8 @@ from cube_vision import world_overlay as O  # noqa: E402
 from cube_vision.world_map import WorldMap, snap_to_layer  # noqa: E402
 
 DRIFT_MOVED_PX = 8.0
+WATCH_MIN_SHARPNESS = 25.0      # ảnh camera tay nhòe/tối hơn mức này thì "không thấy cube" không có nghĩa là cube mất
+WATCH_MIN_BRIGHTNESS = 25.0
 
 
 def camera_model(name):
@@ -111,6 +115,79 @@ def cmd_scan(args):
     print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn).")
 
 
+def cmd_watch(args):
+    """Chỉ nhìn: tay đứng yên ở pose nào, camera tay thấy cube nào thì ghi vào world. Không gửi lệnh chuyển động,
+    trừ khi có --goto (đi tới một pose rồi nhìn) hoặc --free (nhả lực servo để bạn tự bẻ tay)."""
+    import cv2
+    import calibrate_hand_eye as C
+    import world_watch as W
+    world = WorldMap() if args.fresh else WorldMap.load()
+    if args.fresh:
+        add_fixed_cameras(world, log=lambda *_: None)
+    with A.WristSession(park=False) as session:
+        try:
+            world.table_z = float(json.loads(M.CALIB_FILE.read_text())["table_z"])
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        watcher = W.Watcher(session.cal, world)
+        if args.goto:
+            print(f"Đưa tay tới {args.goto} rồi chỉ nhìn.")
+            C.move_and_settle(session.arm, args.goto)
+        if args.free:
+            print("NHẢ LỰC SERVO: giữ tay máy bằng tay trước khi nhả, nó sẽ rũ xuống. Bẻ tay tới pose muốn nhìn rồi "
+                  "giữ yên ~1 giây. Thoát (q) sẽ bật lực lại.")
+            time.sleep(2.0)
+            session.arm.Arm_serial_set_torque(0)
+        print("Đang theo dõi (q hoặc Ctrl+C để thoát). World:", world.save())
+        model, last_text, last_save = A.wrist_camera(session.cal), "", 0.0
+        try:
+            while True:
+                try:
+                    servo, seen, frame = session.look()
+                except RuntimeError as exc:                    # đọc khớp lỗi tạm thời: thử lại
+                    print("  đọc khớp lỗi:", exc)
+                    time.sleep(0.3)
+                    continue
+                if frame is None:
+                    time.sleep(0.1)
+                    continue
+                note = "tay dang chuyen dong"
+                if servo is not None:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    clear = bool(seen) or (I.sharpness(gray) >= WATCH_MIN_SHARPNESS and gray.mean() >= WATCH_MIN_BRIGHTNESS)
+                    events = watcher.observe(servo, seen, clear_view=clear)
+                    text = W.describe(events)
+                    if text and text != last_text:
+                        print(f"  [{time.strftime('%H:%M:%S')}] J={[round(v) for v in servo[:4]]}: {text}")
+                    last_text = text
+                    changed = events["used"] or events["removed"]
+                    if changed and time.time() - last_save > 0.4:
+                        world.save()
+                        last_save = time.time()
+                    note = f"J={[round(v) for v in servo[:4]]}  world: {len(world.tags)} cube" + (
+                        "  NGOAI VUNG HAND-EYE" if events["skipped"] else "")
+                if not args.no_window:
+                    if servo is not None:
+                        view, _ = O.draw(frame, world, model, A.base_T_optical(servo, session.cal), seen, note)
+                    else:
+                        view = frame.copy()
+                        cv2.putText(view, note, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                    cv2.imshow("camera tay -> world", view)
+                    if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
+                        break
+                if args.once and servo is not None:
+                    break
+        except KeyboardInterrupt:
+            pass
+        finally:
+            if args.free:
+                session.arm.Arm_serial_set_torque(1)
+                print("Đã bật lại lực servo.")
+            cv2.destroyAllWindows()
+            world.save()
+    cmd_show(args)
+
+
 def cmd_locate(args):
     world = WorldMap.load()
     if not world.tags:
@@ -179,8 +256,17 @@ def main():
     ap.add_argument("--check", metavar="CAMERA")
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--source", default="auto")
+    ap.add_argument("--watch", action="store_true",
+                    help="chỉ nhìn: tay ở pose nào, thấy cube nào thì ghi vào world (không lái tay)")
+    ap.add_argument("--goto", nargs=5, type=float, metavar="J", help="với --watch: đi tới 5 góc servo này trước khi nhìn")
+    ap.add_argument("--free", action="store_true", help="với --watch: nhả lực servo để tự bẻ tay bằng tay (tay sẽ rũ!)")
+    ap.add_argument("--fresh", action="store_true", help="với --watch: bắt đầu từ world rỗng thay vì world đã lưu")
+    ap.add_argument("--once", action="store_true", help="với --watch: ghi một lần nhìn rồi thoát")
+    ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
     args = ap.parse_args()
-    if args.scan:
+    if args.watch:
+        cmd_watch(args)
+    elif args.scan:
         cmd_scan(args)
     elif args.locate:
         cmd_locate(args)
