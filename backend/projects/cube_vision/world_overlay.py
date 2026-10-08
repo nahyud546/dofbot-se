@@ -56,24 +56,31 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
             if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
                     and -w < b[0] < 2 * w and -h < b[1] < 2 * h and np.hypot(*(a - b)) < max(w, h) / 3):
                 _line(out, a, b, (255, 120, 0), 2)
+    now = time.time()
     for item, ring, top, dots in drawn["objects"]:   # vật không phải cube: điểm 3D đã đo + hình khớp (đáy, nắp, cạnh)
-        for uv in (dots if dots is not None else ()):
+        # Vật lâu chưa được camera nào xác nhận lại thì vẽ xám kèm tuổi: nó có thể đã bị dời mà chưa ai thấy.
+        age = now - max(float(item.get("stamp", 0.0)), float(item.get("seen_stamp", 0.0)))
+        stale = age > OBJECT_STALE_S
+        shade = (150, 150, 150) if stale else (255, 0, 255)
+        for uv in (dots if dots is not None and not stale else ()):
             p = _pt(uv)
             if p and 0 <= p[0] < w and 0 <= p[1] < h:
                 cv2.circle(out, p, 2, (0, 255, 0), -1)
         for loop in (ring, top):
             if loop is not None:
                 for a, b in zip(loop[:-1], loop[1:]):
-                    _line(out, a, b, (255, 0, 255), 2)
+                    _line(out, a, b, shade, 2)
         if top is not None:
             for a, b in zip(ring[:-1], top[:-1]):
-                _line(out, a, b, (255, 0, 255), 2)
+                _line(out, a, b, shade, 2)
         anchor = top if top is not None and np.isfinite(top).all() else ring
         p = _pt(anchor[:-1].mean(axis=0)) if np.isfinite(anchor).all() else None
         if p:
             x, y = item["centre"] * 1000
             tall = "" if not item.get("height_m") else f", cao {item['height_m'] * 1000:.0f}"
-            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f}{tall} ({'tru' if item.get('shape') == 'cylinder' else 'hop'})", (p[0] - 40, p[1]),
+            kind = "tru" if item.get("shape") == "cylinder" else "hop"
+            old = f", cu {age / 60:.0f} phut" if stale else ""
+            cv2.putText(out, f"{item['label']}: {x:+.0f},{y:+.0f}{tall} ({kind}{old})", (p[0] - 40, p[1]),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2, cv2.LINE_AA)
     for k, (a, b) in enumerate(drawn["axes"]):
         _line(out, a, b, AXIS_COLOURS[k], 3)
@@ -156,6 +163,82 @@ def save_debug(frame, view, seen, info, folder=None):
     return str(folder)
 
 
+OBJECT_STALE_S = 120.0          # vật chưa được camera nào đo/xác nhận lại quá chừng này giây: vẽ xám
+SEEN_PERIOD_S = 0.4             # nhịp tìm vật + mặt màu trên khung của camera này (luồng riêng)
+KNOWN_OBJECT_CONFIDENCE = 0.10  # vật ĐÃ CÓ trong world: nhận mặt nạ độ tin thấp (đo: cốc nhìn từ iPhone chỉ 0,13–0,24),
+                                # vì còn phải hợp nhãn + cỡ + nằm gần chỗ cũ mới được ghép
+
+
+def seen_path(camera: str, world_path=None):
+    """File phụ nơi camera này báo những vật nó đang thấy, để tiến trình camera tay (`--watch`) gộp vào world."""
+    from pathlib import Path
+    return Path(world_path or default_path()).parent / f"seen_{camera}.json"
+
+
+class SeenJob:
+    """Luồng riêng: trên khung mới nhất của camera này (pose đã biết), tìm mặt nạ vật khác cube (YOLOE) rồi định vị
+    lại trên mặt bàn, và tìm cube không đọc được tag qua mặt màu. Kết quả áp thẳng vào world sống và ghi ra file phụ.
+
+    Không có ultralytics / trọng số thì chỉ còn phần mặt màu (in một dòng báo)."""
+
+    def __init__(self, live, camera: str, table_z: float, world_path=None, objects: bool = True):
+        import threading
+        self.live, self.camera, self.table_z = live, camera, float(table_z)
+        self.path, self.want_objects = seen_path(camera, world_path), objects
+        self._latest, self._lock, self._stop = None, threading.Lock(), threading.Event()
+        self.note = ""
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def offer(self, frame, pose, seen_tags):
+        with self._lock:
+            self._latest = (frame.copy(), np.array(pose, float), set(seen_tags))
+
+    def _loop(self):
+        import json
+        from . import object_track as OT
+        masks = None
+        if self.want_objects:
+            try:
+                from .object_masks import ObjectMasks
+                masks = ObjectMasks()
+            except Exception as exc:  # noqa: BLE001 - python hệ thống không có ultralytics: vẫn bám cube
+                print(f"Không nạp được bộ tách vật ({exc}): vật khác cube sẽ không đi theo trên camera này.")
+        last = 0.0
+        while not self._stop.is_set():
+            if time.time() - last < SEEN_PERIOD_S:
+                time.sleep(0.02)
+                continue
+            with self._lock:
+                job, self._latest = self._latest, None
+            if job is None:
+                time.sleep(0.02)
+                continue
+            frame, pose, seen_tags = job
+            last = time.time()
+            try:
+                cubes = self.live.see_colour_faces(frame, seen_tags, pose)
+                observations = []
+                if masks is not None and self.live.world.objects:
+                    for label, confidence, mask in masks.detect(frame, KNOWN_OBJECT_CONFIDENCE, imgsz=960):
+                        obs = OT.observe_mask(self.live.model, pose, mask, self.table_z, label, confidence)
+                        if obs is not None:
+                            observations.append(obs)
+                moved = self.live.see_objects(observations) if observations else []
+                self.note = (f"vat thay {len(observations)}" + (f", doi {moved}" if moved else "")
+                             + (f", cube mat mau {sorted(cubes)}" if cubes else ""))
+                tmp = self.path.with_suffix(".tmp")
+                tmp.write_text(json.dumps({"stamp": time.time(), "camera": self.camera,
+                                           "objects": [OT.to_json(o) for o in observations]}))
+                tmp.replace(self.path)
+            except Exception as exc:  # noqa: BLE001
+                self.note = f"loi tim vat: {exc}"[:60]
+
+    def stop(self):
+        self._stop.set()
+        self._thread.join(timeout=5.0)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--camera", required=True, help="tên camera có trong world (phone, ext)")
@@ -166,6 +249,8 @@ def main():
     ap.add_argument("--handheld", action="store_true", help=argparse.SUPPRESS)       # tên cũ; giờ là mặc định
     ap.add_argument("--write-live", metavar="FILE", help="ghi world sống (camera + cube dời) ra file này ~2 lần/giây")
     ap.add_argument("--snapshot", help="ghi một ảnh rồi thoát (không mở cửa sổ)")
+    ap.add_argument("--no-objects", action="store_true", help="không tìm vật khác cube trên camera này (không cần YOLOE)")
+    ap.add_argument("--tags-only", action="store_true", help="chỉ bám theo AprilTag như trước: không vật, không mặt màu")
     args = ap.parse_args()
     world = WorldMap.load(args.world)
     model = world.camera_model(args.camera)
@@ -186,6 +271,9 @@ def main():
     live = None if args.fixed else LiveWorld(world, model, args.camera)
     pose = world.cameras[args.camera]["world_T_optical"]
     last_write = 0.0
+    seen_job = None
+    if live is not None and not args.tags_only and not args.snapshot:
+        seen_job = SeenJob(live, args.camera, world.table_z or 0.0, world_path, objects=not args.no_objects)
     try:
         grab(cap, model.rotate, warm=25)
         while True:
@@ -221,6 +309,9 @@ def main():
                 info = live.update(seen)
                 if info["ok"]:
                     note = f"theo doi: {len(info['anchors'])} tag neo, rms {info['rms_px']:.1f}px"
+                    if seen_job is not None:
+                        seen_job.offer(frame, info["pose"], seen)
+                        note += (" | " + seen_job.note) if seen_job.note else ""
                     if info["moved"] or info["new"]:
                         note += f", cube doi {sorted(info['moved'])} moi {sorted(info['new'])}"
                     view, errors = draw(frame, info["world"], model, info["pose"], seen, note, info["missing"])
@@ -249,6 +340,8 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        if seen_job is not None:
+            seen_job.stop()
         if cap is not None:
             cap.release()
         cv2.destroyAllWindows()

@@ -265,3 +265,26 @@ Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
 - **iPhone không vẽ vật khác cube**: `LiveWorld` dựng world sống mà không chép `objects` và `region`; đã sửa.
   Vật khác cube chỉ cập nhật khi `--scan`: dời cốc mà không quét lại thì world giữ chỗ cũ.
 
+## Vật đi theo khi bị dời; iPhone cùng cập nhật (2026-10-08)
+
+- **Đám mây điểm theo vệt** (`pointcloud.triangulate`): cặp khớp hợp hình học được nối thành vệt qua nhiều khung, mỗi
+  điểm giải từ mọi tia của vệt. Lượt dựng cuối chỉ giữ điểm có ≥ 3 khung và thị sai ≥ 6°. Đo trên lượt quét thật
+  `20261008-155549`: mặt trước bịch khăn nhòe dọc hướng nhìn 79 → 24 mm, hộp bịch khăn 93 × 70 → 77 × 22 mm và nằm
+  đúng mặt trước; cốc tự khớp được cung tròn (71 % điểm trong 4 mm), Ø 74 mm, cao 99 mm.
+- **Hình dạng do camera tay quét, vị trí do camera nào cũng cập nhật được** (`cube_vision/object_track.py`): từ mặt nạ
+  của vật trong MỘT khung (YOLOE) + pose camera, chiếu viền xuống mặt bàn, lấy mép gần + bề ngang → tâm. Vật đã biết
+  được ghép theo nhãn (tròn / không tròn), cỡ (0,5–2 lần) và khoảng cách (≤ 40 cm); lệch > 2 cm thì dời cả đa giác
+  đáy lẫn điểm 3D, hình dạng giữ nguyên.
+- **Hai camera**: hai đường ngắm lệch ≥ 20° thì giao nhau (stereo đường đáy rộng, không cần khớp đặc trưng giữa hai
+  ảnh). iPhone đặt ĐỐI DIỆN tay máy thì hai đường ngắm gần trùng: khi đó lấy trung điểm hai mép gần mà hai camera
+  thấy. Camera tay ở gần nên mặt nạ thường bị cắt (đo: hầu hết khung quét cắt cốc ở mép ảnh); khi đó nó chỉ góp
+  hướng ngắm.
+- **Luồng dữ liệu**: `world_overlay --camera phone` chạy `SeenJob` (YOLOE + mặt màu trên khung iPhone, ~2,5 lần/giây),
+  dời vật ngay trong world sống của nó và ghi `data/world/seen_phone.json`; `build_world.py --watch` đọc file đó
+  (`merge_seen`), gộp với quan sát của camera tay, sửa world gốc và lưu. Cube không đọc được tag mà lộ mặt màu trước
+  iPhone cũng được vẽ (`LiveWorld.see_colour_faces`). Vật quá 120 s chưa được camera nào xác nhận thì vẽ xám kèm tuổi.
+- **CHƯA kiểm trên luồng iPhone thật** (DroidCam tắt lúc làm): mọi thứ ở mục này mới qua test giả lập và chạy khói.
+  Rủi ro đã biết: trên hai ảnh chụp màn hình cửa sổ iPhone, YOLOE nhận cốc ở một ảnh với độ tin chỉ 0,13–0,24 và
+  hụt ở ảnh kia; ngưỡng cho vật đã biết hạ xuống 0,10 vì thế. Ngưỡng HSV mặt màu đo trên camera tay, chưa đo trên
+  iPhone.
+

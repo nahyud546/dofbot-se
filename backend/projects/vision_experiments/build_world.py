@@ -284,6 +284,58 @@ def cmd_scan(args):
           f"{len(world.objects)} vật khác.")
 
 
+SEEN_FRESH_S = 3.0              # quan sát vật cũ hơn mức này thì không dùng
+STEREO_LINE_GAP_M = 0.08        # đường ngắm của camera tay phải đi qua cách tâm iPhone báo dưới mức này mới là cùng vật
+
+
+def merge_seen(world, wrist_seen, camera: str = "phone") -> list:
+    """Gộp quan sát vật khác cube của iPhone (file phụ do `world_overlay` ghi) và của camera tay vào world: vật bị dời
+    thì dời theo, giữ nguyên hình dạng đã quét. Hai camera cùng thấy thì giao hai đường ngắm (stereo đường đáy rộng).
+    Trả các dòng mô tả những vật vừa dời (rỗng khi không có gì đổi)."""
+    from cube_vision import object_track as OT
+    from cube_vision.world_overlay import seen_path
+    if not world.objects:
+        return []
+    now, phone_seen = time.time(), []
+    try:
+        data = json.loads(seen_path(camera).read_text())
+        if now - float(data.get("stamp", 0.0)) <= SEEN_FRESH_S:
+            phone_seen = [OT.from_json(o) for o in data.get("objects", [])]
+    except (OSError, ValueError, TypeError):
+        pass
+    wrist_seen = [o for o in wrist_seen if now - float(o.get("stamp", 0.0)) <= SEEN_FRESH_S]
+    lines = []
+    matched = OT.match(world.objects, phone_seen)
+    for index, seen in matched.items():
+        item, centre, how = world.objects[index], np.asarray(seen["centre"], float), camera
+        for other in wrist_seen:
+            if (other.get("bearing_ok") or other.get("near_ok")) and OT._compatible(item, dict(other, side_ok=False)) \
+                    and OT.line_gap(other, centre) <= STEREO_LINE_GAP_M:
+                fused, kind = OT.fuse(seen, other)
+                if kind == "stereo":
+                    centre, how = fused, f"{camera} + camera tay (giao hai đường ngắm)"
+                elif kind == "opposed":
+                    centre, how = fused, f"{camera} + camera tay (hai phía đối diện)"
+                break
+        item["seen_stamp"] = now                                # camera vừa xác nhận vật còn đó (dù có dời hay không)
+        if np.linalg.norm(centre - item["centre"][:2]) > OT.MOVED_M and world.inside(centre):
+            x0, y0 = item["centre"][:2] * 1000
+            world.objects[index] = OT.moved_copy(item, centre, how)
+            lines.append(f"vật '{item['label']}' dời từ ({x0:+.0f}, {y0:+.0f}) tới ({centre[0] * 1000:+.0f}, "
+                         f"{centre[1] * 1000:+.0f}) mm, theo {how}")
+    whole = [o for o in wrist_seen if o.get("near_ok") and o.get("side_ok")]
+    free = [i for i in range(len(world.objects)) if i not in matched]
+    if whole and free:
+        updated, moved, _ = OT.relocate([world.objects[i] for i in free], whole, "camera tay")
+        for k in moved:
+            if world.inside(updated[k]["centre"]):
+                item = world.objects[free[k]]
+                world.objects[free[k]] = updated[k]
+                x, y = updated[k]["centre"] * 1000
+                lines.append(f"vật '{item['label']}' dời tới ({x:+.0f}, {y:+.0f}) mm, theo camera tay")
+    return lines
+
+
 class FaceJob:
     """Tìm cube không ngửa tag ở luồng riêng, trên khung đứng yên mới nhất, để không chặn vòng hiển thị.
 
@@ -293,7 +345,7 @@ class FaceJob:
     chưa có lần đọc khớp sau khung đó.
     """
 
-    def __init__(self, cal, servo_at, dino: bool = True):
+    def __init__(self, cal, servo_at, dino: bool = True, objects: bool = True):
         import queue
         import threading
         self.cal, self.servo_at = cal, servo_at
@@ -301,6 +353,10 @@ class FaceJob:
         self._latest = {"colour": None, "dino": None}           # mỗi luồng một ô "khung mới nhất" riêng
         self._fits = {}                                         # {(nguồn, cube): (quad, khớp, nghiệm)} lần khớp gần nhất
         self._threads = [threading.Thread(target=self._colour_loop, daemon=True)]
+        self.objects_seen = []                                  # quan sát vật khác cube mới nhất của camera tay
+        if objects:
+            self._threads.append(threading.Thread(target=self._object_loop, daemon=True))
+        self._latest["object"] = None
         if dino:                                                # luồng riêng: nạp DINO mất vài giây, không chặn mặt màu
             self._threads.append(threading.Thread(target=self._dino_loop, daemon=True))
         for thread in self._threads:
@@ -356,6 +412,30 @@ class FaceJob:
                 self._emit(stamp, servo, color.colour_faces(frame, registry.COLOR_TO_ID), tag_ids, clear, "colour")
             except Exception as exc:  # noqa: BLE001
                 print(f"  Bộ tìm mặt màu lỗi ở một khung ({exc}).")
+            last = time.time()
+
+    def _object_loop(self):
+        """Mặt nạ vật khác cube trên khung camera tay -> quan sát trên mặt bàn (thường bị cắt vì camera tay ở gần:
+        khi đó chỉ còn hướng ngắm, dùng để giao với đường ngắm của iPhone)."""
+        from cube_vision import object_track as OT
+        try:
+            from cube_vision.object_masks import ObjectMasks
+            masks = ObjectMasks()
+        except Exception:  # noqa: BLE001 - python hệ thống: camera tay không góp quan sát vật
+            return
+        camera, table_z, last = A.wrist_camera(self.cal), float(self.cal["tag_top_z"]) - 0.030, 0.0
+        while not self._stop.is_set():
+            got = self._next("object", FACE_COLOUR_PERIOD_S, last)
+            if got is None:
+                continue
+            (stamp, frame, _, _), servo = got
+            try:
+                T = A.base_T_optical(servo, self.cal)
+                found = [OT.observe_mask(camera, T, mask, table_z, label, confidence)
+                         for label, confidence, mask in masks.detect(frame)]
+                self.objects_seen = [dict(o, stamp=stamp) for o in found if o is not None]
+            except Exception as exc:  # noqa: BLE001
+                print(f"  Bộ tách vật lỗi ở một khung ({exc}).")
             last = time.time()
 
     def _dino_loop(self):
@@ -427,7 +507,9 @@ def cmd_watch(args):
         recent, pending = collections.deque(maxlen=3), collections.deque(maxlen=90)
         started, frames, looks = time.time(), 0, 0
         session.start_polling()
-        face_job = None if args.no_faces else FaceJob(session.cal, session.joints_at, dino=args.dino)
+        face_job = None if args.no_faces else FaceJob(session.cal, session.joints_at, dino=args.dino,
+                                                      objects=not args.no_objects)
+        last_merge = 0.0
         last_dim = 0.0
         try:
             while True:
@@ -479,6 +561,11 @@ def cmd_watch(args):
                         last_save = time.time()
                     if args.once:
                         break
+                if not args.no_objects and time.time() - last_merge > 0.5:
+                    last_merge = time.time()
+                    for line in merge_seen(world, face_job.objects_seen if face_job is not None else []):
+                        print(f"  [{time.strftime('%H:%M:%S')}] {line}")
+                        world.save()
                 now_servo = session.latest_joints()
                 if not args.no_window:
                     if now_servo is None:

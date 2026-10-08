@@ -23,6 +23,10 @@ from .frames import CameraModel
 from .world_map import CUBE_EDGE_M, WorldMap, snap_to_layer
 
 LIVE_SOURCE = "phone-live"
+FACE_KEEP_S = 3.0               # cube thấy bằng mặt màu được giữ chừng này giây sau lần thấy cuối
+FACE_MAX_RMS_PX = 8.0
+FACE_MAX_RMS_SHARE = 0.07
+FACE_LAYER_RATIO = 2.0
 GLOBAL_RETRY_S = 1.5            # mất dấu thì tìm lại toàn cục (~1 s) tối đa chừng này giây một lần, tránh giật hình
 MISSING_MARGIN_PX = 40.0
 LIVE_MAX_DZ_M = 0.015           # một góc nhìn đo sâu kém hơn camera tay: cho phép lệch tầng nhiều hơn khi bám tầng
@@ -91,6 +95,8 @@ class LiveWorld:
         cam = world.cameras.get(name)
         self.pose = None if cam is None else np.asarray(cam["world_T_optical"], float)   # khởi tạo cho khung đầu
         self._next_global = 0.0
+        self.object_moves = {}           # {chỉ số vật trong world gốc: (stamp world gốc lúc dời, vật đã dời)}
+        self.face_cubes = {}             # {cube_id: (nghiệm khớp mặt, nhãn, thời điểm)} cube thấy bằng mặt màu
 
     def update(self, seen: dict) -> dict:
         """seen {id: (4,2)} từ một khung (đã xoay đúng hướng). Trả dict: ok, reasons, pose, world (WorldMap sống),
@@ -111,6 +117,17 @@ class LiveWorld:
         live.tags = copy.deepcopy(self.world.tags)
         live.faces = copy.deepcopy(self.world.faces)
         live.objects = copy.deepcopy(self.world.objects)
+        for index, (base_stamp, item) in list(self.object_moves.items()):
+            # world gốc đo lại vật đó (stamp đổi) hoặc không còn vật đó: bỏ phần dời tạm, tin world gốc
+            if index >= len(live.objects) or live.objects[index]["stamp"] != base_stamp:
+                del self.object_moves[index]
+            else:
+                live.objects[index] = item
+        for cube_id, (fit, label, when) in list(self.face_cubes.items()):
+            if cube_id in seen or time.time() - when > FACE_KEEP_S:
+                del self.face_cubes[cube_id]                    # đọc được tag rồi, hoặc lâu không thấy lại mặt đó
+            elif cube_id not in live.tags:
+                live.update_face(cube_id, fit, label, 0.8, LIVE_SOURCE + "-face", sure=False, stamp=when)
         live.region = copy.deepcopy(self.world.region)
         live.zones = copy.deepcopy(self.world.zones)
         live.cameras = copy.deepcopy(self.world.cameras)
@@ -137,3 +154,44 @@ class LiveWorld:
         live.set_camera(self.name, self.pose, self.model)
         info.update(ok=True, pose=self.pose, world=live, anchors=list(res["anchors"]), rms_px=res["rms_px"])
         return info
+
+
+    # ------------------------------------------------------------------ vật khác cube + cube không đọc được tag
+    def see_objects(self, observations) -> list:
+        """Áp quan sát vật (từ `object_track.observe_mask` trên khung của camera này) lên world sống: vật nào bị dời
+        thì dời theo, giữ nguyên hình dạng. Trả chỉ số các vật vừa dời."""
+        from . import object_track as OT
+        current = []
+        for index, item in enumerate(self.world.objects):
+            moved = self.object_moves.get(index)
+            current.append(moved[1] if moved and moved[0] == item["stamp"] else item)
+        updated, moved, matched = OT.relocate(current, observations, LIVE_SOURCE)
+        for index in matched:                                   # dời, hoặc đứng yên nhưng vừa được xác nhận còn ở đó
+            self.object_moves[index] = (self.world.objects[index]["stamp"], updated[index])
+        return moved
+
+    def see_colour_faces(self, frame, seen_tags=(), pose=None) -> list:
+        """Cube không đọc được tag nhưng lộ mặt màu trong khung của camera này: khớp mặt 30 mm (trên / bên) bằng
+        pose camera hiện tại. Trả các cube_id vừa nhận. Cần pose (đã `update` thành công ít nhất một lần)."""
+        pose = self.pose if pose is None else pose              # pose của ĐÚNG khung đó (luồng tìm vật chạy trễ hơn)
+        if pose is None or frame is None:
+            return []
+        from . import color, registry
+        found = []
+        layer_zs = [self.tag_top_z + MV.FACE_SIZE_M * k for k in range(4)]
+        for face in color.colour_faces(frame, registry.COLOR_TO_ID):
+            cube_id = int(face["cube_id"])
+            if cube_id in seen_tags:
+                continue                                        # tag đọc được: tag thắng
+            quad = np.asarray(face["quad"], float)
+            fit = MV.cube_face(MV.View(pose, self.model, quad, "live-face"), layer_zs)
+            edge = float(np.linalg.norm(quad - np.roll(quad, -1, axis=0), axis=1).mean())
+            if fit is None or fit["rms_px"] > max(FACE_MAX_RMS_PX, FACE_MAX_RMS_SHARE * edge):
+                continue
+            if fit["runner_up_px"] < FACE_LAYER_RATIO * max(fit["rms_px"], 1.0) or not self.world.inside(fit["centre"][:2]):
+                continue
+            self.face_cubes[cube_id] = (fit, face["label"] + (" o mat ben" if fit.get("kind") == "side" else ""),
+                                        time.time())
+            found.append(cube_id)
+        return found
+

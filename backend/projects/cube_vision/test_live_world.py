@@ -275,3 +275,41 @@ class LiveCarriesEverything(unittest.TestCase):
         self.assertTrue(info["ok"])
         self.assertEqual(len(info["world"].objects), 1)
         self.assertEqual(info["world"].region, world.region)
+
+    def test_objects_follow_what_this_camera_sees_until_the_base_world_remeasures_them(self):
+        from cube_vision import object_track as OT
+        from cube_vision.test_object_track import cup_item
+        world = build_world()
+        world.set_objects([cup_item([-0.20, -0.10])], "wrist-scan", stamp=5.0)
+        live = LiveWorld(world, PHONE)
+        self.assertTrue(live.update(see(TAGS, TRUE_POSE))["ok"])
+        seen = {"label": "cup", "centre": np.array([-0.26, 0.04]), "width_m": 0.07, "near_ok": True, "side_ok": True,
+                "eye": np.zeros(2), "bearing": np.array([1.0, 0.0])}
+        self.assertEqual(live.see_objects([seen]), [0])
+        info = live.update(see(TAGS, TRUE_POSE, seed=1))
+        np.testing.assert_allclose(info["world"].objects[0]["centre"], [-0.26, 0.04])
+        np.testing.assert_allclose(world.objects[0]["centre"], [-0.20, -0.10])        # world gốc không bị sửa
+        world.set_objects([cup_item([-0.30, 0.0])], "wrist-scan", stamp=9.0)          # camera tay vừa quét lại
+        info = live.update(see(TAGS, TRUE_POSE, seed=2))
+        np.testing.assert_allclose(info["world"].objects[0]["centre"], [-0.30, 0.0])
+
+    def test_a_cube_showing_only_a_colour_face_to_this_camera_appears_in_the_live_world(self):
+        import cv2
+        from cube_vision import registry
+        from cube_vision.frames import invert
+        world = build_world()
+        world.tags.pop(2)                                                             # cube 2 không có trong world
+        live = LiveWorld(world, PHONE)
+        self.assertTrue(live.update(see(TAGS, TRUE_POSE, ids=[1, 3, 4]))["ok"])
+        centre, h = np.array([-0.24, -0.09, 0.0578]), 0.015
+        top = centre + np.array([[-h, -h, 0], [h, -h, 0], [h, h, 0], [-h, h, 0]])
+        inv = invert(TRUE_POSE)
+        quad = PHONE.project(top @ inv[:3, :3].T + inv[:3, 3])
+        hsv = np.full((1280, 720, 3), (0, 0, 235), np.uint8)
+        cv2.fillConvexPoly(hsv, np.round(quad).astype(np.int32), (43, 122, 48))       # mặt lục của cube 2
+        frame = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+        cube_id = registry.COLOR_TO_ID["khoi_xanh"]
+        self.assertEqual(live.see_colour_faces(frame, seen_tags={1, 3, 4}), [cube_id])
+        info = live.update(see(TAGS, TRUE_POSE, ids=[1, 3, 4], seed=1))
+        self.assertLess(np.linalg.norm(info["world"].faces[cube_id]["centre"] - centre), 0.006)
+

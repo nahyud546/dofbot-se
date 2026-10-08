@@ -50,3 +50,80 @@ class Pipeline(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MergeSeen(unittest.TestCase):
+    """`--watch` gộp quan sát vật của iPhone (file phụ) và của camera tay vào world."""
+
+    def setUp(self):
+        import json
+        import tempfile
+        import time
+        from pathlib import Path
+        from cube_vision import object_track as OT
+        from cube_vision import test_object_track as T
+        from cube_vision import world_overlay as O
+        from cube_vision.world_map import WorldMap
+        self.OT, self.T, self.json, self.time = OT, T, json, time
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "seen_phone.json"
+        self._seen_path = O.seen_path
+        O.seen_path = lambda camera, world_path=None: self.path
+        self.world = WorldMap()
+        self.world.set_objects([T.cup_item([-0.20, -0.10])], "wrist-scan")
+
+    def tearDown(self):
+        from cube_vision import world_overlay as O
+        O.seen_path = self._seen_path
+        self.tmp.cleanup()
+
+    def phone_reports(self, centre, age=0.0, eye=None):
+        obs = self.T.see(eye or self.T.PHONE, centre, target=[-0.22, 0.0, 0.03])
+        self.path.write_text(self.json.dumps({"stamp": self.time.time() - age, "camera": "phone",
+                                              "objects": [self.OT.to_json(obs)]}))
+        return obs
+
+    def test_the_cup_follows_what_the_phone_sees_and_keeps_its_shape(self):
+        self.phone_reports([-0.27, 0.05])
+        lines = B.merge_seen(self.world, [])
+        self.assertEqual(len(lines), 1)
+        cup = self.world.objects[0]
+        self.assertLess(np.linalg.norm(cup["centre"] - [-0.27, 0.05]), 0.012)
+        self.assertAlmostEqual(cup["width_m"], 0.074)
+        self.assertEqual(B.merge_seen(self.world, []), [])                # đã tới nơi: không dời nữa
+
+    def test_stale_phone_reports_and_a_missing_file_change_nothing(self):
+        self.phone_reports([-0.27, 0.05], age=10.0)
+        self.assertEqual(B.merge_seen(self.world, []), [])
+        self.path.unlink()
+        self.assertEqual(B.merge_seen(self.world, []), [])
+        np.testing.assert_allclose(self.world.objects[0]["centre"], [-0.20, -0.10])
+
+    def test_phone_and_wrist_together_intersect_their_sight_lines(self):
+        truth = [-0.25, -0.02]
+        phone = self.phone_reports(truth, eye=[-0.30, 0.40, 0.35])            # iPhone đứng chếch một bên
+        off = dict(phone, centre=phone["centre"] + phone["bearing"] * 0.04)   # iPhone đoán khoảng cách sai 4 cm
+        self.path.write_text(self.json.dumps({"stamp": self.time.time(), "camera": "phone",
+                                              "objects": [self.OT.to_json(off)]}))
+        wrist = dict(self.T.see(self.T.WRIST, truth), near_ok=False, side_ok=False, stamp=self.time.time())  # chân bị cắt
+        lines = B.merge_seen(self.world, [wrist])
+        self.assertIn("giao hai đường ngắm", lines[0])
+        self.assertLess(np.linalg.norm(self.world.objects[0]["centre"] - truth), 0.01)
+
+    def test_the_wrist_alone_moves_an_object_only_when_it_sees_it_whole(self):
+        whole = dict(self.T.see(self.T.WRIST, [-0.24, -0.02]), stamp=self.time.time())
+        cut = dict(whole, near_ok=False, side_ok=False)
+        self.assertEqual(B.merge_seen(self.world, [cut]), [])
+        self.assertEqual(len(B.merge_seen(self.world, [whole])), 1)
+
+    def test_phone_facing_the_arm_and_wrist_take_the_middle_of_the_two_near_edges(self):
+        truth = [-0.25, -0.02]
+        phone = self.phone_reports(truth)                                     # iPhone đối diện tay máy
+        off = dict(phone, centre=phone["centre"] + phone["bearing"] * 0.04)
+        self.path.write_text(self.json.dumps({"stamp": self.time.time(), "camera": "phone",
+                                              "objects": [self.OT.to_json(off)]}))
+        wrist = dict(self.T.see(self.T.WRIST, truth), stamp=self.time.time())
+        lines = B.merge_seen(self.world, [wrist])
+        self.assertIn("hai phía đối diện", lines[0])
+        self.assertLess(np.linalg.norm(self.world.objects[0]["centre"] - truth), 0.01)
+
