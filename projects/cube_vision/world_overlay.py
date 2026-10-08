@@ -137,9 +137,11 @@ def main():
     from .tag import TagDetector
     detector = TagDetector(enhance=True, quiet=True)
     spec = cameras.STREAMS.get(args.camera, {"size": None, "fourcc": None})
-    cap = cameras.open_stream(cameras.stream_source(args.camera, args.source), spec["size"], spec["fourcc"])
+    source = cameras.stream_source(args.camera, args.source)
+    cap = cameras.open_stream(source, spec["size"], spec["fourcc"])
     if cap is None:
         raise SystemExit(f"Không mở được camera '{args.camera}'. (DroidCam chỉ cho một kết nối: tắt cửa sổ khác.)")
+    lost = 0
     live = None if args.fixed else LiveWorld(world, model, args.camera)
     pose = world.cameras[args.camera]["world_T_optical"]
     last_write = 0.0
@@ -148,8 +150,18 @@ def main():
         while True:
             frame = grab(cap, model.rotate)
             if frame is None:
+                lost += 1
                 time.sleep(0.05)
+                if lost >= 20:                      # luồng mạng (DroidCam) đứt: mở lại thay vì chờ mãi
+                    print("Mất luồng camera, đang kết nối lại...")
+                    cap.release()
+                    cap, lost = None, 0
+                    while cap is None:
+                        time.sleep(1.0)
+                        cap = cameras.open_stream(source, spec["size"], spec["fourcc"])
+                    grab(cap, model.rotate, warm=10)
                 continue
+            lost = 0
             seen = detect_tags(frame, detector)
             errors = {}
             if live is None:
@@ -183,8 +195,11 @@ def main():
                 print("Đã lưu khung để chẩn đoán:", save_debug(frame, view, seen, info if live is not None else None))
             if key in (ord("q"), 27):
                 return
+    except KeyboardInterrupt:
+        pass
     finally:
-        cap.release()
+        if cap is not None:
+            cap.release()
         cv2.destroyAllWindows()
 
 

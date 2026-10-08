@@ -23,6 +23,11 @@ MAX_LEAVE_ONE_OUT_PX = 12.0
 MIN_TAGS_FOR_LEAVE_ONE_OUT = 4
 REFINE_ACCEPT_PX = 8.0         # khởi tạo từ pose trước: nếu sau tinh chỉnh còn lệch hơn mức này thì tìm lại từ đầu
 MOVED_PX = 10.0                # tag lệch hơn mức này so với pose của các tag còn lại => tag đó đã bị dời
+# Các tag đồng phẳng cho HAI pose camera đều khớp tạm: pose thật và pose "lật" (camera quay 180° quanh pháp tuyến mặt
+# bàn). Đo thật 2026-10-08 trên iPhone cầm tay: pose thật khớp 1,8 / 3,0 px, pose lật 3,8 / 5,6 px. Chỉ nhảy sang
+# nghiệm lật khi nó khớp tốt hơn rõ rệt; chênh ít thì giữ nghiệm liền mạch với khung trước.
+FLIP_SWITCH_RATIO = 1.5
+COPLANAR_RATIO = 0.25          # độ dày của đám điểm so với bề rộng: nhỏ hơn mức này mới coi là đồng phẳng
 
 
 def _to_T(rvec, tvec) -> np.ndarray:
@@ -65,6 +70,24 @@ def _refine(pts, px, camera: CameraModel, optical_T_world, min_height=None):
     if min_height is not None and float(invert(T)[2, 3]) < min_height:
         return None
     return T
+
+
+def flip_start(optical_T_world, points):
+    """Pose khởi tạo cho nghiệm lật của các điểm gần đồng phẳng, hoặc None khi điểm không đồng phẳng.
+
+    Nghiệm lật = camera quay 180° quanh pháp tuyến mặt phẳng (qua trọng tâm các điểm), rồi xoay 180° quanh trục
+    nhìn để ảnh giữ nguyên chiều.
+    """
+    pts = np.asarray(points, float)
+    centre = pts.mean(axis=0)
+    _, sing, vt = np.linalg.svd(pts - centre)
+    if sing[1] < 1e-9 or sing[2] > COPLANAR_RATIO * sing[1]:
+        return None
+    n = vt[2]
+    half_turn = np.eye(4)
+    half_turn[:3, :3] = 2.0 * np.outer(n, n) - np.eye(3)
+    half_turn[:3, 3] = centre - half_turn[:3, :3] @ centre
+    return invert(half_turn @ invert(optical_T_world) @ np.diag([-1.0, -1.0, 1.0, 1.0]))
 
 
 def _pnp(points, pixels, camera: CameraModel, min_height=None, init_T=None):
@@ -189,16 +212,29 @@ def track(world_corners: dict, detections: dict, camera: CameraModel, prev=None,
         P, Q = stack(subset)
         return float(np.sqrt(np.mean(_errors(P, Q, camera, T) ** 2)))
 
+    def best_for(subset, starts):
+        """(rms, T) tốt nhất của một tập tag, đã so với nghiệm lật; None khi không nghiệm nào đạt."""
+        P, Q = stack(subset)
+        for T0 in starts:
+            T = _refine(P, Q, camera, T0, floor)
+            keep = None if T is None else (fit(subset, T), T)
+            alt0 = flip_start(T if T is not None else T0, P)
+            alt = None if alt0 is None else _refine(P, Q, camera, alt0, floor)
+            if alt is not None:
+                alt_rms = fit(subset, alt)
+                if keep is None or alt_rms * FLIP_SWITCH_RATIO < keep[0]:
+                    keep = (alt_rms, alt)
+            if keep is not None and keep[0] <= max_rms_px:
+                return keep
+        return None
+
     def attempt(starts):
         for size in range(len(ids), max(MIN_TAGS, len(ids) - 3) - 1, -1):
             found = []
             for subset in itertools.combinations(ids, size):
-                P, Q = stack(subset)
-                for T0 in starts:
-                    T = _refine(P, Q, camera, T0, floor)
-                    if T is not None and fit(subset, T) <= max_rms_px:
-                        found.append((fit(subset, T), subset, T))
-                        break
+                hit = best_for(subset, starts)
+                if hit is not None:
+                    found.append((hit[0], subset, hit[1]))
             if found:
                 return min(found, key=lambda item: item[0])
         return None

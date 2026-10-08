@@ -199,6 +199,34 @@ class SingleFrame(unittest.TestCase):
 
 
 class Track(unittest.TestCase):
+    FLAT = {1: tag_pose([-0.223, -0.060, 0.0578], (0, 0, 0.2)), 2: tag_pose([-0.146, -0.057, 0.0578], (0, 0, -0.4)),
+            3: tag_pose([-0.191, 0.060, 0.0578], (0, 0, 1.1)), 4: tag_pose([-0.188, -0.009, 0.0578], (0, 0, 0.7))}
+
+    def test_tracking_escapes_the_flipped_pose_of_coplanar_tags(self):
+        # Như đo thật khi cầm iPhone đi vòng: khung trước đã rơi vào nghiệm lật; khung này phải quay về nghiệm thật.
+        world = {i: corners_of(T) for i, T in self.FLAT.items()}
+        for eye, ids in (([0.166, -0.314, 0.201], [2, 4]), ([0.173, 0.198, 0.232], [2, 3, 4]),
+                         ([-0.43, -0.03, 0.154], [1, 2, 4])):
+            true_pose = look_at(eye, [-0.18, 0.0, 0.05])
+            seen = see(self.FLAT, true_pose, ids=ids, noise=0.5, seed=4)
+            flipped = invert(P.flip_start(invert(true_pose), np.vstack([world[i] for i in seen])))
+            self.assertGreater(np.linalg.norm(flipped[:3, 3] - true_pose[:3, 3]), 0.2)
+            result = P.track(world, seen, PHONE, prev=flipped)
+            self.assertTrue(result["ok"], result["reasons"])
+            self.assertLess(np.linalg.norm(result["world_T_optical"][:3, 3] - true_pose[:3, 3]), 0.03, eye)
+
+    def test_a_correct_previous_pose_is_not_abandoned_for_its_flip(self):
+        world = {i: corners_of(T) for i, T in self.FLAT.items()}
+        for seed in range(10):
+            true_pose = look_at([-0.43, -0.03, 0.154], [-0.18, 0.0, 0.05])
+            result = P.track(world, see(self.FLAT, true_pose, noise=1.0, seed=seed), PHONE, prev=true_pose)
+            self.assertLess(np.linalg.norm(result["world_T_optical"][:3, 3] - true_pose[:3, 3]), 0.03, seed)
+
+    def test_non_coplanar_points_have_no_flip(self):
+        stacked = np.vstack([corners_of(self.FLAT[1]), corners_of(tag_pose([-0.15, 0.0, 0.12]))])
+        self.assertIsNone(P.flip_start(np.eye(4), stacked))
+        self.assertIsNotNone(P.flip_start(np.eye(4), np.vstack([corners_of(T) for T in self.FLAT.values()])))
+
     def test_warm_start_is_much_faster_than_a_global_search(self):
         world = {i: corners_of(T) for i, T in TAGS.items()}
         seen = see(TAGS, TRUE_POSE)
