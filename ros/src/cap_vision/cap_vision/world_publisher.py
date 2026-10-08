@@ -138,6 +138,12 @@ def main(args=None):
                 m = self.marker("table", 0, Marker.CUBE, stamp, rgba=(0.75, 0.85, 0.95, 0.35), scale=(0.40, 0.60, 0.001))
                 m.pose.position.x, m.pose.position.z = -0.20, float(table_z)
                 array.markers.append(m)
+            region = world.get("region") or []
+            if len(region) >= 3:
+                ring = self.marker("region", 0, Marker.LINE_STRIP, stamp, rgba=(0.0, 0.45, 1.0, 1.0), scale=(0.003, 0, 0))
+                for x, y in list(region) + [region[0]]:
+                    ring.points.append(Point(x=float(x), y=float(y), z=float(table_z or 0.0) + 0.001))
+                array.markers.append(ring)
             for key, cube in (world.get("cubes") or {}).items():
                 tag = (world.get("tags") or {}).get(key, {})
                 by_face = cube.get("seen_by") == "face"

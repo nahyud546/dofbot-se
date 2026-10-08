@@ -31,10 +31,59 @@ from cube_vision import view_quality as Q  # noqa: E402
 from cube_vision.frames import CameraModel  # noqa: E402
 
 READY = [90.0, 125.0, 0.0, 0.0, 90.0]
-SCAN_POSES = [[j1, j2, 0.0, 0.0, 90.0] for j2 in (125.0, 110.0) for j1 in (60.0, 90.0, 120.0)]
+# Quét mặt bàn: J3 = J4 = 0 nên camera chỉ nhìn xuống bàn. J1 phủ hết vùng hand-eye đã kiểm chứng
+# (`j1_valid_range` trong hand_eye.json: 40,3–134,6°); ống kính mở rộng nên vùng thấy được còn rộng hơn khoảng J1 này.
+SCAN_J1 = (42.0, 66.0, 90.0, 114.0, 133.0)
+SCAN_POSES = [[j1, j2, 0.0, 0.0, 90.0] for j2 in (125.0, 110.0) for j1 in SCAN_J1]
+REGION_INSET_PX = 40.0          # bỏ viền ảnh: ở đó méo lớn và vật thường bị cắt
+REGION_MAX_RANGE_M = 0.45       # tia gần ngang đi rất xa: vùng world không vươn quá tầm này tính từ gốc
+REGION_CELL_M = 0.004
 MAX_EXTRA_VIEWS = 4
 MIN_NEW_BASELINE_M = 0.03       # pose mới phải dời tâm camera ít nhất chừng này so với mọi pose đã dùng
 IMAGE_SIZE = (640, 480)
+
+
+def view_footprint(servo, cal, z: float, inset: float = REGION_INSET_PX):
+    """Đa giác (N,2) trên mặt phẳng z mà camera tay thấy ở pose này, hoặc None. Chỉ lấy các điểm viền mà mô hình méo
+    còn đúng (chiếu ngược lại ra đúng pixel) và tia tới được mặt bàn trong tầm REGION_MAX_RANGE_M."""
+    from cube_vision.frames import pixel_to_plane
+    camera, T = wrist_camera(cal), base_T_optical(servo, cal)
+    w, h = camera.image_size
+    us, vs = np.linspace(inset, w - inset, 15), np.linspace(inset, h - inset, 11)
+    border = ([(u, inset) for u in us] + [(w - inset, v) for v in vs] + [(u, h - inset) for u in us[::-1]]
+              + [(inset, v) for v in vs[::-1]])
+    opt_T_base = np.linalg.inv(T)
+    hits = []
+    for u, v in border:
+        hit = pixel_to_plane(camera, T, u, v, z)
+        if hit is None or np.hypot(hit[0], hit[1]) > REGION_MAX_RANGE_M:
+            continue
+        back = camera.project((opt_T_base[:3, :3] @ hit + opt_T_base[:3, 3]).reshape(1, 3))[0]
+        if np.isfinite(back).all() and np.hypot(back[0] - u, back[1] - v) < 1.0:
+            hits.append(hit[:2])
+    return np.array(hits) if len(hits) >= 3 else None
+
+
+def scan_region(cal, poses=None, z: float | None = None, cell: float = REGION_CELL_M):
+    """Vùng world: hợp các vết nhìn của bộ pose quét trên mặt bàn, thành MỘT đa giác [[x, y], ...] (hệ base).
+
+    Tính thuần từ động học + hand-eye, không cần phần cứng. Trả (đa giác, diện tích m²); ([], 0.0) khi không có gì.
+    """
+    import cv2
+    z = float(cal["tag_top_z"]) - 0.030 if z is None else float(z)                 # mặt bàn = dưới cube tầng 0
+    lo, size = np.array([-REGION_MAX_RANGE_M, -REGION_MAX_RANGE_M]), int(round(2 * REGION_MAX_RANGE_M / cell))
+    mask = np.zeros((size, size), np.uint8)
+    for servo in (SCAN_POSES if poses is None else poses):
+        poly = view_footprint(servo, cal, z)
+        if poly is not None:
+            cv2.fillPoly(mask, [np.round((poly - lo) / cell).astype(np.int32)], 255)   # cột = x, hàng = y
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))          # khe hở < 2 cm giữa hai vết
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return [], 0.0
+    biggest = max(contours, key=cv2.contourArea)
+    outline = cv2.approxPolyDP(biggest, 1.0, True).reshape(-1, 2).astype(float) * cell + lo
+    return [[float(x), float(y)] for x, y in outline], float(cv2.contourArea(biggest)) * cell * cell
 
 
 def wrist_camera(cal) -> CameraModel:
@@ -226,6 +275,14 @@ class WristSession:
         import calibrate_external as E
         real = C.move_and_settle(self.arm, servo)
         return real, E._stable_tags(self.cap, self.det)
+
+    def frame(self):
+        """Một khung 640x480 tươi (tay phải đang đứng yên); None khi lỗi."""
+        import cv2
+        ok, raw = self.cap.read()
+        if not ok or raw is None:
+            return None
+        return raw if (raw.shape[1], raw.shape[0]) == IMAGE_SIZE else cv2.resize(raw, IMAGE_SIZE)
 
     def look(self, still_deg: float = 1.0):
         """Chỉ đọc, KHÔNG lái tay: (khớp thật | None nếu tay đang chuyển động, {tag_id: 4 góc}, khung ảnh).

@@ -102,6 +102,9 @@ class Watcher:
             if est is None:
                 events["rejected"][tag_id] = "không giải được pose từ lần nhìn này"
                 continue
+            if not self.world.inside(est["centre"][:2]):
+                events["rejected"][tag_id] = "ngoài vùng world"
+                continue
             known = self.world.tags.get(tag_id)
             is_new = known is None
             moved = known is not None and float(np.linalg.norm(est["centre"] - known["centre"])) > MOVED_M

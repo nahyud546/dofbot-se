@@ -51,6 +51,11 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
             if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
                     and -w < b[0] < 2 * w and -h < b[1] < 2 * h):
                 _line(out, a, b, (200, 200, 120), 1)
+    if drawn["region"] is not None:                  # viền vùng world: ngoài viền này không ghi vật nào
+        for a, b in zip(drawn["region"][:-1], drawn["region"][1:]):
+            if (np.isfinite(a).all() and np.isfinite(b).all() and -w < a[0] < 2 * w and -h < a[1] < 2 * h
+                    and -w < b[0] < 2 * w and -h < b[1] < 2 * h and np.hypot(*(a - b)) < max(w, h) / 3):
+                _line(out, a, b, (255, 120, 0), 2)
     for k, (a, b) in enumerate(drawn["axes"]):
         _line(out, a, b, AXIS_COLOURS[k], 3)
     errors = {}

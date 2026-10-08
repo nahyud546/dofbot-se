@@ -21,6 +21,7 @@ from .registry import repo_root
 
 CUBE_EDGE_M = 0.030
 TAG_SIZE_M = 0.020
+REGION_MARGIN_M = 0.015         # vật nằm ngay viền vùng (tâm lấn ra chừng này) vẫn tính là trong vùng
 _CUBE_EDGES = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
 
 
@@ -130,13 +131,15 @@ class WorldMap:
                               "K": list(model.K), "k1": model.k1, "k2": model.k2,
                               "image_size": list(model.image_size), "rotate": model.rotate, "stamp": time.time()}
 
-    def inside(self, xy) -> bool:
-        """Điểm (x, y) trên mặt bàn có nằm trong vùng world không. Chưa khai báo vùng thì coi như mọi chỗ đều trong."""
+    def inside(self, xy, margin_m: float = REGION_MARGIN_M) -> bool:
+        """Điểm (x, y) trên mặt bàn có nằm trong vùng world không (cho phép lấn ra ngoài viền `margin_m`).
+        Chưa khai báo vùng thì coi như mọi chỗ đều trong."""
         if not self.region:
             return True
         import cv2
         poly = (np.asarray(self.region, float) * 1000.0).astype(np.float32).reshape(-1, 1, 2)
-        return cv2.pointPolygonTest(poly, (float(xy[0]) * 1000.0, float(xy[1]) * 1000.0), False) >= 0
+        signed_mm = cv2.pointPolygonTest(poly, (float(xy[0]) * 1000.0, float(xy[1]) * 1000.0), True)
+        return signed_mm >= -margin_m * 1000.0
 
     # -------------------------------------------------------------- đọc
     def tag_corners(self, only_sure: bool = True) -> dict:
@@ -178,13 +181,23 @@ class WorldMap:
         z = self.table_z or 0.0
         origin = np.array([0.0, 0.0, z])
         out = {"axes": [tuple(px([origin, origin + 0.05 * np.eye(3)[k]])) for k in range(3)], "grid": [],
-               "cubes": {}, "tags": {}, "faces": {}, "zones": {}}
+               "cubes": {}, "tags": {}, "faces": {}, "zones": {}, "region": None}
         steps = np.arange(-extent_m, extent_m + 1e-9, grid_m)
         along = np.arange(0.0, 1.0 + 1e-9, 0.02 / max(extent_m, 0.02) / 2.0)   # lấy mẫu ~1 cm dọc từng đường
 
         def polyline(a, b):                                # (N,2) pixel dọc đoạn a-b; điểm không chiếu được là NaN
             a, b = np.asarray(a, float), np.asarray(b, float)
-            return px(a + along[:, None] * (b - a))
+            points = a + along[:, None] * (b - a)
+            pixels = px(points)
+            if self.region:                                # có vùng world: lưới chỉ vẽ bên trong vùng
+                pixels[[not self.inside(p[:2], 0.0) for p in points]] = np.nan
+            return pixels
+
+        if self.region:
+            ring = np.asarray(self.region + self.region[:1], float)
+            dense = np.concatenate([a + np.linspace(0.0, 1.0, max(2, int(np.linalg.norm(b - a) / 0.01)))[:, None]
+                                    * (b - a) for a, b in zip(ring[:-1], ring[1:])])
+            out["region"] = px(np.c_[dense, np.full(len(dense), z)])
 
         for s in steps:                                    # lưới trên mặt bàn, phía làm việc (x âm)
             out["grid"].append(polyline([-extent_m, s, z], [0.0, s, z]))

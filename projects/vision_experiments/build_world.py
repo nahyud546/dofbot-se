@@ -34,7 +34,7 @@ import dofbot_frames as D  # noqa: E402
 from cube_vision import camera_pose as P  # noqa: E402
 from cube_vision import cameras, intrinsics as I  # noqa: E402
 from cube_vision import world_overlay as O  # noqa: E402
-from cube_vision.world_map import WorldMap, snap_to_layer  # noqa: E402
+from cube_vision.world_map import WorldMap, default_path, snap_to_layer  # noqa: E402
 
 DRIFT_MOVED_PX = 8.0
 WATCH_MIN_SHARPNESS = 25.0      # ảnh camera tay nhòe/tối hơn mức này thì "không thấy cube" không có nghĩa là cube mất
@@ -50,17 +50,30 @@ def camera_model(name):
     return model
 
 
-def scan(session, tags=None, look_around=True, use_plane=True, log=print) -> WorldMap:
+def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=True, keep_dir=None) -> WorldMap:
     """Đo mọi tag bằng camera tay rồi trả world mới (chưa lưu).
 
     use_plane: tag nằm ngửa đúng tầng thì lấy độ cao đã biết của tầng thay cho độ cao đo (xem snap_to_layer).
+    faces: ở mỗi pose quét chụp thêm 2 khung, nhận cube không ngửa tag bằng mặt màu / hình in.
+    keep_dir: lưu khung + góc khớp của từng pose quét vào thư mục này (dữ liệu cho việc dựng hình vật bất kỳ).
     """
     world = WorldMap()
+    world.region, area = A.scan_region(session.cal)
+    log(f"Vùng world (mặt bàn camera tay quét được): {area * 1e4:.0f} cm². Vật ngoài vùng này không được ghi.")
+    shots = []                                                  # [(khớp thật, [khung], {tag thấy})] của các pose quét
+    grab_frame = getattr(session, "frame", None)
+
+    def observe(servo):
+        real, seen = session.observe(servo)
+        if grab_frame is not None and (faces or keep_dir) and len(shots) < len(A.SCAN_POSES):
+            frames = [f for f in (grab_frame(), grab_frame()) if f is not None]
+            shots.append(([float(v) for v in real[:5]], frames, set(seen)))
+        return real, seen
     try:
         world.table_z = float(json.loads(M.CALIB_FILE.read_text())["table_z"])
     except (OSError, ValueError, KeyError, TypeError):
         world.table_z = None
-    results = A.measure(session.observe, session.cal, tags, look_around=look_around, log=log)
+    results = A.measure(observe, session.cal, tags, look_around=look_around, log=log)
     for tag_id, result in results.items():
         log(A.describe(tag_id, result))
         fused = result["fused"]
@@ -73,8 +86,46 @@ def scan(session, tags=None, look_around=True, use_plane=True, log=print) -> Wor
                 fused["layer"], source = layer, "wrist+plane"
                 log(f"    -> nằm ngửa ở tầng {layer}: dùng độ cao đã biết {fused['centre'][2] * 1000:.1f} mm "
                     f"(đo được lệch {fused['dz_m'] * 1000:+.1f} mm)")
+        if not world.inside(fused["centre"][:2]):
+            log(f"    -> tag {tag_id} nằm ngoài vùng world: không ghi")
+            continue
         world.update_tag(tag_id, fused, source, sure=bool(result["quality"]))
+    if keep_dir and shots:
+        import cv2
+        keep_dir = Path(keep_dir)
+        keep_dir.mkdir(parents=True, exist_ok=True)
+        for index, (real, frames, _) in enumerate(shots):
+            if frames:
+                cv2.imwrite(str(keep_dir / f"pose{index:02d}.png"), frames[0])
+        (keep_dir / "poses.json").write_text(json.dumps([real for real, _, _ in shots]))
+        log(f"Đã lưu {len(shots)} khung quét vào {keep_dir}")
+    if faces and shots:
+        scan_faces(session.cal, world, shots, log)
     return world
+
+
+def scan_faces(cal, world, shots, log=print) -> None:
+    """Cube không ngửa tag trong các khung quét: nhận bằng mặt, ghi vào world (hai khung phải thống nhất)."""
+    import world_watch as W
+    try:
+        from cube_vision.identify import FULL, Identifier
+        identifier = Identifier(FULL)
+    except Exception as exc:  # noqa: BLE001
+        log(f"Không nạp được bộ nhận mặt ({exc}): world chỉ có cube đọc được tag.")
+        return
+    watcher = W.Watcher(cal, world)
+    stamp = time.time()
+    for real, frames, seen in shots:
+        for frame in frames:
+            found, tag_ids = W.faces_from_detections(identifier.detect(frame))
+            stamp += 1.0
+            events = watcher.observe_faces(real, found, tag_ids | set(seen) | set(world.tags), stamp=stamp,
+                                           clear_view=False)
+            for cube_id in events["new"]:
+                face = world.faces[cube_id]
+                x, y, z = face["centre"] * 1000
+                log(f"  cube {cube_id}: thấy mặt {face['label']} (không đọc tag) ở ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, "
+                    f"tầng {face['layer']}")
 
 
 def add_fixed_cameras(world: WorldMap, log=print) -> None:
@@ -109,11 +160,12 @@ def see_tags(name, source="auto"):
 
 def cmd_scan(args):
     with A.WristSession() as session:
+        keep = default_path().parent / "scan" / time.strftime("%Y%m%d-%H%M%S")
         world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around,
-                     use_plane=not args.no_plane)
+                     use_plane=not args.no_plane, faces=not args.no_faces, keep_dir=keep)
     add_fixed_cameras(world)
     sure = sum(1 for t in world.tags.values() if t["sure"])
-    print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn).")
+    print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn), {len(world.faces)} cube nhận bằng mặt khác.")
 
 
 class FaceJob:
@@ -179,6 +231,9 @@ def cmd_watch(args):
             world.table_z = float(json.loads(M.CALIB_FILE.read_text())["table_z"])
         except (OSError, ValueError, KeyError, TypeError):
             pass
+        if not world.region:
+            world.region, area = A.scan_region(session.cal)
+            print(f"Vùng world (mặt bàn camera tay quét được): {area * 1e4:.0f} cm². Vật ngoài vùng này không được ghi.")
         watcher = W.Watcher(session.cal, world)
         if args.goto:
             print(f"Đưa tay tới {args.goto} rồi chỉ nhìn.")
@@ -368,7 +423,7 @@ def main():
     ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
     ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
     ap.add_argument("--no-faces", action="store_true",
-                    help="với --watch: chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
+                    help="chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()
     if args.watch:
         cmd_watch(args)

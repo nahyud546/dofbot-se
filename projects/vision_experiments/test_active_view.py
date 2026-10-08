@@ -137,3 +137,49 @@ class Chooser(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Region(unittest.TestCase):
+    """Vùng world = phần mặt bàn mà bộ pose quét nhìn thấy."""
+
+    def test_scan_poses_stay_inside_the_hand_eye_envelope_and_look_only_at_the_table(self):
+        lo, hi = CAL["j1_valid_range"]
+        for servo in A.SCAN_POSES:
+            self.assertTrue(lo <= servo[0] <= hi, servo)
+            self.assertEqual(servo[2:4], [0.0, 0.0])
+        self.assertGreaterEqual(len({s[0] for s in A.SCAN_POSES}), 5)
+
+    def test_region_is_one_polygon_in_front_of_the_arm_wider_than_the_old_three_angle_scan(self):
+        from cube_vision.world_map import WorldMap
+        region, area = A.scan_region(CAL)
+        old, old_area = A.scan_region(CAL, [[j1, j2, 0.0, 0.0, 90.0] for j2 in (125.0, 110.0) for j1 in (60.0, 90.0, 120.0)])
+        self.assertGreater(area, 1.2 * old_area)
+        world = WorldMap(region=region)
+        self.assertTrue(world.inside([-0.22, 0.0]))                  # giữa vùng làm việc
+        self.assertFalse(world.inside([0.20, 0.0]))                  # sau lưng tay máy
+        self.assertFalse(world.inside([-0.60, 0.0]))                 # xa quá tầm nhìn
+        self.assertFalse(world.inside([0.0, 0.0]))                   # ngay đế tay máy
+
+    def test_every_spot_inside_the_region_is_seen_by_some_scan_pose(self):
+        from cube_vision.world_map import WorldMap
+        world, camera, z = WorldMap(region=A.scan_region(CAL)[0]), A.wrist_camera(CAL), CAL["tag_top_z"] - 0.03
+        for x in np.arange(-0.34, 0.0, 0.02):
+            for y in np.arange(-0.30, 0.301, 0.02):
+                if not world.inside([x, y], margin_m=-0.01):
+                    continue
+                seen = False
+                for servo in A.SCAN_POSES:
+                    cam = (np.linalg.inv(A.base_T_optical(servo, CAL)) @ [x, y, z, 1.0])[:3]
+                    uv = camera.project(cam.reshape(1, 3))[0] if cam[2] > 0.05 else [np.nan, np.nan]
+                    seen = seen or (np.isfinite(uv).all() and 0 <= uv[0] <= 640 and 0 <= uv[1] <= 480)
+                self.assertTrue(seen, (x, y))
+
+    def test_grid_is_drawn_only_inside_the_region(self):
+        from cube_vision.world_map import WorldMap
+        servo = [90.0, 110.0, 0.0, 0.0, 90.0]
+        free = WorldMap(table_z=CAL["tag_top_z"] - 0.03)
+        fenced = WorldMap(table_z=free.table_z, region=[[-0.25, -0.02], [-0.20, -0.02], [-0.20, 0.02], [-0.25, 0.02]])
+        count = lambda w: sum(int(np.isfinite(line).all(axis=1).sum())
+                              for line in w.project_into(A.wrist_camera(CAL), A.base_T_optical(servo, CAL))["grid"])
+        self.assertGreater(count(free), 5 * max(count(fenced), 1))
+        self.assertIsNotNone(fenced.project_into(A.wrist_camera(CAL), A.base_T_optical(servo, CAL))["region"])
