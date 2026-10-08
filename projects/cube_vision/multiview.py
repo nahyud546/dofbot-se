@@ -226,3 +226,36 @@ def flat_tag(view: View, z: float, size_m: float = TAG_SIZE_M):
     res = residual(sol.x)
     return {"a_T_tag": a_T_tag, "corners": pts @ a_T_tag[:3, :3].T + a_T_tag[:3, 3], "centre": a_T_tag[:3, 3].copy(),
             "normal": np.array([0.0, 0.0, 1.0]), "rms_px": float(np.sqrt(np.mean(res ** 2))), "z": float(z)}
+
+
+FACE_SIZE_M = 0.030
+
+
+def flat_face(view: View, layer_zs, size_m: float = FACE_SIZE_M):
+    """Mặt trên của cube (vuông `size_m`, nằm ngang) thấy bằng 4 góc KHÔNG có thứ tự chuẩn: tìm tầng và x, y, yaw.
+
+    Khác tag, 4 góc của một mặt màu/hình in đến từ dò đường viền nên không biết góc nào là góc đầu, chiều nào là
+    chiều quay: thử cả 8 thứ tự. Độ cao không biết trước: thử từng độ cao trong `layer_zs` (mặt trên của tầng 0, 1,
+    ...). Kích thước mặt đã biết nên chỉ MỘT tầng khớp: sai tầng thì mặt chiếu ra to/nhỏ hơn 4 góc thấy được.
+    Trả nghiệm tốt nhất của `flat_tag` kèm "layer" và "runner_up_px" (rms của tầng tốt nhì; inf khi chỉ có một tầng),
+    hoặc None khi không tầng nào giải được.
+    """
+    quad = np.asarray(view.corners_px, float).reshape(4, 2)
+    per_layer = []
+    for layer, z in enumerate(layer_zs):
+        best = None
+        for order in (quad, quad[::-1]):
+            for shift in range(4):
+                fit = flat_tag(View(view.a_T_optical, view.camera, np.roll(order, shift, axis=0), view.label),
+                               float(z), size_m)
+                if fit is not None and (best is None or fit["rms_px"] < best["rms_px"]):
+                    best = fit
+        if best is not None:
+            best["layer"] = layer
+            per_layer.append(best)
+    if not per_layer:
+        return None
+    per_layer.sort(key=lambda fit: fit["rms_px"])
+    best = per_layer[0]
+    best["runner_up_px"] = per_layer[1]["rms_px"] if len(per_layer) > 1 else float("inf")
+    return best

@@ -55,16 +55,19 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
         _line(out, a, b, AXIS_COLOURS[k], 3)
     errors = {}
     for tag_id, edges in drawn["cubes"].items():
-        tag = world.tags[tag_id]
+        tag = world.entry(tag_id)
+        by_face = tag_id not in world.tags
         if tag_id in missing:
             colour, suffix = (150, 150, 150), " (khong thay)"
+        elif by_face:
+            colour, suffix = ((255, 200, 0) if tag["sure"] else (200, 120, 0)), f" (mat {tag['label']})"
         elif str(tag.get("source", "")).startswith("phone-live"):
             colour, suffix = (0, 140, 255), " (do live)"
         else:
             colour, suffix = ((0, 220, 255) if tag["sure"] else (0, 120, 255)), ""
         for a, b in edges:
             _line(out, a, b, colour, 2)
-        quad = drawn["tags"][tag_id]
+        quad = drawn["faces"][tag_id] if by_face else drawn["tags"][tag_id]
         centre = _pt(quad.mean(axis=0))
         if centre:
             x, y, z = tag["centre"] * 1000
@@ -73,7 +76,7 @@ def draw(frame, world: WorldMap, model, world_T_optical, detections=None, note="
                 suffix = f" (do live, nghieng {tilt:.0f})"
             cv2.putText(out, f"{tag_id}: {x:+.0f},{y:+.0f},{z:+.0f}{suffix}", (centre[0] + 8, centre[1] - 8),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2, cv2.LINE_AA)
-        if detections and tag_id in detections and np.isfinite(quad).all():
+        if not by_face and detections and tag_id in detections and np.isfinite(quad).all():
             errors[tag_id] = float(np.mean(np.linalg.norm(quad - np.asarray(detections[tag_id], float), axis=1)))
     for tag_id, quad in (detections or {}).items():
         cv2.polylines(out, [np.asarray(quad, np.int32).reshape(-1, 1, 2)], True, (0, 255, 0), 1, cv2.LINE_AA)

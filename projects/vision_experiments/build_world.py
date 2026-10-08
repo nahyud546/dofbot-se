@@ -38,7 +38,8 @@ from cube_vision.world_map import WorldMap, snap_to_layer  # noqa: E402
 
 DRIFT_MOVED_PX = 8.0
 WATCH_MIN_SHARPNESS = 25.0      # ảnh camera tay nhòe/tối hơn mức này thì "không thấy cube" không có nghĩa là cube mất
-WATCH_MIN_BRIGHTNESS = 25.0
+WATCH_MIN_BRIGHTNESS = 25
+WATCH_FACE_BRIGHTNESS = 90      # đo thật: ở 63 bộ nhận mặt không thấy cube lật mặt, ở 154 thấy đủ.0
 
 
 def camera_model(name):
@@ -115,6 +116,55 @@ def cmd_scan(args):
     print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn).")
 
 
+class FaceJob:
+    """Bộ nhận mặt (màu / hình in, có DINO) chạy ở luồng riêng trên khung mới nhất: chậm hơn dò tag nhiều lần
+    (0,7 s có GPU, ~4 s chỉ CPU) nên không được chặn vòng hiển thị."""
+
+    def __init__(self):
+        import queue
+        import threading
+        self._latest, self._lock = None, threading.Lock()
+        self._out, self._stop = queue.Queue(), threading.Event()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def offer(self, stamp, frame, clear):
+        with self._lock:
+            self._latest = (stamp, frame.copy(), clear)
+
+    def _loop(self):
+        try:
+            from cube_vision.identify import FULL, Identifier
+            identifier = Identifier(FULL)
+        except Exception as exc:  # noqa: BLE001 - thiếu mô hình: vẫn theo dõi được bằng tag
+            print(f"  Không nạp được bộ nhận mặt ({exc}): chỉ theo dõi bằng tag.")
+            return
+        while not self._stop.is_set():
+            with self._lock:
+                job, self._latest = self._latest, None
+            if job is None:
+                time.sleep(0.02)
+                continue
+            stamp, frame, clear = job
+            try:
+                self._out.put((stamp, identifier.detect(frame), clear))
+            except Exception as exc:  # noqa: BLE001
+                print(f"  Bộ nhận mặt lỗi ở một khung ({exc}).")
+
+    def results(self):
+        import queue
+        out = []
+        while True:
+            try:
+                out.append(self._out.get_nowait())
+            except queue.Empty:
+                return out
+
+    def stop(self):
+        self._stop.set()
+        self._thread.join(timeout=10.0)
+
+
 def cmd_watch(args):
     """Chỉ nhìn: tay đứng yên ở pose nào, camera tay thấy cube nào thì ghi vào world. Không gửi lệnh chuyển động,
     trừ khi có --goto (đi tới một pose rồi nhìn) hoặc --free (nhả lực servo để bạn tự bẻ tay)."""
@@ -141,9 +191,12 @@ def cmd_watch(args):
         print("Đang theo dõi (q hoặc Ctrl+C để thoát). World:", world.save())
         import collections
         model, last_text, last_save = A.wrist_camera(session.cal), "", 0.0
+        last_face_text = ""
         recent, pending = collections.deque(maxlen=3), collections.deque(maxlen=90)
         started, frames, looks = time.time(), 0, 0
         session.start_polling()
+        face_job = None if args.no_faces else FaceJob()
+        last_dim = 0.0
         try:
             while True:
                 stamp, frame, seen = session.grab()
@@ -157,6 +210,23 @@ def cmd_watch(args):
                 clear = bool(steady) or (I.sharpness(gray) >= WATCH_MIN_SHARPNESS
                                          and gray.mean() >= WATCH_MIN_BRIGHTNESS)
                 pending.append((stamp, steady, clear))
+                if face_job is not None:
+                    if gray.mean() < WATCH_FACE_BRIGHTNESS and time.time() - last_dim > 30.0:
+                        print(f"  Ảnh tối (độ sáng {gray.mean():.0f}/255): mặt không có tag sẽ khó nhận, hãy bật thêm đèn.")
+                        last_dim = time.time()
+                    face_job.offer(stamp, frame, clear)
+                    for at, detections, was_clear in face_job.results():
+                        servo = session.joints_at(at)
+                        if not isinstance(servo, list):
+                            continue                              # tay đang động quanh khung đó: bỏ
+                        faces, tag_ids = W.faces_from_detections(detections)
+                        events = watcher.observe_faces(servo, faces, tag_ids, stamp=at, clear_view=was_clear)
+                        text = W.describe(events)
+                        if text and text != last_face_text:
+                            print(f"  [{time.strftime('%H:%M:%S')}] J={[round(v) for v in servo[:4]]}: {text}")
+                        last_face_text = text
+                        if events["used"] or events["removed"]:
+                            world.save()
                 # Khung nào đã có lần đọc khớp sau nó thì kết luận được: tay đứng yên (ghi) hay đang động (bỏ).
                 confirmed, moving = None, False
                 while pending:
@@ -189,9 +259,10 @@ def cmd_watch(args):
                     else:
                         j1_range = session.cal.get("j1_valid_range")
                         outside = bool(j1_range) and not (j1_range[0] <= now_servo[0] <= j1_range[1])
-                        note = f"J={[round(v) for v in now_servo[:4]]} world: {len(world.tags)} cube" + (
+                        note = f"J={[round(v) for v in now_servo[:4]]} world: {len(world.cube_ids())} cube" + (
                             " | tay dang chuyen dong" if moving else "") + (" | NGOAI VUNG HAND-EYE" if outside else "")
-                        unseen = set(world.tags) - set(steady)       # cube của world không thấy trong khung này: vẽ xám
+                        # cube của world không thấy trong khung này: vẽ xám
+                        unseen = (set(world.tags) - set(steady)) | {c for c in world.faces if watcher.unseen.get(c)}
                         view, _ = O.draw(frame, world, model, A.base_T_optical(now_servo, session.cal), steady, note,
                                          missing=unseen)
                     cv2.imshow("camera tay -> world", view)
@@ -203,6 +274,8 @@ def cmd_watch(args):
             pass
         finally:
             session.stop_polling()
+            if face_job is not None:
+                face_job.stop()
             elapsed = max(time.time() - started, 1e-6)
             print(f"Đã chạy {elapsed:.0f} s: {frames / elapsed:.1f} khung/giây hiển thị, {looks / elapsed:.1f} lần ghi/giây.")
             if args.free:
@@ -265,6 +338,11 @@ def cmd_show(_args):
         print(f"  tag {tag_id}: ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, nghiêng {tilt:.0f}°, ±{tag['std_m'] * 1000:.1f} mm, "
               f"{tag['n_views']} góc nhìn, {tag['source']}, {'chắc' if tag['sure'] else 'CHƯA CHẮC'}, "
               f"{now - tag['stamp']:.0f} s trước")
+    for cube_id, face in sorted(world.faces.items()):
+        x, y, z = face["centre"] * 1000
+        print(f"  cube {cube_id} (mặt {face['label']} ngửa lên, không đọc tag): ({x:+.1f}, {y:+.1f}, {z:+.1f}) mm, "
+              f"tầng {face['layer']}, khớp {face['rms_px']:.1f} px, {face['n_views']} lần nhìn, "
+              f"{now - face['stamp']:.0f} s trước")
     for name, cam in world.cameras.items():
         x, y, z = cam["world_T_optical"][:3, 3] * 1000
         print(f"  camera {name}: ({x:+.0f}, {y:+.0f}, {z:+.0f}) mm")
@@ -289,6 +367,8 @@ def main():
     ap.add_argument("--once", action="store_true", help="với --watch: ghi một lần nhìn rồi thoát")
     ap.add_argument("--no-window", action="store_true", help="với --watch: không mở cửa sổ")
     ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
+    ap.add_argument("--no-faces", action="store_true",
+                    help="với --watch: chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()
     if args.watch:
         cmd_watch(args)

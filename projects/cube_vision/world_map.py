@@ -80,8 +80,10 @@ def snap_to_layer(fused: dict, tag_top_z: float, edge: float = CUBE_EDGE_M, max_
 @dataclass
 class WorldMap:
     tags: dict = field(default_factory=dict)        # {id: {corners, centre, normal, std_m, n_views, source, stamp, sure}}
+    faces: dict = field(default_factory=dict)       # {cube_id: như tags nhưng `corners` là MẶT TRÊN 30 mm; + label}
     zones: dict = field(default_factory=dict)       # {zone: {xy, source, stamp}}
     cameras: dict = field(default_factory=dict)     # {tên: {world_T_optical, K, k1, k2, image_size, rotate, stamp}}
+    region: list = field(default_factory=list)      # [[x, y], ...] đa giác trên mặt bàn: vùng camera tay quét được
     table_z: float | None = None
     frame: str = "world"
     created: float = field(default_factory=time.time)
@@ -101,8 +103,24 @@ class WorldMap:
         self.tags[int(tag_id)] = entry
         return entry
 
+    def update_face(self, cube_id: int, fit: dict, label: str, confidence: float, source: str, sure: bool = True,
+                    n_views: int = 1, stamp: float | None = None):
+        """Cube nhận bằng một mặt KHÔNG có tag (mặt màu, hình in): `fit` từ `multiview.flat_face`.
+
+        Lưu riêng khỏi `tags`: mặt này không làm mốc định vị cho camera khác, nhưng cube vẫn được vẽ và dùng tọa độ.
+        Một cube chỉ ở một chỗ: ghi mặt thì bỏ mục tag cũ của cube đó (tag không còn ngửa lên).
+        """
+        self.tags.pop(int(cube_id), None)
+        self.faces[int(cube_id)] = {
+            "corners": np.asarray(fit["corners"], float).reshape(4, 3), "centre": np.asarray(fit["centre"], float),
+            "normal": np.array([0.0, 0.0, 1.0]), "layer": int(fit["layer"]), "rms_px": float(fit["rms_px"]),
+            "label": str(label), "confidence": float(confidence), "n_views": int(n_views), "source": source,
+            "sure": bool(sure), "stamp": time.time() if stamp is None else float(stamp)}
+        return self.faces[int(cube_id)]
+
     def forget(self, tag_id: int) -> None:
         self.tags.pop(int(tag_id), None)
+        self.faces.pop(int(tag_id), None)
 
     def set_zone(self, zone: int, xy, source: str) -> None:
         self.zones[int(zone)] = {"xy": [float(xy[0]), float(xy[1])], "source": source, "stamp": time.time()}
@@ -112,13 +130,29 @@ class WorldMap:
                               "K": list(model.K), "k1": model.k1, "k2": model.k2,
                               "image_size": list(model.image_size), "rotate": model.rotate, "stamp": time.time()}
 
+    def inside(self, xy) -> bool:
+        """Điểm (x, y) trên mặt bàn có nằm trong vùng world không. Chưa khai báo vùng thì coi như mọi chỗ đều trong."""
+        if not self.region:
+            return True
+        import cv2
+        poly = (np.asarray(self.region, float) * 1000.0).astype(np.float32).reshape(-1, 1, 2)
+        return cv2.pointPolygonTest(poly, (float(xy[0]) * 1000.0, float(xy[1]) * 1000.0), False) >= 0
+
     # -------------------------------------------------------------- đọc
     def tag_corners(self, only_sure: bool = True) -> dict:
         return {i: t["corners"] for i, t in self.tags.items() if t["sure"] or not only_sure}
 
     def cube(self, tag_id: int):
-        tag = self.tags.get(int(tag_id))
+        tag = self.tags.get(int(tag_id)) or self.faces.get(int(tag_id))
         return None if tag is None else cube_from_tag(tag["corners"])
+
+    def cube_ids(self) -> list:
+        """Mọi cube của world, dù biết qua tag hay qua mặt khác."""
+        return sorted(set(self.tags) | set(self.faces))
+
+    def entry(self, cube_id: int):
+        """Mục của một cube: tag nếu có (chính xác hơn), không thì mặt."""
+        return self.tags.get(int(cube_id)) or self.faces.get(int(cube_id))
 
     def camera_model(self, name: str):
         cam = self.cameras.get(name)
@@ -144,7 +178,7 @@ class WorldMap:
         z = self.table_z or 0.0
         origin = np.array([0.0, 0.0, z])
         out = {"axes": [tuple(px([origin, origin + 0.05 * np.eye(3)[k]])) for k in range(3)], "grid": [],
-               "cubes": {}, "tags": {}, "zones": {}}
+               "cubes": {}, "tags": {}, "faces": {}, "zones": {}}
         steps = np.arange(-extent_m, extent_m + 1e-9, grid_m)
         along = np.arange(0.0, 1.0 + 1e-9, 0.02 / max(extent_m, 0.02) / 2.0)   # lấy mẫu ~1 cm dọc từng đường
 
@@ -160,6 +194,12 @@ class WorldMap:
             out["tags"][tag_id] = px(tag["corners"])
             vertices = px(cube_from_tag(tag["corners"])["vertices"])
             out["cubes"][tag_id] = [(vertices[a], vertices[b]) for a, b in _CUBE_EDGES]
+        for cube_id, face in self.faces.items():
+            if cube_id in self.tags:
+                continue                                   # đã thấy lại tag của cube này: tag thắng
+            out["faces"][cube_id] = px(face["corners"])
+            vertices = px(cube_from_tag(face["corners"])["vertices"])
+            out["cubes"][cube_id] = [(vertices[a], vertices[b]) for a, b in _CUBE_EDGES]
         for zone, item in self.zones.items():
             out["zones"][zone] = px([[item["xy"][0], item["xy"][1], z]])[0]
         return out
@@ -173,11 +213,14 @@ class WorldMap:
                 return {str(k): clean(v) for k, v in value.items()}
             return value
         cubes = {}
-        for tag_id in self.tags:
-            cube = self.cube(tag_id)
-            cubes[str(tag_id)] = {"centre": cube["centre"].tolist(), "R": cube["R"].tolist(), "edge_m": CUBE_EDGE_M}
+        for tag_id in self.cube_ids():
+            cube, entry = self.cube(tag_id), self.entry(tag_id)
+            cubes[str(tag_id)] = {"centre": cube["centre"].tolist(), "R": cube["R"].tolist(), "edge_m": CUBE_EDGE_M,
+                                  "seen_by": "tag" if tag_id in self.tags else "face",
+                                  "top_face": entry.get("label", "tag"), "sure": bool(entry.get("sure", True))}
         return {"frame": self.frame, "created": self.created, "saved": time.time(), "table_z": self.table_z,
-                "tags": clean(self.tags), "cubes": cubes, "zones": clean(self.zones), "cameras": clean(self.cameras)}
+                "tags": clean(self.tags), "faces": clean(self.faces), "cubes": cubes, "zones": clean(self.zones), "cameras": clean(self.cameras),
+                "region": [[float(x), float(y)] for x, y in self.region]}
 
     def save(self, path=None) -> Path:
         path = Path(path or default_path())
@@ -200,6 +243,11 @@ class WorldMap:
             world.tags[int(key)] = {**tag, "corners": np.asarray(tag["corners"], float).reshape(4, 3),
                                     "centre": np.asarray(tag["centre"], float),
                                     "normal": np.asarray(tag["normal"], float)}
+        world.region = [[float(x), float(y)] for x, y in (data.get("region") or [])]
+        for key, face in (data.get("faces") or {}).items():
+            world.faces[int(key)] = {**face, "corners": np.asarray(face["corners"], float).reshape(4, 3),
+                                     "centre": np.asarray(face["centre"], float),
+                                     "normal": np.asarray(face["normal"], float)}
         world.zones = {int(k): v for k, v in (data.get("zones") or {}).items()}
         for name, cam in (data.get("cameras") or {}).items():
             world.cameras[name] = {**cam, "world_T_optical": np.asarray(cam["world_T_optical"], float).reshape(4, 4)}

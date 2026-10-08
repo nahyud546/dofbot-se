@@ -140,10 +140,12 @@ def main(args=None):
                 array.markers.append(m)
             for key, cube in (world.get("cubes") or {}).items():
                 tag = (world.get("tags") or {}).get(key, {})
-                sure = bool(tag.get("sure", True))
+                by_face = cube.get("seen_by") == "face"
+                sure = bool(cube.get("sure", tag.get("sure", True)))
                 edge = float(cube.get("edge_m", 0.03))
                 m = self.marker("cube", key, Marker.CUBE, stamp,
-                                rgba=(1.0, 0.8, 0.1, 0.9) if sure else (1.0, 0.5, 0.1, 0.35), scale=(edge, edge, edge))
+                                rgba=((0.1, 0.75, 1.0, 0.9) if by_face else (1.0, 0.8, 0.1, 0.9)) if sure
+                                else (1.0, 0.5, 0.1, 0.35), scale=(edge, edge, edge))
                 m.pose.position.x, m.pose.position.y, m.pose.position.z = map(float, cube["centre"])
                 q = quaternion(cube["R"])
                 m.pose.orientation.x, m.pose.orientation.y, m.pose.orientation.z, m.pose.orientation.w = map(float, q)
@@ -158,6 +160,13 @@ def main(args=None):
                     text.pose.position.x, text.pose.position.y, text.pose.position.z = float(c[0]), float(c[1]), float(c[2]) + 0.025
                     text.text = (f"tag {key}: {c[0] * 1000:+.0f}, {c[1] * 1000:+.0f}, {c[2] * 1000:+.0f} mm"
                                  + ("" if sure else " (?)"))
+                    array.markers.append(text)
+                elif by_face:
+                    c = cube["centre"]
+                    text = self.marker("label", key, Marker.TEXT_VIEW_FACING, stamp, scale=(0.0, 0.0, 0.012))
+                    text.pose.position.x, text.pose.position.y, text.pose.position.z = float(c[0]), float(c[1]), float(c[2]) + 0.04
+                    text.text = (f"cube {key} (mặt {cube.get('top_face', '?')}): "
+                                 f"{c[0] * 1000:+.0f}, {c[1] * 1000:+.0f}, {c[2] * 1000:+.0f} mm" + ("" if sure else " (?)"))
                     array.markers.append(text)
             for key, zone in (world.get("zones") or {}).items():
                 colour = ZONE_COLOURS.get(int(key), (1.0, 0.0, 1.0))

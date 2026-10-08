@@ -109,6 +109,7 @@ class LiveWorld:
         self.pose = res["world_T_optical"]
         live = WorldMap(table_z=self.world.table_z, frame=self.world.frame, created=self.world.created)
         live.tags = copy.deepcopy(self.world.tags)
+        live.faces = copy.deepcopy(self.world.faces)
         live.zones = copy.deepcopy(self.world.zones)
         live.cameras = copy.deepcopy(self.world.cameras)
         for tag_id, corners in seen.items():

@@ -204,3 +204,117 @@ class Timing(unittest.TestCase):
         self.assertEqual(sorted(steady), [1])
         np.testing.assert_allclose(steady[1], quad + (0.5 - 0.4) / 3, atol=1e-9)
         self.assertEqual(A.stable_tags([]), {})
+
+
+def face_quad(centre, pose, yaw=0.3, order=(2, 1, 0, 3), noise=0.4, seed=0):
+    """4 góc pixel của mặt trên 30 mm (tâm `centre`, nằm ngang) thấy từ `pose`, theo thứ tự KHÔNG chuẩn như dò viền."""
+    c, s, h = np.cos(yaw), np.sin(yaw), 0.015
+    square = np.array([[-h, -h, 0], [h, -h, 0], [h, h, 0], [-h, h, 0]]) @ np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]]).T
+    opt_T_base = np.linalg.inv(A.base_T_optical(pose, CAL))
+    uv = A.wrist_camera(CAL).project((square + centre) @ opt_T_base[:3, :3].T + opt_T_base[:3, 3])
+    return uv[list(order)] + np.random.default_rng(seed).normal(0.0, noise, (4, 2))
+
+
+def face(cube_id, centre, pose, confidence=0.8, label="khoi_vang", **kw):
+    return {"cube_id": cube_id, "quad": face_quad(np.asarray(centre, float), pose, **kw), "label": label,
+            "confidence": confidence}
+
+
+class Faces(unittest.TestCase):
+    """Cube không ngửa tag: ghi vào world từ 4 góc mặt trên do bộ nhận mặt đưa vào."""
+    POSE = POSES[0]
+
+    def spot(self, layer=0, k=0):
+        centre = visible_spot(self.POSE, k)[:3, 3].copy()
+        centre[2] = CAL["tag_top_z"] + 0.03 * layer
+        return centre
+
+    def test_a_face_up_cube_is_recorded_after_two_agreeing_looks_at_the_right_layer(self):
+        for layer in (0, 1):
+            centre, watcher = self.spot(layer), W.Watcher(CAL)
+            first = watcher.observe_faces(self.POSE, [face(4, centre, self.POSE)], stamp=0.0)
+            self.assertEqual(first["used"], [])                       # một lần nhìn chưa đủ để ghi chỗ mới
+            second = watcher.observe_faces(self.POSE, [face(4, centre, self.POSE, seed=1)], stamp=1.0)
+            self.assertEqual(second["new"], [4], second)
+            entry = watcher.world.faces[4]
+            self.assertEqual(entry["layer"], layer)
+            self.assertLess(np.linalg.norm(entry["centre"] - centre), 0.003)
+            self.assertEqual(entry["label"], "khoi_vang")
+            self.assertNotIn(4, watcher.world.tags)                   # không làm mốc định vị cho camera khác
+            self.assertLess(np.linalg.norm(watcher.world.cube(4)["centre"] - (centre - [0, 0, 0.015])), 0.003)
+
+    def test_a_readable_tag_always_wins_over_the_face(self):
+        truth, watcher = visible_spot(self.POSE), W.Watcher(CAL)
+        servo, seen = FakeArm({4: truth}).observe(self.POSE)
+        watcher.observe(servo, seen, stamp=0.0)
+        elsewhere = self.spot(k=3)
+        for t in (0.5, 1.0):
+            events = watcher.observe_faces(self.POSE, [face(4, elsewhere, self.POSE)], tag_ids={4}, stamp=t)
+            self.assertEqual(events["used"], [])
+        self.assertIn(4, watcher.world.tags)
+        self.assertNotIn(4, watcher.world.faces)
+
+    def test_seeing_the_tag_again_replaces_the_face_entry(self):
+        centre, watcher = self.spot(), W.Watcher(CAL)
+        for t in (0.0, 1.0):
+            watcher.observe_faces(self.POSE, [face(4, centre, self.POSE)], stamp=t)
+        self.assertIn(4, watcher.world.faces)
+        watcher.observe(*FakeArm({4: visible_spot(self.POSE)}).observe(self.POSE), stamp=5.0)
+        self.assertIn(4, watcher.world.tags)
+        self.assertNotIn(4, watcher.world.faces)
+        self.assertEqual(watcher.world.cube_ids(), [4])
+
+    def test_a_flipped_cube_drops_its_stale_tag_entry(self):
+        truth, watcher = visible_spot(self.POSE), W.Watcher(CAL)
+        watcher.observe(*FakeArm({4: truth}).observe(self.POSE), stamp=0.0)
+        centre = truth[:3, 3].copy()
+        for t in (10.0, 11.0):
+            watcher.observe_faces(self.POSE, [face(4, centre, self.POSE)], stamp=t)
+        self.assertNotIn(4, watcher.world.tags)
+        self.assertIn(4, watcher.world.faces)
+
+    def test_weak_cut_off_or_wrong_shape_faces_are_rejected_with_a_reason(self):
+        centre, watcher = self.spot(), W.Watcher(CAL)
+        weak = watcher.observe_faces(self.POSE, [face(4, centre, self.POSE, confidence=0.3)], stamp=0.0)
+        self.assertIn("độ tin", weak["rejected"]["mặt cube 4"])
+        squashed = face(4, centre, self.POSE)
+        squashed["quad"][:, 1] = squashed["quad"][:, 1].mean() + 0.4 * (squashed["quad"][:, 1] - squashed["quad"][:, 1].mean())
+        bad = watcher.observe_faces(self.POSE, [squashed], stamp=1.0)
+        self.assertIn("mặt cube 4", bad["rejected"])
+        cut = face(4, centre, self.POSE)
+        cut["quad"][:, 0] -= cut["quad"][:, 0].min() + 5
+        self.assertIn("mép ảnh", watcher.observe_faces(self.POSE, [cut], stamp=2.0)["rejected"]["mặt cube 4"])
+        self.assertEqual(watcher.world.cube_ids(), [])
+
+    def test_a_face_cube_outside_the_world_region_is_ignored(self):
+        centre, watcher = self.spot(), W.Watcher(CAL)
+        watcher.world.region = [[1.0, 1.0], [1.1, 1.0], [1.1, 1.1], [1.0, 1.1]]
+        for t in (0.0, 1.0):
+            events = watcher.observe_faces(self.POSE, [face(4, centre, self.POSE)], stamp=t)
+        self.assertIn("ngoài vùng", events["rejected"]["mặt cube 4"])
+        self.assertEqual(watcher.world.cube_ids(), [])
+
+    def test_a_face_cube_taken_away_is_removed_only_after_patient_misses(self):
+        centre, watcher = self.spot(), W.Watcher(CAL)
+        for t in (0.0, 1.0):
+            watcher.observe_faces(self.POSE, [face(4, centre, self.POSE)], stamp=t)
+        for t in (2.0, 3.0, 4.0):
+            self.assertEqual(watcher.observe_faces(self.POSE, [], stamp=t)["removed"], [])
+        self.assertIn(4, watcher.world.faces)
+        self.assertEqual(watcher.observe_faces(self.POSE, [], stamp=9.0)["removed"], [4])
+
+    def test_world_file_round_trips_face_cubes_and_region(self):
+        import tempfile
+        from cube_vision.world_map import WorldMap
+        centre, watcher = self.spot(), W.Watcher(CAL)
+        watcher.world.region = [[-0.3, -0.2], [-0.05, -0.2], [-0.05, 0.2], [-0.3, 0.2]]
+        for t in (0.0, 1.0):
+            watcher.observe_faces(self.POSE, [face(2, centre, self.POSE, label="apple_core")], stamp=t)
+        with tempfile.TemporaryDirectory() as tmp:
+            again = WorldMap.load(watcher.world.save(f"{tmp}/w.json"))
+        self.assertEqual(again.faces[2]["label"], "apple_core")
+        np.testing.assert_allclose(again.faces[2]["centre"], watcher.world.faces[2]["centre"])
+        self.assertTrue(again.inside([-0.2, 0.0]))
+        self.assertFalse(again.inside([-0.4, 0.0]))
+        drawn = again.project_into(A.wrist_camera(CAL), A.base_T_optical(self.POSE, CAL))
+        self.assertIn(2, drawn["cubes"])
