@@ -5,6 +5,8 @@ description: Kiểm tra camera tay, camera ngoài và cổng serial của tay m�
 
 # Kiểm tra phần cứng
 
+> Mọi lệnh và đường dẫn dưới đây tính từ `backend/`: `cd backend` trước khi chạy.
+
 ## Ai đang giữ thiết bị
 ```bash
 fuser /dev/video0 /dev/video2 /dev/ttyUSB0            # không in gì = rảnh

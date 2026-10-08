@@ -51,7 +51,7 @@ def camera_model(name):
 
 
 def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=True, keep_dir=None,
-         objects=True) -> WorldMap:
+         objects=True, look_objects=True) -> WorldMap:
     """Đo mọi tag bằng camera tay rồi trả world mới (chưa lưu).
 
     use_plane: tag nằm ngửa đúng tầng thì lấy độ cao đã biết của tầng thay cho độ cao đo (xem snap_to_layer).
@@ -103,28 +103,73 @@ def scan(session, tags=None, look_around=True, use_plane=True, log=print, faces=
     if faces and shots:
         scan_faces(session.cal, world, shots, log)
     if objects and shots:
-        scan_objects(session.cal, world, shots, log)
+        camera = A.wrist_camera(session.cal)
+        frames = [(shot[1][0], camera, A.base_T_optical(shot[0], session.cal)) for shot in shots if shot[1]]
+        found = scan_objects(session.cal, world, frames, log)
+        if found and look_objects and grab_frame is not None:
+            extra = look_at_objects(session, found, frames, log, keep_dir)
+            if extra:
+                log(f"Dựng lại vật với {extra} khung chụp thêm quanh vật:")
+                scan_objects(session.cal, world, frames, log)
     return world
 
 
-def scan_objects(cal, world, shots, log=print, labeller=None) -> None:
+MAX_LOOK_OBJECTS = 3            # chỉ chụp thêm quanh chừng này vật (vật nhiều điểm nhất trước)
+
+
+def look_at_objects(session, found, frames, log=print, keep_dir=None) -> int:
+    """Tay tự đi quanh từng vật khác cube và chụp thêm khung có vật nằm GIỮA ảnh (chỉ nhìn, không gắp).
+
+    Khung quét cố định thường cắt mất đỉnh hoặc đáy vật và chồng nhau ít; các khung này dày và trải rộng quanh vật
+    nên đám mây điểm của vật dày hơn và thấy cả hai bên. Thêm thẳng vào `frames`; trả số khung đã thêm.
+    """
+    import cv2
+    cal, camera = session.cal, A.wrist_camera(session.cal)
+    table_z = float(cal["tag_top_z"]) - 0.030
+    added, poses = 0, []
+    for item in found[:MAX_LOOK_OBJECTS]:
+        target = np.r_[item["centre"], table_z + min(float(item["height_m"]), 0.12) / 2.0]
+        views = A.object_views(target, cal)
+        x, y = item["centre"] * 1000
+        log(f"  nhìn quanh vật '{item['label']}' ở ({x:+.0f}, {y:+.0f}) mm: {len(views)} pose")
+        for servo in views:
+            real, _ = session.observe(servo)
+            frame = session.frame()
+            if frame is None:
+                continue
+            real = [float(v) for v in real[:5]]
+            frames.append((frame, camera, A.base_T_optical(real, cal)))
+            if keep_dir:
+                cv2.imwrite(str(Path(keep_dir) / f"object{added:02d}.png"), frame)
+                poses.append(real)
+            added += 1
+    if keep_dir and poses:
+        (Path(keep_dir) / "object_poses.json").write_text(json.dumps(poses))
+    return added
+
+
+_LABELLER = []                  # YOLOE nạp một lần cho cả hai lượt dựng vật
+
+
+def scan_objects(cal, world, frames, log=print, labeller=None) -> list:
     """Vật không phải cube: nối các khung quét thành đám mây điểm 3D (`cube_vision.pointcloud`), tách cụm, khớp hình.
 
     labeller: tùy chọn, có `.detect(khung) -> [(nhãn, độ tin, mặt nạ)]` (YOLOE) để đặt tên vật; không có thì "vật".
     """
     from cube_vision import pointcloud as PC
     camera, table_z = A.wrist_camera(cal), float(cal["tag_top_z"]) - 0.030
-    frames = [(shot[1][0], camera, A.base_T_optical(shot[0], cal)) for shot in shots if shot[1]]
     cloud = PC.triangulate(frames)
     cubes = [world.entry(i)["centre"][:2] for i in world.cube_ids()]
     found = PC.objects(cloud, table_z, cubes, world.inside)
     log(f"Đám mây điểm từ {len(frames)} khung: {len(cloud['points'])} điểm 3D, {len(found)} vật khác cube.")
     if found and labeller is None:
-        try:
-            import object_masks
-            labeller = object_masks.ObjectMasks()
-        except Exception:  # noqa: BLE001 - không có ultralytics (python hệ thống): vật vẫn có hình, chỉ thiếu tên
-            labeller = None
+        if not _LABELLER:
+            try:
+                import object_masks
+                _LABELLER.append(object_masks.ObjectMasks())
+            except Exception:  # noqa: BLE001 - không có ultralytics (python hệ thống): vật vẫn có hình, chỉ thiếu tên
+                _LABELLER.append(None)
+        labeller = _LABELLER[0]
     if found and labeller is not None:
         seen = [(T, labeller.detect(image)) for image, _, T in frames]
         for item in found:                                      # nhãn: lớp được nhiều khung gọi nhất tại thân vật
@@ -158,6 +203,7 @@ def scan_objects(cal, world, shots, log=print, labeller=None) -> None:
         log(f"  vật '{item['label']}' ({'trụ' if item['shape'] == 'cylinder' else 'hộp'}): tâm ({x:+.0f}, {y:+.0f}) mm, "
             f"ngang ~{item['width_m'] * 1000:.0f} mm, cao ~{item['height_m'] * 1000:.0f} mm, {item['n_points']} điểm 3D từ "
             f"{item['n_views']} khung ({item['fit']})")
+    return found
 
 
 def object_masks_round() -> tuple:
@@ -224,7 +270,7 @@ def cmd_scan(args):
         keep = default_path().parent / "scan" / time.strftime("%Y%m%d-%H%M%S")
         world = scan(session, set(args.tags or []) or None, look_around=not args.no_look_around,
                      use_plane=not args.no_plane, faces=not args.no_faces, keep_dir=keep,
-                     objects=not args.no_objects)
+                     objects=not args.no_objects, look_objects=not args.no_object_looks)
     add_fixed_cameras(world)
     sure = sum(1 for t in world.tags.values() if t["sure"])
     print(f"Đã ghi {world.save()}: {len(world.tags)} tag ({sure} chắc chắn), {len(world.faces)} cube nhận bằng mặt khác, "
@@ -493,6 +539,8 @@ def main():
     ap.add_argument("--seconds", type=float, default=0.0, help="với --watch: tự dừng sau chừng này giây")
     ap.add_argument("--no-objects", action="store_true",
                     help="với --scan: không dựng vật khác cube (cốc, hộp...) từ đám mây điểm")
+    ap.add_argument("--no-object-looks", action="store_true",
+                    help="với --scan: không chụp thêm khung quanh từng vật (nhanh hơn, hình vật kém hơn)")
     ap.add_argument("--no-faces", action="store_true",
                     help="chỉ dùng tag, không nhận cube bằng mặt màu / hình in")
     args = ap.parse_args()
@@ -500,6 +548,12 @@ def main():
         cmd_watch(args)
     elif args.scan:
         cmd_scan(args)
+        # torch (CUDA) + OpenCV dọn dẹp lúc thoát làm hỏng heap ("corrupted size vs. prev_size", 3/3 lần quét bằng
+        # .venv). Mọi thứ đã lưu và thiết bị đã nhả ở trên, nên thoát thẳng, không chạy phần dọn dẹp của thư viện.
+        sys.stdout.flush()
+        sys.stderr.flush()
+        import os
+        os._exit(0)
     elif args.locate:
         cmd_locate(args)
     elif args.check:

@@ -2,9 +2,8 @@
 
 Priority:
   1. $ROBOT_ARM_ROOT env (set by scripts/setup/setup_env.sh)
-  2. git top-level (if inside a git checkout)
-  3. walk up from this file looking for marker dirs (workspaces/, vendor/, config/)
-  4. legacy fallbacks: /home/jloy/Desktop/robot-arm, /home/yahboom (read-only compat)
+  2. walk up from this file looking for marker dirs (workspaces/, vendor/, config/)
+  3. legacy fallbacks: /home/jloy/Desktop/robot-arm, /home/yahboom (read-only compat)
 
 Usage:
     from repo_paths import ROBOT_ARM_ROOT, repo_path, first_existing
@@ -17,7 +16,6 @@ Usage:
 from __future__ import annotations
 
 import os
-import subprocess
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
@@ -41,26 +39,10 @@ def _walk_up(start: Path) -> Path | None:
     return None
 
 
-def _git_root() -> Path | None:
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if out.returncode == 0 and out.stdout.strip():
-            return Path(out.stdout.strip())
-    except Exception:
-        pass
-    return None
-
-
 def resolve_root() -> Path:
     env = os.environ.get("ROBOT_ARM_ROOT")
     if env and Path(env).exists():
         return Path(env).resolve()
-    g = _git_root()
-    if g and g.exists():
-        return g.resolve()
     w = _walk_up(_CANDIDATE_ROOT)
     if w:
         return w.resolve()

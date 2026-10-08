@@ -5,6 +5,8 @@ description: Hiệu chuẩn camera tay (hand-eye) và camera ngoài với hệ b
 
 # Hiệu chuẩn camera
 
+> Mọi lệnh và đường dẫn dưới đây tính từ `backend/`: `cd backend` trước khi chạy.
+
 Tắt T8/perception trước (skill `hardware-check`): các script này tự mở camera và cổng serial.
 Thứ tự bắt buộc: camera tay trước, vì camera ngoài được hiệu chuẩn **dựa trên** camera tay.
 

@@ -35,7 +35,7 @@ from cv_bridge import CvBridge
 from cap_scene_interfaces.msg import GraspCandidate as GraspCandidateMsg
 from cap_scene_interfaces.msg import ObjectStates
 
-ROOT = Path("/home/jloy/Desktop/robot-arm")
+ROOT = Path(__file__).resolve().parents[2]
 WORKER = ROOT / "projects/t8_pipeline/t8_motion_worker.py"
 ROS_SETUP = ROOT / "workspaces/dofbot_ws/install/setup.bash"
 GRASP_LOG = ROOT / "projects/vision_experiments/validation/grasp_execution.jsonl"

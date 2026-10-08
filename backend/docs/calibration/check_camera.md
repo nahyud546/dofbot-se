@@ -1,4 +1,4 @@
-cd ~/Desktop/robot-arm/ros
+cd ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof
 source /opt/ros/humble/setup.bash && source install/setup.bash
 
 ls -l /dev/ttyUSB* /dev/video* 

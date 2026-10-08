@@ -71,6 +71,7 @@ def main(args=None):
     from geometry_msgs.msg import Point, TransformStamped
     from rclpy.node import Node
     from sensor_msgs.msg import JointState
+    from std_msgs.msg import ColorRGBA
     from tf2_ros import TransformBroadcaster
     from visualization_msgs.msg import Marker, MarkerArray
 
@@ -152,10 +153,32 @@ def main(args=None):
                 for x, y in list(polygon) + [polygon[0]]:
                     ring.points.append(Point(x=float(x), y=float(y), z=float(table_z or 0.0) + 0.002))
                 array.markers.append(ring)
+                height = item.get("height_m")
+                if height:                                      # nắp + cạnh đứng: hình khối của vật
+                    lid = self.marker("object_top", index, Marker.LINE_STRIP, stamp, rgba=(1.0, 0.0, 1.0, 1.0), scale=(0.003, 0, 0))
+                    edges = self.marker("object_side", index, Marker.LINE_LIST, stamp, rgba=(1.0, 0.0, 1.0, 0.7), scale=(0.002, 0, 0))
+                    base_z = float(table_z or 0.0)
+                    for x, y in list(polygon) + [polygon[0]]:
+                        lid.points.append(Point(x=float(x), y=float(y), z=base_z + float(height)))
+                    for x, y in polygon[::max(1, len(polygon) // 8)]:
+                        edges.points.append(Point(x=float(x), y=float(y), z=base_z))
+                        edges.points.append(Point(x=float(x), y=float(y), z=base_z + float(height)))
+                    array.markers += [lid, edges]
+                cloud = item.get("points") or []
+                if cloud:                                       # các điểm 3D đã đo của vật, đúng màu ảnh
+                    dots = self.marker("object_points", index, Marker.POINTS, stamp, scale=(0.003, 0.003, 0))
+                    colours = item.get("colours") or []
+                    for k, (x, y, z) in enumerate(cloud):
+                        dots.points.append(Point(x=float(x), y=float(y), z=float(z)))
+                        b, g, r = colours[k] if k < len(colours) else (255, 0, 255)
+                        dots.colors.append(ColorRGBA(r=r / 255.0, g=g / 255.0, b=b / 255.0, a=1.0))
+                    array.markers.append(dots)
                 text = self.marker("object_label", index, Marker.TEXT_VIEW_FACING, stamp, scale=(0.0, 0.0, 0.012))
                 text.pose.position.x, text.pose.position.y = float(item["centre"][0]), float(item["centre"][1])
                 text.pose.position.z = float(table_z or 0.0) + 0.03
-                text.text = f"{item.get('label', 'vật')} (đáy ước lượng, chưa đo chiều cao)"
+                text.pose.position.z = float(table_z or 0.0) + float(height or 0.0) + 0.03
+                text.text = (f"{item.get('label', 'vật')}: ngang {float(item.get('width_m', 0)) * 1000:.0f} mm"
+                             + (f", cao {float(height) * 1000:.0f} mm" if height else ""))
                 array.markers.append(text)
             for key, cube in (world.get("cubes") or {}).items():
                 tag = (world.get("tags") or {}).get(key, {})

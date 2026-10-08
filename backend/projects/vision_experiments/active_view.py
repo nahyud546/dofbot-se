@@ -115,6 +115,35 @@ def candidate_poses(target_base, cal, j1_range=None):
     return C.pose_pool(np.asarray(target_base, float), np.asarray(cal["arm4_T_optical"], float), K, j1_values)
 
 
+OBJECT_VIEWS = 8                # số khung chụp thêm quanh mỗi vật khác cube
+OBJECT_VIEW_GAP_M = 0.02        # hai khung chụp thêm phải cách nhau chừng này (đường đáy cho tam giác hóa)
+ENVELOPE_DEFAULT = {"j2": (74.5, 134.5), "j3": (0.0, 28.9), "j4": (0.0, 19.4)}
+
+
+def object_views(target_base, cal, count: int = OBJECT_VIEWS, pool=None) -> list:
+    """Các pose nhìn MỘT vật từ nhiều chỗ khác nhau, vật nằm giữa khung: dữ liệu dày cho đám mây điểm của vật đó.
+
+    Lấy từ bộ pose an toàn (`candidate_poses`: vật nằm gọn trong ảnh, đầu kẹp cao hơn cube), giữ trong vùng hand-eye
+    đã kiểm chứng, rồi chọn `count` pose có TÂM CAMERA trải xa nhau nhất (mỗi cặp cách ≥ OBJECT_VIEW_GAP_M): càng trải
+    rộng thì thấy càng nhiều mặt của vật và độ sâu càng chính xác. Trả theo thứ tự J1 tăng dần để tay đi mượt.
+    """
+    pool = candidate_poses(target_base, cal) if pool is None else pool
+    envelope = {**ENVELOPE_DEFAULT, **{k: v for k, v in (cal.get("envelope") or {}).items() if k in ENVELOPE_DEFAULT}}
+    pool = [s for s in pool if all(envelope[f"j{i + 1}"][0] - 0.6 <= s[i] <= envelope[f"j{i + 1}"][1]
+                                   for i in (1, 2, 3))]
+    if not pool:
+        return []
+    eyes = np.array([base_T_optical(s, cal)[:3, 3] for s in pool])
+    chosen = [int(np.argmin(np.linalg.norm(eyes - eyes.mean(axis=0), axis=1)))]      # bắt đầu từ pose ở giữa
+    while len(chosen) < count:
+        gaps = np.min(np.linalg.norm(eyes[:, None] - eyes[chosen][None], axis=2), axis=1)
+        best = int(np.argmax(gaps))
+        if gaps[best] < OBJECT_VIEW_GAP_M:
+            break
+        chosen.append(best)
+    return sorted((pool[i] for i in chosen), key=lambda s: (s[0], s[1]))
+
+
 def next_view(target_base, used_servos, cal, hints=(), normal=(0.0, 0.0, 1.0), pool=None):
     """Pose nhìn kế tiếp cho một mục tiêu, hoặc None khi không còn pose nào khác đáng kể.
 

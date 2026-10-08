@@ -5,6 +5,8 @@ description: Chạy test của repo đúng môi trường (Python hệ thống, 
 
 # Chạy test
 
+> Mọi lệnh và đường dẫn dưới đây tính từ `backend/`: `cd backend` trước khi chạy.
+
 Cấu hình nằm trong `pyproject.toml` (`pythonpath`, `testpaths`, tắt plugin ROS) và `conftest.py` (tự bỏ qua test cần ROS).
 
 ```bash
@@ -26,7 +28,7 @@ source /opt/ros/humble/setup.bash && source ros/install/setup.bash
 
 ## Lỗi môi trường hay gặp
 - `No module named pytest`: đang dùng python của `.venv` (không có pytest) → gọi `/usr/bin/python3 -m pytest`.
-- `PluginValidationError: launch_testing`: chạy `pytest` ngoài gốc repo nên không đọc `pyproject.toml` → `cd` về gốc.
+- `PluginValidationError: launch_testing`: chạy `pytest` ngoài `backend/` nên không đọc `pyproject.toml` → `cd backend`.
 - `No module named 'std_msgs'` / `cap_scene_interfaces`: chưa source ROS hoặc chưa build `ros/`.
 - Build `ros/` lỗi `No module named 'catkin_pkg'`: CMake lấy python của `.venv`; tắt venv và thêm
   `--cmake-args -DPython3_EXECUTABLE=/usr/bin/python3`.

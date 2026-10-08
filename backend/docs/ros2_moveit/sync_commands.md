@@ -1,9 +1,9 @@
 # Note command: sim <-> real (chi chay, khong giai thich dai)
 
-> Moi lenh chay tai `~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof`, da `source /opt/ros/humble/setup.bash && source install/setup.bash`.
+> Moi lenh chay tai `~/Desktop/robot-arm/dofbot_robot_arm_6dof`, da `source /opt/ros/humble/setup.bash && source install/setup.bash`.
 > Can T1 (`ros2 launch dofbot_moveit demo.launch.py use_rviz:=true`) dang chay cho cac lenh sim.
 
-ls -l /dev/ttyUSB* /dev/ttyACM* /dev/video* 
+ls -l /dev/ttyUSB* /dev/video* 
 
 
 ## 1. Reset ve HOME
@@ -31,14 +31,14 @@ python3 hardware/check_stm32.py --port /dev/ttyUSB0
 
   Terminal 1 — mở MoveIt và RViz:
 
-  cd ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof
+  cd ~/Desktop/robot-arm/dofbot_robot_arm_6dof
   source /opt/ros/humble/setup.bash
   source install/setup.bash
   ros2 launch dofbot_moveit demo.launch.py
 
   Terminal 2 — chạy follower tới /dev/ttyUSB0:
 
-  cd ~/Desktop/robot-arm/workspaces/dofbot_robot_arm_6dof
+  cd ~/Desktop/robot-arm/dofbot_robot_arm_6dof
   source /opt/ros/humble/setup.bash
   source install/setup.bash
   python3 hardware/follow_sim.py --yes --allow-uncalibrated --port /dev/ttyUSB0

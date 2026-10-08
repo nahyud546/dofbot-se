@@ -186,3 +186,28 @@ class Region(unittest.TestCase):
                               for line in w.project_into(A.wrist_camera(CAL), A.base_T_optical(servo, CAL))["grid"])
         self.assertGreater(count(free), 5 * max(count(fenced), 1))
         self.assertIsNotNone(fenced.project_into(A.wrist_camera(CAL), A.base_T_optical(servo, CAL))["region"])
+
+
+class ObjectViews(unittest.TestCase):
+    """Pose chụp thêm quanh một vật khác cube."""
+
+    def test_views_centre_the_object_spread_out_and_stay_in_the_envelope(self):
+        target = np.array([-0.20, -0.08, CAL["tag_top_z"] + 0.02])
+        views = A.object_views(target, CAL)
+        self.assertGreaterEqual(len(views), 4)
+        camera, lo_hi = A.wrist_camera(CAL), CAL["j1_valid_range"]
+        eyes = []
+        for servo in views:
+            self.assertTrue(lo_hi[0] <= servo[0] <= lo_hi[1])
+            self.assertTrue(74.0 <= servo[1] <= 134.6 and servo[2] <= 29.0 and servo[3] <= 19.5, servo)
+            self.assertGreaterEqual(C.tip_z(servo), C.MIN_TIP_Z)
+            T = A.base_T_optical(servo, CAL)
+            uv = camera.project((np.linalg.inv(T) @ np.r_[target, 1.0])[:3].reshape(1, 3))[0]
+            self.assertTrue(60 <= uv[0] <= 580 and 50 <= uv[1] <= 430, (servo, uv))
+            eyes.append(T[:3, 3])
+        gaps = [np.linalg.norm(a - b) for i, a in enumerate(eyes) for b in eyes[i + 1:]]
+        self.assertGreaterEqual(min(gaps), A.OBJECT_VIEW_GAP_M - 1e-9)
+        self.assertEqual(views, sorted(views, key=lambda s: (s[0], s[1])))
+
+    def test_an_object_nobody_can_look_at_gets_no_views(self):
+        self.assertEqual(A.object_views(np.array([0.30, 0.0, 0.05]), CAL), [])

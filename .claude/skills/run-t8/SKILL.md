@@ -5,6 +5,8 @@ description: Chạy trợ lý T8 trên tay máy thật (sort, xếp tầng, lệ
 
 # Chạy T8
 
+> Mọi lệnh và đường dẫn dưới đây tính từ `backend/`: `cd backend` trước khi chạy.
+
 ## Trước khi chạy
 1. Phần cứng rảnh: xem skill `hardware-check`. `camera_test` hay T8 cũ còn mở sẽ giữ camera/serial.
 2. Terminal đã source ROS, nếu không T8 báo "Chưa source ROS":

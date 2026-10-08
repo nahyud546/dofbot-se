@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+python projects/t8_pipeline/t8_assistant.py --vision-backend legacy2d --enable-motion#!/usr/bin/env python3
 # coding: utf-8
 """Phát âm thanh từ text bất kỳ (TTS giọng Việt) qua loa laptop.
 
