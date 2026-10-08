@@ -30,11 +30,10 @@ for _p in (ROOT / "projects", ROOT / "projects" / "t8_pipeline", Path(__file__).
 
 import cube_search_center_math as M  # noqa: E402
 import dofbot_ik  # noqa: E402
-from cube_vision import frames as F  # noqa: E402
+from cube_vision import frames as F, intrinsics as I  # noqa: E402
 from cube_vision.external_camera import ExternalCalibration  # noqa: E402
 
 READY = [90.0, 125.0, 0.0, 0.0, 90.0]
-CAMERA_DIR = ROOT / "config" / "robot" / "cameras"
 # Quy ước, không hiệu chuẩn: hệ thân camera (wrist_cam, trục song song arm4) -> hệ quang học của ẢNH THÔ.
 WRIST_CAM_T_OPTICAL = M.MOUNT_RZ90
 # URDF Gripping_Joint (arm5 -> Gripping_point_Link): xyz + rpy(3.1416, -1.5708, 0).
@@ -54,13 +53,14 @@ def _joint(index, origin, axis, cal):
 
 
 def load_phone(path=None):
-    """Hiệu chuẩn iPhone (`config/robot/cameras/phone.json`) hoặc None khi chưa có/chưa đạt."""
+    """File camera của iPhone khi VỊ TRÍ đã hiệu chuẩn đạt (`pose_accepted`), ngược lại None."""
+    data = I.load_camera("phone", path)
     try:
-        data = json.loads(Path(path or CAMERA_DIR / "phone.json").read_text())
-        T = np.asarray(data["base_T_optical"], float).reshape(4, 4)
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
-    return data if data.get("accepted") is True and F.is_rigid(T) else None
+        ok = bool(data) and data.get("pose_accepted") is True and F.is_rigid(
+            np.asarray(data["base_T_optical"], float).reshape(4, 4))
+    except (KeyError, TypeError, ValueError):
+        ok = False
+    return data if ok else None
 
 
 def build(cal="auto", external="auto", phone="auto") -> F.FrameGraph:
@@ -110,7 +110,8 @@ def build(cal="auto", external="auto", phone="auto") -> F.FrameGraph:
           kind="hiệu chuẩn camera ngoài", source="config/robot/external_camera.json: base_T_ext",
           how="python projects/vision_experiments/calibrate_external.py --collect (×6) rồi --solve",
           note="Webcam dễ bị chạm: kiểm --status trước khi dùng, lệch thì --relocalize.")
-    g.add("base_link", "phone_optical", None if phone is None else np.asarray(phone["base_T_optical"], float),
+    g.add("base_link", "phone_optical",
+          None if phone is None else np.asarray(phone["base_T_optical"], float).reshape(4, 4),
           kind="hiệu chuẩn camera ngoài", source="config/robot/cameras/phone.json: base_T_optical",
           how="python projects/vision_experiments/calibrate_external.py --camera phone")
     return g
@@ -129,10 +130,9 @@ def cameras(cal="auto", external="auto", phone="auto") -> dict:
         f, cx, cy = external.K
         out["ext_optical"] = F.CameraModel("ext", (f, f, cx, cy), tuple(external.image_size), external.k1,
                                            source="config/robot/external_camera.json: K, k1 (fit chung với pose)")
-    if phone is not None:
-        out["phone_optical"] = F.CameraModel(
-            "phone", tuple(phone["K"]), tuple(phone["image_size"]), float(phone.get("k1", 0.0)),
-            float(phone.get("k2", 0.0)), int(phone.get("rotate", 0)), "config/robot/cameras/phone.json")
+    model = I.model_from(I.load_camera("phone") if phone is not None else None, "phone")
+    if model is not None:
+        out["phone_optical"] = model
     return out
 
 

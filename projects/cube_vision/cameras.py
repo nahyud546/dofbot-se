@@ -155,6 +155,52 @@ def open_capture(path):
     return cap
 
 
+PHONE_URL_ENV = "PHONE_CAMERA_URL"
+PHONE_URL_DEFAULT = "http://192.168.1.30:4747/video"     # DroidCam trên iPhone trong mạng LAN
+STREAMS = {   # tên camera -> cách mở luồng mà intrinsic/extrinsic của nó được hiệu chuẩn theo
+    "wrist": {"size": (640, 480), "fourcc": None, "rotate": 0},
+    "ext": {"size": (1280, 720), "fourcc": "MJPG", "rotate": 0},
+    "phone": {"size": None, "fourcc": None, "rotate": 90},
+}
+
+
+def is_url(source) -> bool:
+    return str(source).startswith(("http://", "https://", "rtsp://"))
+
+
+def stream_source(name: str, explicit=None):
+    """Nguồn (đường dẫn /dev/videoN hoặc URL) của camera theo tên; None khi không tìm thấy."""
+    if explicit and str(explicit) != "auto":
+        return explicit
+    if name == "phone":
+        return os.environ.get(PHONE_URL_ENV) or PHONE_URL_DEFAULT
+    wrist, _ = resolve_wrist()
+    return wrist if name == "wrist" else resolve_external(wrist)
+
+
+def open_stream(source, size=None, fourcc=None):
+    """Mở luồng camera (thiết bị V4L2 hoặc URL mạng); None khi không mở được."""
+    if source is None:
+        return None
+    cap = cv2.VideoCapture(str(source)) if is_url(source) else cv2.VideoCapture(source, cv2.CAP_V4L2)
+    if not cap.isOpened():
+        cap.release()
+        return None
+    if not is_url(source):
+        if fourcc:
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fourcc))
+        if size:
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, size[0])
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, size[1])
+    return cap
+
+
+def rotate_frame(frame, degrees: int):
+    """Xoay khung theo chiều kim đồng hồ 0/90/180/270 độ."""
+    turns = (int(degrees) // 90) % 4
+    return frame if turns == 0 else np.ascontiguousarray(np.rot90(frame, k=-turns))
+
+
 def identify_with_arm(devices, serial="/dev/ttyUSB0", delta_deg=12.0, log=print):
     """Xoay J1 ±delta bằng cổng serial (khóa /tmp/t8_motion.lock) và so khung của mọi camera.
 
