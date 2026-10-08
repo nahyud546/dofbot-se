@@ -53,7 +53,7 @@ _YAML_NAME_TO_LABEL = {spec["name"]: spec["color"] for spec in CUBES.values()}
 
 def repo_root() -> Path:
     env = os.environ.get("ROBOT_ARM_ROOT")
-    if env and Path(env).exists():
+    if env and (Path(env) / "projects").is_dir():          # biến cũ trỏ sai chỗ (repo đã dời) thì không tin
         return Path(env)
     for parent in Path(__file__).resolve().parents:
         if (parent / "workspaces").exists():

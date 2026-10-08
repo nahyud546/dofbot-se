@@ -41,7 +41,7 @@ def _walk_up(start: Path) -> Path | None:
 
 def resolve_root() -> Path:
     env = os.environ.get("ROBOT_ARM_ROOT")
-    if env and Path(env).exists():
+    if env and (Path(env) / "projects").is_dir():          # biến cũ trỏ sai chỗ (repo đã dời) thì không tin
         return Path(env).resolve()
     w = _walk_up(_CANDIDATE_ROOT)
     if w:
