@@ -113,7 +113,7 @@ def build(cal="auto", external="auto", phone="auto") -> F.FrameGraph:
     g.add("base_link", "phone_optical",
           None if phone is None else np.asarray(phone["base_T_optical"], float).reshape(4, 4),
           kind="hiệu chuẩn camera ngoài", source="config/robot/cameras/phone.json: base_T_optical",
-          how="python projects/vision_experiments/calibrate_external.py --camera phone")
+          how="python projects/vision_experiments/build_world.py --scan  rồi  --locate phone --save")
     return g
 
 

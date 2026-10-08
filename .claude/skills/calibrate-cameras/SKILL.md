@@ -52,3 +52,17 @@ python -m cube_vision.external_camera     # in XY (base) các cube camera ngoài
 - Từ camera ngoài, **tầng** của cube không tự suy ra chắc được (hai tầng kề chỉ khác ~1 mm ở kích thước tag):
   biết tầng thì truyền vào `locate_tag(..., layer=n)`; sai tầng làm XY lệch hàng cm.
 - Ảnh khác cỡ hiệu chuẩn (ví dụ 640×480) không dùng được với `external_camera.json`.
+
+## Thêm một camera vào world (iPhone, camera thứ ba)
+
+Cách mới, tách intrinsic khỏi vị trí. Bảng lệnh đầy đủ ở `docs/architecture/frames.md`.
+
+1. Intrinsic, một lần cho mỗi chế độ luồng: `python projects/vision_experiments/calibrate_intrinsics.py --camera phone --with-board`
+   (bảng ChArUco hiện trên màn hình laptop; cầm điện thoại quay quanh, đưa bảng tới 4 góc ảnh, nghiêng nhiều hướng).
+   Camera tay và webcam laptop không tự nhìn được màn hình laptop: dùng `--png` để mở bảng trên điện thoại.
+2. Dựng world bằng camera tay: `python projects/vision_experiments/build_world.py --scan`. Tag nào báo "CHƯA CHẮC"
+   thì không được dùng để định vị camera khác.
+3. Đặt camera vào world: `build_world.py --locate phone --save` (cần ≥ 2 tag chung, tách nhau ≥ 40 mm; cảnh đứng
+   yên từ bước 2). Kiểm bằng mắt: `python -m cube_vision.world_overlay --camera phone`.
+4. Trước khi dùng lại: `build_world.py --check phone`. DroidCam chỉ cho một kết nối; URL đổi thì đặt
+   `PHONE_CAMERA_URL`.

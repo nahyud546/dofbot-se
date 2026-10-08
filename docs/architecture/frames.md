@@ -68,8 +68,9 @@ intrinsic của camera đó (`CameraModel.project`). Ngược lại, một pixel
 | **Độ sâu** | Mặt phẳng đã biết (mặt tag ở tầng n) hoặc kích thước tag 20 mm (PnP). | Mặt phẳng đã biết. | Như webcam; nhiều camera cùng thấy thì tam giác hóa. |
 | **Thời gian** | Chỉ ghép quan sát khi tay đã đứng yên và cảnh tĩnh. Chưa có đồng bộ đồng hồ giữa các luồng. | như bên | như bên; DroidCam trễ mạng ~0,1–0,3 s. |
 
-Kế hoạch: intrinsic của cả ba camera sẽ được hiệu chuẩn riêng bằng bảng ChArUco
-(`config/robot/cameras/<tên>.json`), sau đó extrinsic chỉ còn giải 6 tham số pose.
+Intrinsic nên hiệu chuẩn riêng bằng bảng ChArUco (`calibrate_intrinsics.py`, ghi
+`config/robot/cameras/<tên>.json`); sau đó extrinsic chỉ còn 6 tham số pose. Hiện mới có mã, chưa camera nào
+được chạy qua bước này.
 
 ### Độ sâu: vì sao một pixel chưa đủ
 
@@ -79,7 +80,7 @@ Camera thường chỉ cho hướng nhìn. Repo lấy độ sâu theo các cách
   phẳng đó ra x, y (`frames.pixel_to_plane`, `ExternalCalibration.pixel_to_base`, `cube_layer.locate_cube`).
 - **Kích thước vật đã biết.** Tag 20 mm → PnP cho pose 6D; khoảng cách kém chính xác khi chỉ có một góc nhìn.
 - **Nhiều góc nhìn.** Camera tay nhìn cùng một tag từ vài pose, hoặc hai camera cùng thấy: ra z thật không cần giả
-  thiết mặt phẳng (đang xây: `cube_vision/multiview.py`).
+  thiết mặt phẳng (`cube_vision/multiview.py`, vòng tự nhìn quanh ở `vision_experiments/active_view.py`).
 
 ## File hiệu chuẩn
 
@@ -88,7 +89,8 @@ Camera thường chỉ cho hướng nhìn. Repo lấy độ sâu theo các cách
 | `config/robot/hand_eye.json` | `arm4_T_optical`, K, k1, `tag_top_z`, `table_z`, vùng J1 | `calibrate_hand_eye.py` | `validate_hand_eye.py` |
 | `config/robot/hand_eye.center_proven.json` | mốc đã kiểm bằng gắp thật: **không xóa, không ghi đè** | — | — |
 | `config/robot/external_camera.json` | `base_T_ext`, K, k1, mốc ô màu chống trôi | `calibrate_external.py --collect` ×6, `--solve` | `--status`, `--validate` |
-| `config/robot/cameras/phone.json` | `base_T_optical`, K, k1, k2, `rotate` | chưa có | — |
+| `config/robot/cameras/<tên>.json` | K, k1, k2, `rotate`, `image_size`; khi đã đặt vào world: `base_T_optical` | `calibrate_intrinsics.py --camera <tên>`; `build_world.py --locate <tên> --save` | `build_world.py --check <tên>` |
+| `data/world/latest.json` | world map: tag, cube, ô, camera (không commit) | `build_world.py --scan` | `build_world.py --show` |
 
 ## Dùng trong mã
 
@@ -105,6 +107,34 @@ Chuỗi đi qua một cạnh chưa hiệu chuẩn sẽ báo `MissingTransform` k
 Đường gắp/thả đang chạy của T8 vẫn gọi trực tiếp `fk_arm4_cal(q, cal) @ cal["arm4_T_optical"]`; test
 `test_dofbot_frames.py` khóa hai đường cho ra cùng một ma trận, và khóa hai bản sao hằng số URDF
 (`cube_search_center_math.py`, `dofbot_ik.py`) không lệch nhau.
+
+## World map: từ một camera di chuyển tới tọa độ mà camera khác dùng được
+
+```
+camera tay quét + tự nhìn quanh ──▶ pose 6D từng tag trong world ──▶ data/world/latest.json
+                                                                          │
+              iPhone / webcam thấy các tag đó ──▶ pose_from_tags ──▶ world_T_optical của camera ấy
+                                                                          │
+                                    world chiếu ngược vào ảnh camera ấy (vẽ đè) / RViz
+```
+
+| Bước | Lệnh | Mã |
+|---|---|---|
+| Intrinsic một lần cho mỗi camera | `python projects/vision_experiments/calibrate_intrinsics.py --camera phone --with-board` | `cube_vision/intrinsics.py` |
+| Tay quét, tự nhìn thêm khi chưa chắc | `python projects/vision_experiments/build_world.py --scan` | `active_view.py`, `cube_vision/view_quality.py`, `cube_vision/multiview.py` |
+| Đặt camera khác vào world | `python projects/vision_experiments/build_world.py --locate phone --save` | `cube_vision/camera_pose.py` |
+| Camera cố định còn nguyên chỗ không | `python projects/vision_experiments/build_world.py --check phone` | `camera_pose.drift_px` |
+| Vẽ world đè lên ảnh camera | `python -m cube_vision.world_overlay --camera phone` (thêm `--handheld` khi cầm tay) | `cube_vision/world_overlay.py` |
+| Xem 3D | `ros2 launch cap_vision world_view.launch.py` | `ros/src/cap_vision/cap_vision/world_publisher.py` |
+
+Luật "nhìn chưa ổn" (ngưỡng ở đầu `view_quality.py`): tag nhỏ hơn 28 px, sát mép ảnh, PnP lệch quá 3 px, nhìn
+xiên quá 65°, hướng mặt tag còn mơ hồ, J1 ngoài vùng hand-eye; và sau khi gộp: ít hơn 2 góc nhìn, thị sai dưới
+35 mm, các góc nhìn không khớp nhau, vị trí bất định quá ±2 mm. Mỗi luật kèm gợi ý (lại gần, vào giữa ảnh, nhìn
+thẳng hơn, đổi chỗ lấy thị sai) để bộ chọn pose biết đổi gì; tối đa 4 lần nhìn thêm cho mỗi tag, hết thì báo
+"CHƯA CHẮC" chứ không ép ra số.
+
+Camera cầm tay: không có GPS/IMU, nên mỗi khung phải thấy ít nhất 2 tag mà world đã biết chắc, tách nhau từ 40 mm;
+không đủ thì báo "chưa định vị". World là ảnh chụp của một cảnh tĩnh: sau khi tay gắp/thả phải quét lại.
 
 ## Số hiện tại
 
@@ -139,7 +169,7 @@ Sinh ngày 2026-10-08 bằng `dofbot_frames.py --dump`.
 | `wrist_cam_T_wrist_optical` | quy ước | hằng | cube_search_center_math.MOUNT_RZ90 | xyz = (+0.0, +0.0, +0.0) mm; rpy = (+0.0, -0.0, +90.0)° |
 | `base_link_T_table` | hiệu chuẩn hand-eye | hằng | config/robot/hand_eye.json: table_z (= tag_top_z − 0,030) | xyz = (+0.0, +0.0, +27.8) mm; rpy = (+0.0, -0.0, +0.0)° |
 | `base_link_T_ext_optical` | hiệu chuẩn camera ngoài | hằng | config/robot/external_camera.json: base_T_ext | xyz = (-354.1, +14.3, +313.5) mm; rpy = (-141.5, +1.2, -91.6)° |
-| `base_link_T_phone_optical` | hiệu chuẩn camera ngoài | CÒN THIẾU | config/robot/cameras/phone.json: base_T_optical | chưa có — `python projects/vision_experiments/calibrate_external.py --camera phone` |
+| `base_link_T_phone_optical` | hiệu chuẩn camera ngoài | CÒN THIẾU | config/robot/cameras/phone.json: base_T_optical | chưa có — `python projects/vision_experiments/build_world.py --scan  rồi  --locate phone --save` |
 
 Chuỗi tới từng camera (q = [90.0, 125.0, 0.0, 0.0, 90.0]):
 

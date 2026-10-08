@@ -9,7 +9,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        ("share/" + package_name + "/launch", ["launch/cap_mapping.launch.py", "launch/cubes.launch.py", "launch/sim_red_demo.launch.py", "launch/live_red_track.launch.py", "launch/red_scene.launch.py", "launch/red_scene_system.launch.py", "launch/object_pipeline.launch.py", "launch/cube_6d_camera.launch.py"]),
+        ("share/" + package_name + "/launch", ["launch/cap_mapping.launch.py", "launch/cubes.launch.py", "launch/sim_red_demo.launch.py", "launch/live_red_track.launch.py", "launch/red_scene.launch.py", "launch/red_scene_system.launch.py", "launch/object_pipeline.launch.py", "launch/cube_6d_camera.launch.py", "launch/world_view.launch.py"]),
         ("share/" + package_name + "/config", [
             "config/camera.yaml",
             "config/homography.yaml",
@@ -19,6 +19,7 @@ setup(
             "config/red_scene.yaml",
             "config/cube_6d_urdf.yaml",
             "config/red_scene.rviz",
+            "config/world.rviz",
             "config/object_models.yaml",
             "config/cube_color_hsv.yaml",
         ]),
@@ -65,6 +66,7 @@ setup(
             "validate_tag_model = cap_vision.validate_tag_model:main",
             "snapshot_topic = cap_vision.snapshot_topic:main",
             "collect_instance_dataset = cap_vision.collect_instance_dataset:main",
+            "world_publisher = cap_vision.world_publisher:main",
         ],
     },
 )

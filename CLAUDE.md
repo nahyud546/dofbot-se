@@ -30,6 +30,9 @@ python -m cube_vision.cameras --identify                      # camera nào là 
 python -m cube_vision.placement_check                         # camera ngoài thấy đủ 4 ô màu không
 python projects/t8_pipeline/zone_survey.py --zones 3 4        # đo vị trí ô thả, không gắp
 python projects/vision_experiments/calibrate_external.py --status
+python projects/vision_experiments/dofbot_frames.py --dump     # bảng hệ tọa độ + ma trận hiện tại
+python projects/vision_experiments/build_world.py --scan       # tay nhìn quanh, dựng world (data/world/latest.json)
+ros2 launch cap_vision world_view.launch.py                    # xem world trong RViz
 ```
 
 Lỗi test có sẵn, không liên quan thay đổi mới: `test_cube_sort_stage1.py::test_pick_waits_for_confirmed_id_and_current_top_face`.
@@ -55,6 +58,9 @@ ros/src/cap_vision (python hệ thống, ROS)        projects/t8_pipeline (pytho
   từ pose bất kỳ chứ không buộc READY_POSE.
 - **Hệ tọa độ** khai báo một chỗ: `vision_experiments/dofbot_frames.py` (đồ thị `world`/`base_link`/…/camera), toán ở
   `cube_vision/frames.py`, ghi chú ở `docs/architecture/frames.md`. Quy ước `a_T_b`: điểm hệ b → hệ a.
+- **World chung cho nhiều camera**: camera tay đo tag bằng nhiều góc nhìn (`active_view.py` tự nhìn thêm khi luật
+  trong `cube_vision/view_quality.py` báo chưa chắc) → `cube_vision/world_map.py`; camera khác tự định vị bằng tag
+  đã có trong world (`cube_vision/camera_pose.py`). Chi tiết và lệnh: `docs/architecture/frames.md`.
 - **`projects/cube_vision/`** là thư viện độc lập: không được import T8 hay ROS. Robot cụ thể đi vào qua tham số
   (`ZoneLayout`, `arm.execute("look")`, `scene.zone_survey`). T8 nối vào bằng adapter mỏng (`t8_pipeline/zone_survey.py`).
 - **`projects/vision_experiments/` và `projects/t8_pipeline/`** là module phẳng, import nhau bằng tên trần
